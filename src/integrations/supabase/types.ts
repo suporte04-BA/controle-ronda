@@ -14,16 +14,123 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          setor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          nome: string
+          setor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          setor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registros_ponto: {
+        Row: {
+          created_at: string
+          foto_url: string
+          horario_acao: string
+          horario_foto: string
+          id: string
+          tipo_acao: Database["public"]["Enums"]["tipo_acao_ponto"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          foto_url: string
+          horario_acao: string
+          horario_foto?: string
+          id?: string
+          tipo_acao: Database["public"]["Enums"]["tipo_acao_ponto"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          foto_url?: string
+          horario_acao?: string
+          horario_foto?: string
+          id?: string
+          tipo_acao?: Database["public"]["Enums"]["tipo_acao_ponto"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      setores: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      tipo_acao_ponto: "check_in" | "check_out_1" | "check_out_2"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +257,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      tipo_acao_ponto: ["check_in", "check_out_1", "check_out_2"],
+    },
   },
 } as const
