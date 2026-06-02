@@ -8,7 +8,6 @@ import {
   Users,
   Building2,
   LogOut,
-  Clock,
   FolderKanban,
   Tags,
   UserRoundCog,
