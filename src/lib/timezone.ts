@@ -32,8 +32,13 @@ export const TIPO_ACAO_LABEL: Record<string, string> = {
 export type TipoAcao = "check_in" | "check_out_1" | "check_out_2";
 
 export function proximaAcao(acoesHoje: string[]): TipoAcao | null {
-  if (!acoesHoje.includes("check_in")) return "check_in";
-  if (!acoesHoje.includes("check_out_1")) return "check_out_1";
-  if (!acoesHoje.includes("check_out_2")) return "check_out_2";
-  return null;
+  const ciclo: TipoAcao[] = ["check_in", "check_out_1", "check_out_2"];
+  const posicao = acoesHoje.length % ciclo.length;
+  return ciclo[posicao];
+}
+
+export function acoesDoCicloAtual(acoesHoje: string[]): string[] {
+  const resto = acoesHoje.length % 3;
+  if (resto === 0) return [];
+  return acoesHoje.slice(-resto);
 }

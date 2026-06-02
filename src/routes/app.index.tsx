@@ -9,6 +9,7 @@ import {
   formatData,
   formatHora,
   nowManaus,
+  acoesDoCicloAtual,
   proximaAcao,
   TIPO_ACAO_LABEL,
   type TipoAcao,
@@ -33,16 +34,12 @@ function BaterPonto() {
   const carregarHoje = async () => {
     if (!user) return;
     const hojeStr = formatData(new Date());
-    const inicio = new Date();
-    inicio.setHours(0, 0, 0, 0);
-    const fim = new Date();
-    fim.setHours(23, 59, 59, 999);
     const { data } = await supabase
       .from("registros_ponto")
       .select("tipo_acao, horario_acao")
       .eq("user_id", user.id)
-      .gte("horario_acao", inicio.toISOString())
-      .lte("horario_acao", fim.toISOString());
+      .order("horario_acao", { ascending: true })
+      .limit(1000);
     const filtrados = (data ?? []).filter((r) => formatData(r.horario_acao) === hojeStr);
     setAcoesHoje(filtrados.map((r) => r.tipo_acao));
   };
@@ -50,10 +47,13 @@ function BaterPonto() {
   useEffect(() => { carregarHoje(); }, [user]);
 
   const proxima = useMemo(() => proximaAcao(acoesHoje), [acoesHoje]);
+  const cicloAtual = useMemo(() => acoesDoCicloAtual(acoesHoje), [acoesHoje]);
 
-  const handleCapture = async (blob: Blob) => {
+  const handleCapture = async (
+    blob: Blob,
+    timestamps: { horarioCapturaOriginal: string; horarioConfirmacaoEnvio: string }
+  ) => {
     if (!user || !proxima) return;
-    const horarioAcao = new Date().toISOString();
     const path = `${user.id}/${Date.now()}_${proxima}.jpg`;
     const { error: upErr } = await supabase.storage
       .from("fotos_ponto")
@@ -66,8 +66,8 @@ function BaterPonto() {
     const { error: insErr } = await supabase.from("registros_ponto").insert({
       user_id: user.id,
       tipo_acao: proxima as TipoAcao,
-      horario_acao: horarioAcao,
-      horario_foto: new Date().toISOString(),
+      horario_acao: timestamps.horarioCapturaOriginal,
+      horario_foto: timestamps.horarioConfirmacaoEnvio,
       foto_url: urlData.publicUrl,
     });
     if (insErr) {
@@ -76,12 +76,14 @@ function BaterPonto() {
     }
     toast.success(`${TIPO_ACAO_LABEL[proxima]} registrado com sucesso!`);
     setCamOpen(false);
+    if (proxima === "check_out_2") setAcoesHoje([]);
     await carregarHoje();
   };
 
   return (
     <div className="px-4 py-6 space-y-6">
       <header className="space-y-1">
+        <img src="/logo.png" className="h-12 object-contain mb-4" alt="BA Elétrica" />
         <p className="text-sm text-muted-foreground capitalize">
           {now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
         </p>
@@ -101,15 +103,15 @@ function BaterPonto() {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Hoje</h2>
         <div className="grid grid-cols-3 gap-2">
           {(["check_in", "check_out_1", "check_out_2"] as const).map((t) => {
-            const done = acoesHoje.includes(t);
+            const doneCurrent = cicloAtual.includes(t);
             return (
               <div
                 key={t}
                 className={`rounded-xl p-3 text-center border ${
-                  done ? "bg-success/10 border-success/30 text-success" : "bg-muted border-border text-muted-foreground"
+                  doneCurrent ? "bg-success/10 border-success/30 text-success" : "bg-muted border-border text-muted-foreground"
                 }`}
               >
-                {done && <CheckCircle2 className="w-4 h-4 mx-auto mb-1" />}
+                {doneCurrent && <CheckCircle2 className="w-4 h-4 mx-auto mb-1" />}
                 <div className="text-[11px] font-medium">{TIPO_ACAO_LABEL[t]}</div>
               </div>
             );

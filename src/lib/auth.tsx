@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { syncCurrentUserAccess } from "@/lib/access.functions";
 
 export type AppRole = "admin" | "user";
 
@@ -16,26 +18,44 @@ interface AuthCtx {
   user: User | null;
   profile: Profile | null;
   role: AppRole | null;
+  baseRole: AppRole | null;
+  devViewRole: AppRole | null;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  setDevViewRole: (role: AppRole | null) => void;
 }
 
 const AuthContext = createContext<AuthCtx | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const syncAccess = useServerFn(syncCurrentUserAccess);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
+  const [baseRole, setBaseRole] = useState<AppRole | null>(null);
+  const [devViewRole, setDevViewRoleState] = useState<AppRole | null>(() => {
+    if (typeof window === "undefined") return null;
+    const stored = window.localStorage.getItem("devViewRole");
+    return stored === "admin" || stored === "user" ? stored : null;
+  });
   const [loading, setLoading] = useState(true);
 
   const loadProfileAndRole = async (userId: string) => {
-    const [{ data: prof }, { data: roleRow }] = await Promise.all([
+    await syncAccess();
+    const [{ data: prof }, { data: roleRows }] = await Promise.all([
       supabase.from("profiles").select("id,nome,email,setor_id").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId).order("role").maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", userId),
     ]);
     setProfile(prof as Profile | null);
-    setRole((roleRow?.role as AppRole | undefined) ?? "user");
+    const roles = (roleRows ?? []).map((r) => r.role as AppRole);
+    setBaseRole(roles.includes("admin") ? "admin" : "user");
+  };
+
+  const setDevViewRole = (role: AppRole | null) => {
+    setDevViewRoleState(role);
+    if (typeof window === "undefined") return;
+    if (role) window.localStorage.setItem("devViewRole", role);
+    else window.localStorage.removeItem("devViewRole");
   };
 
   useEffect(() => {
@@ -45,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(() => loadProfileAndRole(s.user.id), 0);
       } else {
         setProfile(null);
-        setRole(null);
+        setBaseRole(null);
       }
     });
 
@@ -64,10 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         user: session?.user ?? null,
         profile,
-        role,
+        role: devViewRole ?? baseRole,
+        baseRole,
+        devViewRole,
         loading,
-        signOut: async () => { await supabase.auth.signOut(); },
+        signOut: async () => { setDevViewRole(null); await supabase.auth.signOut(); },
         refreshProfile: async () => { if (session?.user) await loadProfileAndRole(session.user.id); },
+        setDevViewRole,
       }}
     >
       {children}

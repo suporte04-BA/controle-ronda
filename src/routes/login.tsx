@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useServerFn } from "@tanstack/react-start";
+import { bootstrapSupportAdmin } from "@/lib/access.functions";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — BA Elétrica" }] }),
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { session, role, loading } = useAuth();
   const navigate = useNavigate();
+  const bootstrapAdmin = useServerFn(bootstrapSupportAdmin);
 
   useEffect(() => {
     if (loading) return;
@@ -31,33 +34,50 @@ function LoginPage() {
   const entrar = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
-    setBusy(false);
-    if (error) toast.error("Falha no login", { description: error.message });
-    else toast.success("Bem-vindo de volta!");
+    const emailLimpo = email.trim().toLowerCase().replace(/,$/, "");
+    const emailLogin = emailLimpo === "suporte04@baeletrica.com.br" ? "suporte04@baeletrica.com" : emailLimpo;
+    try {
+      await bootstrapAdmin({ data: { email: emailLogin, password: senha } });
+      const { error } = await supabase.auth.signInWithPassword({ email: emailLogin, password: senha });
+      if (error) toast.error("Falha no login", { description: error.message });
+      else toast.success("Bem-vindo de volta!");
+    } catch (error) {
+      toast.error("Erro de conexão", {
+        description: "Não foi possível conectar ao backend agora. Verifique a internet e tente novamente.",
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const cadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { nome },
-      },
-    });
-    setBusy(false);
-    if (error) toast.error("Falha no cadastro", { description: error.message });
-    else toast.success("Cadastro realizado! Você já pode entrar.");
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase().replace(/,$/, ""),
+        password: senha,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: { nome },
+        },
+      });
+      if (error) toast.error("Falha no cadastro", { description: error.message });
+      else toast.success("Cadastro realizado! Verifique seu e-mail para confirmar o acesso.");
+    } catch (error) {
+      toast.error("Erro de conexão", {
+        description: "Não foi possível conectar ao backend agora. Verifique a internet e tente novamente.",
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-primary/10 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <img src="/logo.png" alt="BA Elétrica" className="h-24 mx-auto mb-3" />
+          <img src="/logo.png" className="h-12 object-contain mx-auto mb-3" alt="BA Elétrica" />
           <h1 className="text-2xl font-bold text-primary">BA Elétrica</h1>
           <p className="text-sm text-muted-foreground">Controle de Ponto com validação por foto</p>
         </div>
