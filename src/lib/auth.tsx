@@ -42,12 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfileAndRole = async (userId: string) => {
     await syncAccess();
-    const [{ data: prof }, { data: roleRow }] = await Promise.all([
+    const [{ data: prof }, { data: roleRows }] = await Promise.all([
       supabase.from("profiles").select("id,nome,email,setor_id").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId).order("role").maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", userId),
     ]);
     setProfile(prof as Profile | null);
-    setBaseRole((roleRow?.role as AppRole | undefined) ?? "user");
+    const roles = (roleRows ?? []).map((r) => r.role as AppRole);
+    setBaseRole(roles.includes("admin") ? "admin" : "user");
   };
 
   const setDevViewRole = (role: AppRole | null) => {
