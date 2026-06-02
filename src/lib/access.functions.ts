@@ -58,9 +58,10 @@ export const bootstrapSupportAdmin = createServerFn({ method: "POST" })
 export const syncCurrentUserAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const email = context.claims.email ?? "";
-    const nome = typeof context.claims.user_metadata === "object"
-      ? (context.claims.user_metadata as Record<string, unknown>)?.nome as string | undefined
+    const claims = context.claims as Record<string, unknown>;
+    const email = String(claims.email ?? "");
+    const nome = typeof claims.user_metadata === "object" && claims.user_metadata !== null
+      ? (claims.user_metadata as Record<string, unknown>).nome as string | undefined
       : undefined;
     return ensureAccessForUser(context.userId, email, nome);
   });
