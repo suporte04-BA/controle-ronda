@@ -103,7 +103,6 @@ function BaterPonto() {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Hoje</h2>
         <div className="grid grid-cols-3 gap-2">
           {(["check_in", "check_out_1", "check_out_2"] as const).map((t) => {
-            const done = acoesHoje.includes(t);
             const doneCurrent = cicloAtual.includes(t);
             return (
               <div
