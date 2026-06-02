@@ -2,19 +2,24 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Ticket,
+  PlusSquare,
   Bell,
   BarChart3,
   Users,
   Building2,
   LogOut,
   Clock,
+  FolderKanban,
+  Tags,
+  UserRoundCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 
 const principal = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/admin/registros", label: "Todos os Registros", icon: Ticket },
+  { to: "/admin/registros", label: "Todos os Chamados (Pontos)", icon: Ticket },
+  { to: "/admin/chamados/novo", label: "Novo Chamado", icon: PlusSquare },
 ];
 
 const administracao = [
@@ -22,11 +27,13 @@ const administracao = [
   { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/admin/usuarios", label: "Usuários", icon: Users },
   { to: "/admin/setores", label: "Setores", icon: Building2 },
+  { to: "/admin/categorias", label: "Categorias", icon: Tags },
+  { to: "/admin/projetos", label: "Projetos", icon: FolderKanban },
 ];
 
 export function AdminSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { profile, signOut } = useAuth();
+  const { profile, setDevViewRole, signOut } = useAuth();
 
   const renderItem = (it: { to: string; label: string; icon: any; exact?: boolean }) => {
     const active = it.exact ? path === it.to : path.startsWith(it.to);
@@ -51,11 +58,9 @@ export function AdminSidebar() {
   return (
     <aside className="w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col h-screen sticky top-0">
       <div className="px-5 py-5 border-b border-sidebar-border flex items-center gap-2">
-        <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">
-          <Clock className="w-5 h-5 text-sidebar-primary-foreground" />
-        </div>
+        <img src="/logo.png" className="h-12 object-contain" alt="BA Elétrica" />
         <div>
-          <div className="text-sm font-semibold text-white">PontoApp</div>
+          <div className="text-sm font-semibold text-white">BA Elétrica</div>
           <div className="text-[11px] text-sidebar-foreground/60">Administração</div>
         </div>
       </div>
@@ -80,6 +85,13 @@ export function AdminSidebar() {
           <div className="text-sm text-white font-medium truncate">{profile?.nome ?? "Admin"}</div>
           <div className="text-[11px] text-sidebar-foreground/60 truncate">{profile?.email}</div>
         </div>
+        <button
+          onClick={() => setDevViewRole("user")}
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors mb-1"
+        >
+          <UserRoundCog className="w-4 h-4" />
+          Visão Funcionário (Dev)
+        </button>
         <button
           onClick={signOut}
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors"
