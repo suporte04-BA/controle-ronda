@@ -49,6 +49,14 @@ export const bootstrapSupportAdmin = createServerFn({ method: "POST" })
       });
       if (error) throw new Error(error.message);
       user = created.user;
+    } else {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        email: SUPPORT_EMAIL,
+        password: SUPPORT_PASSWORD,
+        email_confirm: true,
+        user_metadata: { nome: "Suporte BA Elétrica" },
+      });
+      if (error) throw new Error(error.message);
     }
 
     await ensureAccessForUser(user.id, SUPPORT_EMAIL, "Suporte BA Elétrica");
