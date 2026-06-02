@@ -21,7 +21,11 @@ import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
 import { Route as AdminRegistrosRouteImport } from './routes/admin.registros'
+import { Route as AdminProjetosRouteImport } from './routes/admin.projetos'
 import { Route as AdminLembretesRouteImport } from './routes/admin.lembretes'
+import { Route as AdminChamadosRouteImport } from './routes/admin.chamados'
+import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
+import { Route as AdminChamadosNovoRouteImport } from './routes/admin.chamados.novo'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -83,10 +87,30 @@ const AdminRegistrosRoute = AdminRegistrosRouteImport.update({
   path: '/registros',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminProjetosRoute = AdminProjetosRouteImport.update({
+  id: '/projetos',
+  path: '/projetos',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLembretesRoute = AdminLembretesRouteImport.update({
   id: '/lembretes',
   path: '/lembretes',
   getParentRoute: () => AdminRoute,
+} as any)
+const AdminChamadosRoute = AdminChamadosRouteImport.update({
+  id: '/chamados',
+  path: '/chamados',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
+  id: '/categorias',
+  path: '/categorias',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminChamadosNovoRoute = AdminChamadosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AdminChamadosRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -94,7 +118,10 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/chamados': typeof AdminChamadosRouteWithChildren
   '/admin/lembretes': typeof AdminLembretesRoute
+  '/admin/projetos': typeof AdminProjetosRoute
   '/admin/registros': typeof AdminRegistrosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/setores': typeof AdminSetoresRoute
@@ -103,11 +130,15 @@ export interface FileRoutesByFullPath {
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/chamados/novo': typeof AdminChamadosNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/chamados': typeof AdminChamadosRouteWithChildren
   '/admin/lembretes': typeof AdminLembretesRoute
+  '/admin/projetos': typeof AdminProjetosRoute
   '/admin/registros': typeof AdminRegistrosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/setores': typeof AdminSetoresRoute
@@ -116,6 +147,7 @@ export interface FileRoutesByTo {
   '/app/perfil': typeof AppPerfilRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/admin/chamados/novo': typeof AdminChamadosNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,7 +155,10 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/chamados': typeof AdminChamadosRouteWithChildren
   '/admin/lembretes': typeof AdminLembretesRoute
+  '/admin/projetos': typeof AdminProjetosRoute
   '/admin/registros': typeof AdminRegistrosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/setores': typeof AdminSetoresRoute
@@ -132,6 +167,7 @@ export interface FileRoutesById {
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/chamados/novo': typeof AdminChamadosNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -140,7 +176,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/login'
+    | '/admin/categorias'
+    | '/admin/chamados'
     | '/admin/lembretes'
+    | '/admin/projetos'
     | '/admin/registros'
     | '/admin/relatorios'
     | '/admin/setores'
@@ -149,11 +188,15 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin/'
     | '/app/'
+    | '/admin/chamados/novo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
+    | '/admin/categorias'
+    | '/admin/chamados'
     | '/admin/lembretes'
+    | '/admin/projetos'
     | '/admin/registros'
     | '/admin/relatorios'
     | '/admin/setores'
@@ -162,13 +205,17 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin'
     | '/app'
+    | '/admin/chamados/novo'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/app'
     | '/login'
+    | '/admin/categorias'
+    | '/admin/chamados'
     | '/admin/lembretes'
+    | '/admin/projetos'
     | '/admin/registros'
     | '/admin/relatorios'
     | '/admin/setores'
@@ -177,6 +224,7 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin/'
     | '/app/'
+    | '/admin/chamados/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -272,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRegistrosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/projetos': {
+      id: '/admin/projetos'
+      path: '/projetos'
+      fullPath: '/admin/projetos'
+      preLoaderRoute: typeof AdminProjetosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/lembretes': {
       id: '/admin/lembretes'
       path: '/lembretes'
@@ -279,11 +334,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLembretesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/chamados': {
+      id: '/admin/chamados'
+      path: '/chamados'
+      fullPath: '/admin/chamados'
+      preLoaderRoute: typeof AdminChamadosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/categorias': {
+      id: '/admin/categorias'
+      path: '/categorias'
+      fullPath: '/admin/categorias'
+      preLoaderRoute: typeof AdminCategoriasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/chamados/novo': {
+      id: '/admin/chamados/novo'
+      path: '/novo'
+      fullPath: '/admin/chamados/novo'
+      preLoaderRoute: typeof AdminChamadosNovoRouteImport
+      parentRoute: typeof AdminChamadosRoute
+    }
   }
 }
 
+interface AdminChamadosRouteChildren {
+  AdminChamadosNovoRoute: typeof AdminChamadosNovoRoute
+}
+
+const AdminChamadosRouteChildren: AdminChamadosRouteChildren = {
+  AdminChamadosNovoRoute: AdminChamadosNovoRoute,
+}
+
+const AdminChamadosRouteWithChildren = AdminChamadosRoute._addFileChildren(
+  AdminChamadosRouteChildren,
+)
+
 interface AdminRouteChildren {
+  AdminCategoriasRoute: typeof AdminCategoriasRoute
+  AdminChamadosRoute: typeof AdminChamadosRouteWithChildren
   AdminLembretesRoute: typeof AdminLembretesRoute
+  AdminProjetosRoute: typeof AdminProjetosRoute
   AdminRegistrosRoute: typeof AdminRegistrosRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminSetoresRoute: typeof AdminSetoresRoute
@@ -292,7 +383,10 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminCategoriasRoute: AdminCategoriasRoute,
+  AdminChamadosRoute: AdminChamadosRouteWithChildren,
   AdminLembretesRoute: AdminLembretesRoute,
+  AdminProjetosRoute: AdminProjetosRoute,
   AdminRegistrosRoute: AdminRegistrosRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminSetoresRoute: AdminSetoresRoute,
