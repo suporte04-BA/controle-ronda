@@ -17,8 +17,8 @@ interface Linha {
   setor: string;
   tipo: string;
   data: string;
-  horarioAcao: string;
   horarioFoto: string;
+  horarioEnvio: string;
   foto: string;
 }
 
@@ -49,8 +49,8 @@ function Relatorios() {
         setor: p?.setor_id ? sm.get(p.setor_id) ?? "—" : "—",
         tipo: TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao,
         data: formatData(r.horario_acao),
-        horarioAcao: formatHora(r.horario_acao),
-        horarioFoto: formatHora(r.horario_foto),
+        horarioFoto: formatHora(r.horario_acao),
+        horarioEnvio: formatHora(r.horario_foto),
         foto: r.foto_url,
       };
     });
@@ -63,13 +63,11 @@ function Relatorios() {
   const exportarExcel = () => {
     const data = linhas.map((l) => ({
       Funcionário: l.nome,
-      Email: l.email,
       Setor: l.setor,
-      Ação: l.tipo,
-      Data: l.data,
-      "Horário (Ação)": l.horarioAcao,
-      "Horário (Foto)": l.horarioFoto,
-      "URL Foto": l.foto,
+      "Tipo de Ação": l.tipo,
+      "Horário da Foto": `${l.data} ${l.horarioFoto}`,
+      "Horário do Envio": `${l.data} ${l.horarioEnvio}`,
+      "Link da Imagem": l.foto,
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -97,17 +95,23 @@ function Relatorios() {
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Aplicar"}
           </Button>
           <Button onClick={exportarExcel}>
-            <Download className="w-4 h-4 mr-2" /> Excel
+            <Download className="w-4 h-4 mr-2" /> Exportar para Excel
           </Button>
           <Button onClick={() => window.print()} variant="secondary">
-            <Printer className="w-4 h-4 mr-2" /> Imprimir
+            <Printer className="w-4 h-4 mr-2" /> Imprimir Relatório (PDF)
           </Button>
         </div>
       </header>
 
       <div className="print-area bg-card border border-border rounded-2xl p-6">
-        <div className="hidden print:block mb-4">
-          <h2 className="text-xl font-bold">Relatório de Ponto</h2>
+        <div className="hidden print:block mb-6 border-b pb-4">
+          <div className="flex items-center justify-between gap-4">
+            <img src="/logo.png" className="h-12 object-contain" alt="BA Elétrica" />
+            <div className="text-right">
+              <h2 className="text-xl font-bold">Folha de Ponto Oficial</h2>
+              <p className="text-xs text-muted-foreground">BA Elétrica — Fuso America/Manaus</p>
+            </div>
+          </div>
           <p className="text-sm text-muted-foreground">
             {de && `De ${formatData(new Date(de + "T12:00:00"))} `}
             {ate && `até ${formatData(new Date(ate + "T12:00:00"))}`}
@@ -119,10 +123,10 @@ function Relatorios() {
               <tr>
                 <th className="text-left py-2 pr-3">Funcionário</th>
                 <th className="text-left py-2 pr-3">Setor</th>
-                <th className="text-left py-2 pr-3">Ação</th>
+                <th className="text-left py-2 pr-3">Tipo</th>
                 <th className="text-left py-2 pr-3">Data</th>
-                <th className="text-left py-2 pr-3">Ação</th>
-                <th className="text-left py-2 pr-3">Foto enviada</th>
+                <th className="text-left py-2 pr-3">Horário da Foto</th>
+                <th className="text-left py-2 pr-3">Horário do Envio</th>
                 <th className="text-left py-2">Foto</th>
               </tr>
             </thead>
@@ -133,10 +137,10 @@ function Relatorios() {
                   <td className="py-2 pr-3">{l.setor}</td>
                   <td className="py-2 pr-3">{l.tipo}</td>
                   <td className="py-2 pr-3">{l.data}</td>
-                  <td className="py-2 pr-3 tabular-nums">{l.horarioAcao}</td>
                   <td className="py-2 pr-3 tabular-nums">{l.horarioFoto}</td>
+                  <td className="py-2 pr-3 tabular-nums">{l.horarioEnvio}</td>
                   <td className="py-2">
-                    <img src={l.foto} alt="Foto" className="w-12 h-12 rounded object-cover" />
+                    <img src={l.foto} alt={`Foto de ponto de ${l.nome}`} className="w-14 h-14 rounded object-cover border border-border" />
                   </td>
                 </tr>
               ))}
