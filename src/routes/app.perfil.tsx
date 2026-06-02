@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LogOut, User } from "lucide-react";
+import { LogOut, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +10,13 @@ export const Route = createFileRoute("/app/perfil")({
 });
 
 function Perfil() {
-  const { profile, signOut } = useAuth();
+  const { profile, role, baseRole, devViewRole, setDevViewRole, signOut } = useAuth();
   const [setor, setSetor] = useState<string | null>(null);
+
+  const alternarVisao = () => {
+    if ((devViewRole ?? role) === "admin") setDevViewRole("user");
+    else setDevViewRole("admin");
+  };
 
   useEffect(() => {
     if (!profile?.setor_id) return;
@@ -31,8 +36,14 @@ function Perfil() {
           <div className="font-semibold text-lg">{profile?.nome}</div>
           <div className="text-sm text-muted-foreground">{profile?.email}</div>
           {setor && <div className="text-xs text-muted-foreground mt-1">Setor: {setor}</div>}
+          <div className="text-xs text-muted-foreground mt-1">Perfil: {role === "admin" ? "Administrador" : "Funcionário"}</div>
         </div>
       </div>
+
+      <Button onClick={alternarVisao} variant="ghost" className="w-full text-xs text-muted-foreground">
+        <Shield className="w-4 h-4 mr-2" /> Alternar Visão (Dev)
+        {devViewRole && <span className="ml-1">— base: {baseRole}</span>}
+      </Button>
 
       <Button onClick={signOut} variant="outline" className="w-full">
         <LogOut className="w-4 h-4 mr-2" /> Sair
