@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Entrar — PontoApp" }] }),
+  head: () => ({ meta: [{ title: "Entrar — BA Elétrica" }] }),
   component: LoginPage,
 });
 
@@ -54,14 +54,12 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-accent/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-primary/10 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-3">
-            <Clock className="w-7 h-7 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold">PontoApp</h1>
-          <p className="text-sm text-muted-foreground">Controle de ponto com validação por foto</p>
+          <img src="/logo.png" alt="BA Elétrica" className="h-24 mx-auto mb-3" />
+          <h1 className="text-2xl font-bold text-primary">BA Elétrica</h1>
+          <p className="text-sm text-muted-foreground">Controle de Ponto com validação por foto</p>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
