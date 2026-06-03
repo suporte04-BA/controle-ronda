@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Users, CheckCircle2, ShieldAlert, MapPin } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { formatData, formatHora, TIPO_ACAO_LABEL } from "@/lib/timezone";
 
@@ -15,11 +19,15 @@ interface UltimoPonto {
   tipo: string;
 }
 
+const PIE_COLORS = ["#0B1120", "#1e3a8a", "#3b82f6", "#60a5fa", "#93c5fd", "#dc2626", "#f59e0b", "#10b981"];
+
 function AdminDashboard() {
   const [finalizadas, setFinalizadas] = useState(0);
   const [abertas, setAbertas] = useState(0);
   const [agentes, setAgentes] = useState(0);
   const [ultimo, setUltimo] = useState<UltimoPonto | null>(null);
+  const [ranking, setRanking] = useState<{ nome: string; rondas: number }[]>([]);
+  const [porSetor, setPorSetor] = useState<{ setor: string; rondas: number }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -27,20 +35,26 @@ function AdminDashboard() {
       const inicio = new Date(); inicio.setHours(0, 0, 0, 0);
       const fim = new Date(); fim.setHours(23, 59, 59, 999);
 
-      const [{ count: usuarios }, { data: registros }, { data: profs }, { data: sets }] = await Promise.all([
+      const [{ count: usuarios }, { data: regsHoje }, { data: regsAll }, { data: profs }, { data: sets }] = await Promise.all([
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("registros_ponto")
           .select("user_id,tipo_acao,horario_acao")
           .gte("horario_acao", inicio.toISOString())
           .lte("horario_acao", fim.toISOString())
           .order("horario_acao", { ascending: false }),
+        supabase.from("registros_ponto")
+          .select("user_id,tipo_acao,horario_acao")
+          .order("horario_acao", { ascending: true })
+          .limit(5000),
         supabase.from("profiles").select("id,nome,setor_id"),
         supabase.from("setores").select("id,nome"),
       ]);
 
-      const filtrados = (registros ?? []).filter((r) => formatData(r.horario_acao) === hojeStr);
+      const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
+      const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
+
+      const filtrados = (regsHoje ?? []).filter((r) => formatData(r.horario_acao) === hojeStr);
       const porUser = new Map<string, string[]>();
-      // ordem cronológica crescente para contar ciclos
       [...filtrados].reverse().forEach((r) => {
         if (!porUser.has(r.user_id)) porUser.set(r.user_id, []);
         porUser.get(r.user_id)!.push(r.tipo_acao);
@@ -59,16 +73,36 @@ function AdminDashboard() {
 
       const last = filtrados[0];
       if (last) {
-        const pm = new Map((profs ?? []).map((p: any) => [p.id, p]));
-        const sm = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
-        const p: any = pm.get(last.user_id);
+        const p: any = profMap.get(last.user_id);
         setUltimo({
           nome: p?.nome ?? "—",
-          setor: p?.setor_id ? (sm.get(p.setor_id) as string) ?? "—" : "—",
+          setor: p?.setor_id ? (setMap.get(p.setor_id) as string) ?? "—" : "—",
           hora: formatHora(last.horario_acao),
           tipo: TIPO_ACAO_LABEL[last.tipo_acao] ?? last.tipo_acao,
         });
       }
+
+      // Ranking: rondas completas (check_out_2) por usuário
+      const completaPorUser = new Map<string, number>();
+      const completaPorSetor = new Map<string, number>();
+      (regsAll ?? []).forEach((r: any) => {
+        if (r.tipo_acao !== "check_out_2") return;
+        completaPorUser.set(r.user_id, (completaPorUser.get(r.user_id) ?? 0) + 1);
+        const p: any = profMap.get(r.user_id);
+        const setorNome = p?.setor_id ? (setMap.get(p.setor_id) as string) ?? "Sem setor" : "Sem setor";
+        completaPorSetor.set(setorNome, (completaPorSetor.get(setorNome) ?? 0) + 1);
+      });
+
+      const rankingArr = Array.from(completaPorUser.entries())
+        .map(([uid, qtd]) => ({ nome: ((profMap.get(uid) as any)?.nome as string) ?? "—", rondas: qtd }))
+        .sort((a, b) => b.rondas - a.rondas)
+        .slice(0, 8);
+      setRanking(rankingArr);
+
+      const setoresArr = Array.from(completaPorSetor.entries())
+        .map(([setor, rondas]) => ({ setor, rondas }))
+        .sort((a, b) => b.rondas - a.rondas);
+      setPorSetor(setoresArr);
     })();
   }, []);
 
@@ -108,6 +142,54 @@ function AdminDashboard() {
             </div>
           );
         })}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm lg:col-span-2">
+          <h2 className="text-sm font-semibold mb-1">Ranking de Vigilantes</h2>
+          <p className="text-xs text-muted-foreground mb-4">Rondas completas (ciclo até Check-out 2)</p>
+          <div className="h-72">
+            {ranking.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                Nenhuma ronda completa registrada ainda.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ranking} margin={{ top: 8, right: 8, left: 0, bottom: 36 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="nome" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="rondas" fill="#0B1120" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+          <h2 className="text-sm font-semibold mb-1">Distribuição por Setor</h2>
+          <p className="text-xs text-muted-foreground mb-4">Rondas concluídas por setor</p>
+          <div className="h-72">
+            {porSetor.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                Sem dados de setor ainda.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={porSetor} dataKey="rondas" nameKey="setor" innerRadius={48} outerRadius={88} paddingAngle={2}>
+                    {porSetor.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
