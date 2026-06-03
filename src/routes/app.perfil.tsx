@@ -9,13 +9,18 @@ export const Route = createFileRoute("/app/perfil")({
   component: Perfil,
 });
 
+const SUPPORT_EMAIL = "suporte04@baeletrica.com";
+
 function Perfil() {
   const { profile, role, baseRole, devViewRole, setDevViewRole, signOut } = useAuth();
   const [setor, setSetor] = useState<string | null>(null);
 
+  const canToggleView =
+    baseRole === "admin" || profile?.email?.toLowerCase() === SUPPORT_EMAIL;
+  const currentView = devViewRole ?? role;
+
   const alternarVisao = () => {
-    if ((devViewRole ?? role) === "admin") setDevViewRole("user");
-    else setDevViewRole("admin");
+    setDevViewRole(currentView === "admin" ? "user" : "admin");
   };
 
   useEffect(() => {
@@ -36,14 +41,16 @@ function Perfil() {
           <div className="font-semibold text-lg">{profile?.nome}</div>
           <div className="text-sm text-muted-foreground">{profile?.email}</div>
           {setor && <div className="text-xs text-muted-foreground mt-1">Setor: {setor}</div>}
-          <div className="text-xs text-muted-foreground mt-1">Perfil: {role === "admin" ? "Administrador" : "Funcionário"}</div>
+          <div className="text-xs text-muted-foreground mt-1">Perfil: {role === "admin" ? "Administrador" : "Vigilante"}</div>
         </div>
       </div>
 
-      <Button onClick={alternarVisao} variant="ghost" className="w-full text-xs text-muted-foreground">
-        <Shield className="w-4 h-4 mr-2" /> Alternar Visão (Dev)
-        {devViewRole && <span className="ml-1">— base: {baseRole}</span>}
-      </Button>
+      {canToggleView && (
+        <Button onClick={alternarVisao} variant="ghost" className="w-full text-xs text-muted-foreground">
+          <Shield className="w-4 h-4 mr-2" />
+          {currentView === "admin" ? "Alternar para Visão Vigilante" : "Alternar para Visão Administrador"}
+        </Button>
+      )}
 
       <Button onClick={signOut} variant="outline" className="w-full">
         <LogOut className="w-4 h-4 mr-2" /> Sair

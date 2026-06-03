@@ -1,13 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  LayoutDashboard,
-  ShieldCheck,
-  Users,
-  Building2,
-  LogOut,
-  FolderKanban,
-  UserRoundCog,
-} from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Users, Building2, LogOut, UserRoundCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 
@@ -16,12 +8,17 @@ const items = [
   { to: "/admin/registros", label: "Controle de Ronda", icon: ShieldCheck },
   { to: "/admin/usuarios", label: "Usuários", icon: Users },
   { to: "/admin/setores", label: "Setores", icon: Building2 },
-  { to: "/admin/projetos", label: "Projetos", icon: FolderKanban },
 ];
+
+const SUPPORT_EMAIL = "suporte04@baeletrica.com";
 
 export function AdminSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { profile, setDevViewRole, signOut } = useAuth();
+  const { profile, baseRole, devViewRole, setDevViewRole, signOut } = useAuth();
+
+  const canToggleView =
+    baseRole === "admin" || profile?.email?.toLowerCase() === SUPPORT_EMAIL;
+  const currentView = devViewRole ?? baseRole;
 
   return (
     <aside className="no-print w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col h-screen sticky top-0">
@@ -60,13 +57,15 @@ export function AdminSidebar() {
           <div className="text-sm text-white font-medium truncate">{profile?.nome ?? "Admin"}</div>
           <div className="text-[11px] text-sidebar-foreground/60 truncate">{profile?.email}</div>
         </div>
-        <button
-          onClick={() => setDevViewRole("user")}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors mb-1"
-        >
-          <UserRoundCog className="w-4 h-4" />
-          Visão Vigilante (Dev)
-        </button>
+        {canToggleView && (
+          <button
+            onClick={() => setDevViewRole(currentView === "admin" ? "user" : "admin")}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors mb-1"
+          >
+            <UserRoundCog className="w-4 h-4" />
+            {currentView === "admin" ? "Alternar para Visão Vigilante" : "Alternar para Visão Administrador"}
+          </button>
+        )}
         <button
           onClick={signOut}
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors"

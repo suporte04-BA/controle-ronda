@@ -78,8 +78,8 @@ function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
           <img src="/logo.png" className="h-12 object-contain mx-auto mb-3" alt="BA Elétrica" />
-          <h1 className="text-2xl font-bold text-primary">BA Elétrica</h1>
-          <p className="text-sm text-muted-foreground">Controle de Ponto com validação por foto</p>
+          <h1 className="text-2xl font-bold text-primary">BA Elétrica - Controle de Ronda</h1>
+          <p className="text-sm text-muted-foreground">Acesso seguro para vigilantes e administração</p>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">

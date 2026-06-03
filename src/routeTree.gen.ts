@@ -20,7 +20,6 @@ import { Route as AppHistoricoRouteImport } from './routes/app.historico'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
 import { Route as AdminRegistrosRouteImport } from './routes/admin.registros'
-import { Route as AdminProjetosRouteImport } from './routes/admin.projetos'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -77,18 +76,12 @@ const AdminRegistrosRoute = AdminRegistrosRouteImport.update({
   path: '/registros',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminProjetosRoute = AdminProjetosRouteImport.update({
-  id: '/projetos',
-  path: '/projetos',
-  getParentRoute: () => AdminRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/admin/projetos': typeof AdminProjetosRoute
   '/admin/registros': typeof AdminRegistrosRoute
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -100,7 +93,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/admin/projetos': typeof AdminProjetosRoute
   '/admin/registros': typeof AdminRegistrosRoute
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -115,7 +107,6 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/admin/projetos': typeof AdminProjetosRoute
   '/admin/registros': typeof AdminRegistrosRoute
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -131,7 +122,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/login'
-    | '/admin/projetos'
     | '/admin/registros'
     | '/admin/setores'
     | '/admin/usuarios'
@@ -143,7 +133,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/admin/projetos'
     | '/admin/registros'
     | '/admin/setores'
     | '/admin/usuarios'
@@ -157,7 +146,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/login'
-    | '/admin/projetos'
     | '/admin/registros'
     | '/admin/setores'
     | '/admin/usuarios'
@@ -253,18 +241,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRegistrosRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/projetos': {
-      id: '/admin/projetos'
-      path: '/projetos'
-      fullPath: '/admin/projetos'
-      preLoaderRoute: typeof AdminProjetosRouteImport
-      parentRoute: typeof AdminRoute
-    }
   }
 }
 
 interface AdminRouteChildren {
-  AdminProjetosRoute: typeof AdminProjetosRoute
   AdminRegistrosRoute: typeof AdminRegistrosRoute
   AdminSetoresRoute: typeof AdminSetoresRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
@@ -272,7 +252,6 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminProjetosRoute: AdminProjetosRoute,
   AdminRegistrosRoute: AdminRegistrosRoute,
   AdminSetoresRoute: AdminSetoresRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
