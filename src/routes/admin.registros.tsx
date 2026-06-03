@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Search, ImageIcon } from "lucide-react";
+import * as XLSX from "xlsx";
+import { Loader2, Search, ImageIcon, Download, Printer } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -38,7 +39,7 @@ function TodosRegistros() {
         supabase.from("registros_ponto")
           .select("id,tipo_acao,horario_acao,horario_foto,foto_url,user_id")
           .order("horario_acao", { ascending: false })
-          .limit(500),
+          .limit(1000),
         supabase.from("profiles").select("id,nome,setor_id"),
         supabase.from("setores").select("id,nome"),
       ]);
@@ -70,14 +71,42 @@ function TodosRegistros() {
     });
   }, [rows, busca, setorFiltro, dataFiltro]);
 
+  const exportarExcel = () => {
+    const data = filtrados.map((r) => ({
+      Colaborador: r.nome,
+      Setor: r.setor ?? "—",
+      "Tipo de Ronda": TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao,
+      "Horário da Foto (Manaus)": `${formatData(r.horario_acao)} ${formatHora(r.horario_acao)}`,
+      "Horário de Envio (Manaus)": `${formatData(r.horario_foto)} ${formatHora(r.horario_foto)}`,
+      "Link da Foto": r.foto_url,
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws["!cols"] = [
+      { wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 26 }, { wch: 26 }, { wch: 70 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Rondas");
+    XLSX.writeFile(wb, `controle_ronda_${Date.now()}.xlsx`);
+  };
+
   return (
     <div className="p-8 space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold">Todos os Registros</h1>
-        <p className="text-sm text-muted-foreground">{filtrados.length} registro(s)</p>
+      <header className="no-print flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Controle de Ronda</h1>
+          <p className="text-sm text-muted-foreground">{filtrados.length} registro(s)</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={exportarExcel}>
+            <Download className="w-4 h-4 mr-2" /> Exportar Excel
+          </Button>
+          <Button onClick={() => window.print()} variant="secondary">
+            <Printer className="w-4 h-4 mr-2" /> Imprimir Relatório (PDF)
+          </Button>
+        </div>
       </header>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="no-print flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Buscar por nome..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9" />
@@ -92,7 +121,15 @@ function TodosRegistros() {
         </Select>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="print-area bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="hidden print:flex items-center justify-between gap-4 px-6 py-4 border-b">
+          <img src="/logo.png" className="h-12 object-contain" alt="BA Elétrica" />
+          <div className="text-right">
+            <h2 className="text-xl font-bold">Folha Oficial de Controle de Ronda</h2>
+            <p className="text-xs text-muted-foreground">BA Elétrica — Fuso America/Manaus</p>
+            <p className="text-xs text-muted-foreground">{filtrados.length} registro(s) — emitido em {formatData(new Date())} {formatHora(new Date())}</p>
+          </div>
+        </div>
         {loading ? (
           <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : (
@@ -100,28 +137,29 @@ function TodosRegistros() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="text-left px-4 py-3">Funcionário</th>
+                  <th className="text-left px-4 py-3">Colaborador</th>
                   <th className="text-left px-4 py-3">Setor</th>
-                  <th className="text-left px-4 py-3">Ação</th>
+                  <th className="text-left px-4 py-3">Tipo de Ronda</th>
                   <th className="text-left px-4 py-3">Data</th>
-                  <th className="text-left px-4 py-3">Horário (Ação)</th>
-                  <th className="text-left px-4 py-3">Horário (Foto)</th>
+                  <th className="text-left px-4 py-3">Horário da Foto</th>
+                  <th className="text-left px-4 py-3">Horário do Envio</th>
                   <th className="text-right px-4 py-3">Foto</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filtrados.map((r) => (
-                  <tr key={r.id} className="hover:bg-muted/30">
+                  <tr key={r.id} className="hover:bg-muted/30 align-middle">
                     <td className="px-4 py-3 font-medium">{r.nome}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.setor ?? "—"}</td>
-                    <td className="px-4 py-3">{TIPO_ACAO_LABEL[r.tipo_acao]}</td>
+                    <td className="px-4 py-3">{TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao}</td>
                     <td className="px-4 py-3">{formatData(r.horario_acao)}</td>
                     <td className="px-4 py-3 tabular-nums">{formatHora(r.horario_acao)}</td>
                     <td className="px-4 py-3 tabular-nums">{formatHora(r.horario_foto)}</td>
                     <td className="px-4 py-3 text-right">
-                      <Button size="sm" variant="ghost" onClick={() => setFotoOpen(r.foto_url)}>
+                      <Button size="sm" variant="ghost" className="no-print" onClick={() => setFotoOpen(r.foto_url)}>
                         <ImageIcon className="w-4 h-4" />
                       </Button>
+                      <img src={r.foto_url} alt="Foto da ronda" className="hidden print:inline-block w-16 h-16 object-cover rounded border border-border ml-auto" />
                     </td>
                   </tr>
                 ))}
@@ -136,7 +174,7 @@ function TodosRegistros() {
 
       <Dialog open={!!fotoOpen} onOpenChange={(v) => !v && setFotoOpen(null)}>
         <DialogContent className="max-w-lg">
-          <DialogTitle>Foto do registro</DialogTitle>
+          <DialogTitle>Foto da ronda</DialogTitle>
           {fotoOpen && <img src={fotoOpen} alt="Foto" className="w-full rounded-lg" />}
         </DialogContent>
       </Dialog>

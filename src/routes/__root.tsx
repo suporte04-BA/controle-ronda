@@ -76,9 +76,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
-      { title: "PontoApp — Controle de Ponto" },
-      { name: "description", content: "Registro de ponto com validação por foto e fuso de Manaus." },
+      { title: "BA Elétrica — Controle de Ronda" },
+      { name: "description", content: "Controle de Ronda com validação por foto e fuso de Manaus." },
       { name: "theme-color", content: "#0B1120" },
+      { name: "google", content: "notranslate" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
@@ -90,8 +91,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className="notranslate" translate="no">
       <head>
+        <meta name="google" content="notranslate" />
         <HeadContent />
       </head>
       <body>
