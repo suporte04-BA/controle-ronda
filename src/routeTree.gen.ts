@@ -19,13 +19,8 @@ import { Route as AppPerfilRouteImport } from './routes/app.perfil'
 import { Route as AppHistoricoRouteImport } from './routes/app.historico'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
-import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
 import { Route as AdminRegistrosRouteImport } from './routes/admin.registros'
 import { Route as AdminProjetosRouteImport } from './routes/admin.projetos'
-import { Route as AdminLembretesRouteImport } from './routes/admin.lembretes'
-import { Route as AdminChamadosRouteImport } from './routes/admin.chamados'
-import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
-import { Route as AdminChamadosNovoRouteImport } from './routes/admin.chamados.novo'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -77,11 +72,6 @@ const AdminSetoresRoute = AdminSetoresRouteImport.update({
   path: '/setores',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminRelatoriosRoute = AdminRelatoriosRouteImport.update({
-  id: '/relatorios',
-  path: '/relatorios',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminRegistrosRoute = AdminRegistrosRouteImport.update({
   id: '/registros',
   path: '/registros',
@@ -92,62 +82,32 @@ const AdminProjetosRoute = AdminProjetosRouteImport.update({
   path: '/projetos',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminLembretesRoute = AdminLembretesRouteImport.update({
-  id: '/lembretes',
-  path: '/lembretes',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminChamadosRoute = AdminChamadosRouteImport.update({
-  id: '/chamados',
-  path: '/chamados',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
-  id: '/categorias',
-  path: '/categorias',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminChamadosNovoRoute = AdminChamadosNovoRouteImport.update({
-  id: '/novo',
-  path: '/novo',
-  getParentRoute: () => AdminChamadosRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/admin/categorias': typeof AdminCategoriasRoute
-  '/admin/chamados': typeof AdminChamadosRouteWithChildren
-  '/admin/lembretes': typeof AdminLembretesRoute
   '/admin/projetos': typeof AdminProjetosRoute
   '/admin/registros': typeof AdminRegistrosRoute
-  '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/historico': typeof AppHistoricoRoute
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/admin/chamados/novo': typeof AdminChamadosNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/admin/categorias': typeof AdminCategoriasRoute
-  '/admin/chamados': typeof AdminChamadosRouteWithChildren
-  '/admin/lembretes': typeof AdminLembretesRoute
   '/admin/projetos': typeof AdminProjetosRoute
   '/admin/registros': typeof AdminRegistrosRoute
-  '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/historico': typeof AppHistoricoRoute
   '/app/perfil': typeof AppPerfilRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
-  '/admin/chamados/novo': typeof AdminChamadosNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -155,19 +115,14 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/admin/categorias': typeof AdminCategoriasRoute
-  '/admin/chamados': typeof AdminChamadosRouteWithChildren
-  '/admin/lembretes': typeof AdminLembretesRoute
   '/admin/projetos': typeof AdminProjetosRoute
   '/admin/registros': typeof AdminRegistrosRoute
-  '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/historico': typeof AppHistoricoRoute
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/admin/chamados/novo': typeof AdminChamadosNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -176,55 +131,40 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/login'
-    | '/admin/categorias'
-    | '/admin/chamados'
-    | '/admin/lembretes'
     | '/admin/projetos'
     | '/admin/registros'
-    | '/admin/relatorios'
     | '/admin/setores'
     | '/admin/usuarios'
     | '/app/historico'
     | '/app/perfil'
     | '/admin/'
     | '/app/'
-    | '/admin/chamados/novo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
-    | '/admin/categorias'
-    | '/admin/chamados'
-    | '/admin/lembretes'
     | '/admin/projetos'
     | '/admin/registros'
-    | '/admin/relatorios'
     | '/admin/setores'
     | '/admin/usuarios'
     | '/app/historico'
     | '/app/perfil'
     | '/admin'
     | '/app'
-    | '/admin/chamados/novo'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/app'
     | '/login'
-    | '/admin/categorias'
-    | '/admin/chamados'
-    | '/admin/lembretes'
     | '/admin/projetos'
     | '/admin/registros'
-    | '/admin/relatorios'
     | '/admin/setores'
     | '/admin/usuarios'
     | '/app/historico'
     | '/app/perfil'
     | '/admin/'
     | '/app/'
-    | '/admin/chamados/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -306,13 +246,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSetoresRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/relatorios': {
-      id: '/admin/relatorios'
-      path: '/relatorios'
-      fullPath: '/admin/relatorios'
-      preLoaderRoute: typeof AdminRelatoriosRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/registros': {
       id: '/admin/registros'
       path: '/registros'
@@ -327,68 +260,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProjetosRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/lembretes': {
-      id: '/admin/lembretes'
-      path: '/lembretes'
-      fullPath: '/admin/lembretes'
-      preLoaderRoute: typeof AdminLembretesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/chamados': {
-      id: '/admin/chamados'
-      path: '/chamados'
-      fullPath: '/admin/chamados'
-      preLoaderRoute: typeof AdminChamadosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/categorias': {
-      id: '/admin/categorias'
-      path: '/categorias'
-      fullPath: '/admin/categorias'
-      preLoaderRoute: typeof AdminCategoriasRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/chamados/novo': {
-      id: '/admin/chamados/novo'
-      path: '/novo'
-      fullPath: '/admin/chamados/novo'
-      preLoaderRoute: typeof AdminChamadosNovoRouteImport
-      parentRoute: typeof AdminChamadosRoute
-    }
   }
 }
 
-interface AdminChamadosRouteChildren {
-  AdminChamadosNovoRoute: typeof AdminChamadosNovoRoute
-}
-
-const AdminChamadosRouteChildren: AdminChamadosRouteChildren = {
-  AdminChamadosNovoRoute: AdminChamadosNovoRoute,
-}
-
-const AdminChamadosRouteWithChildren = AdminChamadosRoute._addFileChildren(
-  AdminChamadosRouteChildren,
-)
-
 interface AdminRouteChildren {
-  AdminCategoriasRoute: typeof AdminCategoriasRoute
-  AdminChamadosRoute: typeof AdminChamadosRouteWithChildren
-  AdminLembretesRoute: typeof AdminLembretesRoute
   AdminProjetosRoute: typeof AdminProjetosRoute
   AdminRegistrosRoute: typeof AdminRegistrosRoute
-  AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminSetoresRoute: typeof AdminSetoresRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminCategoriasRoute: AdminCategoriasRoute,
-  AdminChamadosRoute: AdminChamadosRouteWithChildren,
-  AdminLembretesRoute: AdminLembretesRoute,
   AdminProjetosRoute: AdminProjetosRoute,
   AdminRegistrosRoute: AdminRegistrosRoute,
-  AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminSetoresRoute: AdminSetoresRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
