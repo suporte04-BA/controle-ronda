@@ -123,4 +123,20 @@
   .print-area, .print-area * { visibility: visible; }
   .print-area { position: absolute; left: 0; top: 0; width: 100%; }
   .no-print { display: none !important; }
+  body.printing-modal .print-area,
+  body.printing-modal .print-area * { visibility: hidden !important; }
+  body.printing-modal .print-modal,
+  body.printing-modal .print-modal * { visibility: visible !important; }
+  body.printing-modal .print-modal {
+    position: absolute !important;
+    left: 0 !important; top: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+    padding: 24px !important;
+  }
 }
+
