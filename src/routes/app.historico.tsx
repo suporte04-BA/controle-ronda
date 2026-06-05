@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { formatData, formatHora, TIPO_ACAO_LABEL } from "@/lib/timezone";
 import { Loader2 } from "lucide-react";
+import { getSignedFotoUrls } from "@/lib/storage";
 
 export const Route = createFileRoute("/app/historico")({
   component: Historico,
@@ -20,20 +21,24 @@ interface Registro {
 function Historico() {
   const { user } = useAuth();
   const [items, setItems] = useState<Registro[]>([]);
+  const [signed, setSigned] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("registros_ponto")
-      .select("id,tipo_acao,horario_acao,horario_foto,foto_url")
-      .eq("user_id", user.id)
-      .order("horario_acao", { ascending: false })
-      .limit(100)
-      .then(({ data }) => {
-        setItems((data ?? []) as Registro[]);
-        setLoading(false);
-      });
+    (async () => {
+      const { data } = await supabase
+        .from("registros_ponto")
+        .select("id,tipo_acao,horario_acao,horario_foto,foto_url")
+        .eq("user_id", user.id)
+        .order("horario_acao", { ascending: false })
+        .limit(100);
+      const list = (data ?? []) as Registro[];
+      setItems(list);
+      const map = await getSignedFotoUrls(list.map((r) => r.foto_url));
+      setSigned(map);
+      setLoading(false);
+    })();
   }, [user]);
 
   const grupos = useMemo(() => {
@@ -62,7 +67,7 @@ function Historico() {
               {regs.map((r) => (
                 <div key={r.id} className="flex items-center gap-3 p-3">
                   <img
-                    src={r.foto_url}
+                    src={signed.get(r.foto_url) ?? ""}
                     alt="foto"
                     className="w-12 h-12 rounded-lg object-cover bg-muted flex-shrink-0"
                     loading="lazy"

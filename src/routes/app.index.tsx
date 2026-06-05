@@ -62,13 +62,12 @@ function BaterPonto() {
       toast.error("Erro ao enviar foto", { description: upErr.message });
       return;
     }
-    const { data: urlData } = supabase.storage.from("fotos_ponto").getPublicUrl(path);
     const { error: insErr } = await supabase.from("registros_ponto").insert({
       user_id: user.id,
       tipo_acao: proxima as TipoAcao,
       horario_acao: timestamps.horarioCapturaOriginal,
       horario_foto: timestamps.horarioConfirmacaoEnvio,
-      foto_url: urlData.publicUrl,
+      foto_url: path,
     });
     if (insErr) {
       toast.error("Erro ao registrar ponto", { description: insErr.message });

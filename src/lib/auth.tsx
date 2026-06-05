@@ -41,14 +41,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfileAndRole = async (userId: string) => {
-    await syncAccess();
-    const [{ data: prof }, { data: roleRows }] = await Promise.all([
-      supabase.from("profiles").select("id,nome,email,setor_id").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-    ]);
-    setProfile(prof as Profile | null);
-    const roles = (roleRows ?? []).map((r) => r.role as AppRole);
-    setBaseRole(roles.includes("admin") ? "admin" : "user");
+    try { await syncAccess(); } catch (e) { console.warn("syncAccess falhou:", e); }
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const [{ data: prof }, { data: roleRows }] = await Promise.all([
+        supabase.from("profiles").select("id,nome,email,setor_id").eq("id", userId).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+      ]);
+      if (prof && roleRows && roleRows.length > 0) {
+        setProfile(prof as Profile);
+        const roles = roleRows.map((r) => r.role as AppRole);
+        setBaseRole(roles.includes("admin") ? "admin" : "user");
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
+    }
+    // Fallback final: ainda assim libera acesso como user
+    const { data: prof } = await supabase.from("profiles").select("id,nome,email,setor_id").eq("id", userId).maybeSingle();
+    setProfile((prof as Profile) ?? null);
+    setBaseRole("user");
   };
 
   const setDevViewRole = (role: AppRole | null) => {
