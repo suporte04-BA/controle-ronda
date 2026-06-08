@@ -63,8 +63,11 @@ function rangeFromPreset(p: Preset): { from: string; to: string } | null {
 }
 
 function TodosRegistros() {
+  const { baseRole } = useAuth();
+  const sendTest = useServerFn(sendTestReport);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [enviando, setEnviando] = useState(false);
   const [busca, setBusca] = useState("");
   const [setorFiltro, setSetorFiltro] = useState<string>("all");
   const [preset, setPreset] = useState<Preset>("hoje");
@@ -73,6 +76,20 @@ function TodosRegistros() {
   const [dataAte, setDataAte] = useState<string>(initial.to);
   const [setores, setSetores] = useState<{ id: string; nome: string }[]>([]);
   const [detalhe, setDetalhe] = useState<Row | null>(null);
+
+  const dispararTeste = async () => {
+    setEnviando(true);
+    const id = toast.loading("Enviando relatório de teste...");
+    try {
+      const r: any = await sendTest();
+      if (!r?.ok) toast.error(r?.message ?? "Falha no envio", { id });
+      else toast.success(`Enviado para: ${(r.recipients as string[]).join(", ") || "(ninguém)"}`, { id });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha no envio", { id });
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
