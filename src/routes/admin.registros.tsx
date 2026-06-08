@@ -396,7 +396,7 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
                     className="mt-3 w-full max-w-sm rounded-lg border border-border object-cover"
                   />
                 ) : (
-                  <div className="mt-3 text-xs text-muted-foreground">Foto indisponível</div>
+                  <div className="mt-3 w-full max-w-sm aspect-[4/3] rounded-lg border border-border bg-muted animate-pulse" />
                 )}
               </li>
             ))}
