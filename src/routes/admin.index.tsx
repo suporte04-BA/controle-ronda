@@ -183,8 +183,9 @@ function AdminDashboard() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: "var(--card)", color: "var(--card-foreground)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: "currentColor" }} />
+
                 </PieChart>
               </ResponsiveContainer>
             )}
