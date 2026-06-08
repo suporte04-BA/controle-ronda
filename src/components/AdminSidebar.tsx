@@ -21,16 +21,21 @@ export function AdminSidebar() {
   const currentView = devViewRole ?? baseRole;
 
   return (
-    <aside className="no-print w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col h-screen sticky top-0">
-      <div className="px-5 py-5 border-b border-sidebar-border flex items-center gap-2">
-        <img src="/logo.png" className="h-12 object-contain" alt="BA Elétrica" />
-        <div>
-          <div className="text-sm font-semibold text-white">BA Elétrica</div>
-          <div className="text-[11px] text-sidebar-foreground/60">Controle de Ronda</div>
+    <aside className="no-print w-72 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col h-screen sticky top-0">
+      <div className="px-5 pt-6 pb-4 border-b border-sidebar-border flex flex-col items-center gap-2 bg-transparent">
+        <img
+          src="/logo.png"
+          alt="BA Elétrica"
+          className="h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.45)]"
+          style={{ background: "transparent" }}
+        />
+        <div className="text-center">
+          <div className="text-base font-semibold text-white tracking-wide">BA Elétrica</div>
+          <div className="text-xs text-sidebar-foreground/70">Controle de Ronda</div>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-1.5">
         {items.map((it) => {
           const active = it.exact ? path === it.to : path.startsWith(it.to);
           const Icon = it.icon;
@@ -39,13 +44,13 @@ export function AdminSidebar() {
               key={it.to}
               to={it.to}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
+                "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-colors",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-5 h-5" />
               <span>{it.label}</span>
             </Link>
           );

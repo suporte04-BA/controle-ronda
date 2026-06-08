@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
-import { Loader2, Search, Download, Printer, FileText, X } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Loader2, Search, Download, Printer, FileText, X, Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +11,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatData, formatHora, TIPO_ACAO_LABEL, formatManaus } from "@/lib/timezone";
 import { getSignedFotoUrl } from "@/lib/storage";
+import { sendTestReport } from "@/lib/report.functions";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin/registros")({
   component: TodosRegistros,
@@ -60,8 +63,11 @@ function rangeFromPreset(p: Preset): { from: string; to: string } | null {
 }
 
 function TodosRegistros() {
+  const { baseRole } = useAuth();
+  const sendTest = useServerFn(sendTestReport);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [enviando, setEnviando] = useState(false);
   const [busca, setBusca] = useState("");
   const [setorFiltro, setSetorFiltro] = useState<string>("all");
   const [preset, setPreset] = useState<Preset>("hoje");
@@ -70,6 +76,20 @@ function TodosRegistros() {
   const [dataAte, setDataAte] = useState<string>(initial.to);
   const [setores, setSetores] = useState<{ id: string; nome: string }[]>([]);
   const [detalhe, setDetalhe] = useState<Row | null>(null);
+
+  const dispararTeste = async () => {
+    setEnviando(true);
+    const id = toast.loading("Enviando relatório de teste...");
+    try {
+      const r: any = await sendTest();
+      if (!r?.ok) toast.error(r?.message ?? "Falha no envio", { id });
+      else toast.success(`Enviado para: ${(r.recipients as string[]).join(", ") || "(ninguém)"}`, { id });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha no envio", { id });
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -168,6 +188,12 @@ function TodosRegistros() {
           <p className="text-sm text-muted-foreground">{filtrados.length} registro(s) no período</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {baseRole === "admin" && (
+            <Button onClick={dispararTeste} disabled={enviando} variant="default" className="bg-[color:var(--brand-red)] hover:bg-[color:var(--brand-red)]/90 text-white">
+              {enviando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+              Enviar Relatório de Teste
+            </Button>
+          )}
           <Button onClick={exportarExcel} disabled={!intervaloValido}>
             <Download className="w-4 h-4 mr-2" /> Exportar Excel
           </Button>
@@ -370,7 +396,7 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
                     className="mt-3 w-full max-w-sm rounded-lg border border-border object-cover"
                   />
                 ) : (
-                  <div className="mt-3 text-xs text-muted-foreground">Foto indisponível</div>
+                  <div className="mt-3 w-full max-w-sm aspect-[4/3] rounded-lg border border-border bg-muted animate-pulse" />
                 )}
               </li>
             ))}

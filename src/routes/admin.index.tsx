@@ -156,11 +156,11 @@ function AdminDashboard() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ranking} margin={{ top: 8, right: 8, left: 0, bottom: 36 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="nome" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="rondas" fill="#0B1120" radius={[6, 6, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground) / 0.2)" />
+                  <XAxis dataKey="nome" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11, fill: "currentColor" }} stroke="currentColor" className="text-foreground/70" />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "currentColor" }} stroke="currentColor" className="text-foreground/70" />
+                  <Tooltip contentStyle={{ background: "var(--card)", color: "var(--card-foreground)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                  <Bar dataKey="rondas" fill="currentColor" className="text-primary" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -183,8 +183,9 @@ function AdminDashboard() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: "var(--card)", color: "var(--card-foreground)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: "currentColor" }} />
+
                 </PieChart>
               </ResponsiveContainer>
             )}
