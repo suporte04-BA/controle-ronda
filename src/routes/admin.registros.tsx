@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
-import { Loader2, Search, Download, Printer, FileText, X } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Loader2, Search, Download, Printer, FileText, X, Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +11,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatData, formatHora, TIPO_ACAO_LABEL, formatManaus } from "@/lib/timezone";
 import { getSignedFotoUrl } from "@/lib/storage";
+import { sendTestReport } from "@/lib/report.functions";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin/registros")({
   component: TodosRegistros,
