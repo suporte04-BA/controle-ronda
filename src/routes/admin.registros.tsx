@@ -188,6 +188,12 @@ function TodosRegistros() {
           <p className="text-sm text-muted-foreground">{filtrados.length} registro(s) no período</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {baseRole === "admin" && (
+            <Button onClick={dispararTeste} disabled={enviando} variant="default" className="bg-[color:var(--brand-red)] hover:bg-[color:var(--brand-red)]/90 text-white">
+              {enviando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+              Enviar Relatório de Teste
+            </Button>
+          )}
           <Button onClick={exportarExcel} disabled={!intervaloValido}>
             <Download className="w-4 h-4 mr-2" /> Exportar Excel
           </Button>
