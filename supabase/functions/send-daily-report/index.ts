@@ -175,17 +175,33 @@ async function fetchGestorAdmins(admin: any): Promise<{ email: string; nome: str
   const ids = profs.map((p: any) => p.id);
   const { data: roles } = await admin.from("user_roles").select("user_id").eq("role", "admin").in("user_id", ids);
   const adminSet = new Set((roles ?? []).map((r: any) => r.user_id));
-  return profs.filter((p: any) => adminSet.has(p.id)).map((p: any) => ({ email: p.email, nome: p.nome }));
+  const seen = new Set<string>();
+  return profs
+    .filter((p: any) => adminSet.has(p.id))
+    .map((p: any) => ({ email: normalizeEmail(p.email), nome: p.nome }))
+    .filter((p: any): p is { email: string; nome: string } => Boolean(p.email) && isCorporateEmail(p.email))
+    .filter((p) => {
+      if (seen.has(p.email)) return false;
+      seen.add(p.email);
+      return true;
+    });
 }
 
 async function sendResend(to: string[], subject: string, html: string, attachments: { filename: string; content: string }[]) {
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendKey) throw new Error("RESEND_API_KEY não configurada no ambiente da função.");
+
+  const payload = { from: SENDER, to, reply_to: REPLY_TO, subject, html, attachments };
+  console.log("Resend request", { from: SENDER, reply_to: REPLY_TO, to, subject, attachments: attachments.map((a) => a.filename) });
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
-    body: JSON.stringify({ from: SENDER, to, subject, html, attachments }),
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
+    body: JSON.stringify(payload),
   });
   const text = await res.text();
+  console.log("Resend raw response", { status: res.status, body: text });
   if (!res.ok) {
+    console.error("Resend delivery failed", { status: res.status, body: text });
     throw new Error(`Resend ${res.status}: ${text}`);
   }
   try { return JSON.parse(text); } catch { return { raw: text }; }
