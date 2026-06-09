@@ -244,6 +244,24 @@ function TodosRegistros() {
         </div>
       </header>
 
+      {mostrarSql && baseRole === "admin" && (
+        <div className="no-print bg-card border border-border rounded-xl p-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold flex items-center gap-2"><Terminal className="w-4 h-4" /> Agendamento Automático (pg_cron + pg_net)</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Cole o script abaixo no <b>SQL Editor</b> do Supabase e execute uma única vez.
+                Ele dispara a Edge Function <code>send-daily-report</code> todos os dias às <b>07:00 (America/Manaus)</b>.
+              </p>
+            </div>
+            <Button size="sm" variant="secondary" onClick={copiarSql}><Copy className="w-4 h-4 mr-2" /> Copiar SQL</Button>
+          </div>
+          <pre className="text-xs bg-muted text-foreground p-3 rounded-lg overflow-auto max-h-72 whitespace-pre"><code>{CRON_SQL}</code></pre>
+        </div>
+      )}
+
+
+
       <div className="no-print bg-card border border-border rounded-xl p-4 space-y-3">
         <div className="flex flex-wrap gap-2">
           {([
