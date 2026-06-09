@@ -214,9 +214,10 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const modo: "teste" | "diario" = body?.modo === "diario" ? "diario" : "teste";
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || FALLBACK_SUPABASE_URL;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+    console.log("send-daily-report start", { modo, supabaseUrl: SUPABASE_URL, sender: SENDER, replyTo: REPLY_TO });
 
     const { fromUtc, toUtc } = rangeFor(modo);
     const periodo = `${fmtManaus(fromUtc.toISOString(), false)} a ${fmtManaus(toUtc.toISOString(), false)} (America/Manaus)`;
@@ -232,13 +233,7 @@ Deno.serve(async (req) => {
 
     const ciclos = rows.filter((r: any) => r.tipo_acao === "check_out_2").length;
     const ag = new Set(rows.map((r: any) => r.user_id)).size;
-    const html = `
-      <div style="font-family:Arial,sans-serif;color:#0B1120">
-        <h2 style="margin:0 0 8px">BA Elétrica — Relatório de Controle de Ronda</h2>
-        <p style="color:#475569;margin:0 0 16px">Período: <strong>${periodo}</strong></p>
-        <p><b>Eventos:</b> ${rows.length} &nbsp;|&nbsp; <b>Ciclos concluídos:</b> ${ciclos} &nbsp;|&nbsp; <b>Agentes ativos:</b> ${ag}</p>
-        <p>Anexos: <b>relatorio.xlsx</b> (detalhado) e <b>relatorio.pdf</b> (gerencial).</p>
-      </div>`;
+    const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#0B1120;background-color:#FFFFFF"><tr><td style="padding:24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;max-width:640px"><tr><td style="font-size:20px;font-weight:bold;line-height:28px;padding:0 0 8px 0">BA Elétrica — Relatório de Controle de Ronda</td></tr><tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 16px 0">Período: <strong>${periodo}</strong></td></tr><tr><td style="font-size:14px;line-height:22px;padding:0 0 12px 0"><strong>Eventos:</strong> ${rows.length} &nbsp;|&nbsp; <strong>Ciclos concluídos:</strong> ${ciclos} &nbsp;|&nbsp; <strong>Agentes ativos:</strong> ${ag}</td></tr><tr><td style="font-size:14px;line-height:22px;padding:0">Anexos: <strong>relatorio.xlsx</strong> (detalhado) e <strong>relatorio.pdf</strong> (gerencial).</td></tr></table></td></tr></table>`;
 
     const result = await sendResend(
       recipients.map((r) => r.email),
