@@ -20,7 +20,6 @@ import { Route as AppHistoricoRouteImport } from './routes/app.historico'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
 import { Route as AdminRegistrosRouteImport } from './routes/admin.registros'
-import { Route as ApiPublicCronDailyReportRouteImport } from './routes/api/public/cron.daily-report'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -77,12 +76,6 @@ const AdminRegistrosRoute = AdminRegistrosRouteImport.update({
   path: '/registros',
   getParentRoute: () => AdminRoute,
 } as any)
-const ApiPublicCronDailyReportRoute =
-  ApiPublicCronDailyReportRouteImport.update({
-    id: '/api/public/cron/daily-report',
-    path: '/api/public/cron/daily-report',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,7 +89,6 @@ export interface FileRoutesByFullPath {
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/api/public/cron/daily-report': typeof ApiPublicCronDailyReportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -108,7 +100,6 @@ export interface FileRoutesByTo {
   '/app/perfil': typeof AppPerfilRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
-  '/api/public/cron/daily-report': typeof ApiPublicCronDailyReportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,7 +114,6 @@ export interface FileRoutesById {
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/api/public/cron/daily-report': typeof ApiPublicCronDailyReportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,7 +129,6 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin/'
     | '/app/'
-    | '/api/public/cron/daily-report'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -151,7 +140,6 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin'
     | '/app'
-    | '/api/public/cron/daily-report'
   id:
     | '__root__'
     | '/'
@@ -165,7 +153,6 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin/'
     | '/app/'
-    | '/api/public/cron/daily-report'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -173,7 +160,6 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
-  ApiPublicCronDailyReportRoute: typeof ApiPublicCronDailyReportRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -255,13 +241,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRegistrosRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/api/public/cron/daily-report': {
-      id: '/api/public/cron/daily-report'
-      path: '/api/public/cron/daily-report'
-      fullPath: '/api/public/cron/daily-report'
-      preLoaderRoute: typeof ApiPublicCronDailyReportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -300,7 +279,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
-  ApiPublicCronDailyReportRoute: ApiPublicCronDailyReportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
