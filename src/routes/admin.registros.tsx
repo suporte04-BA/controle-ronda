@@ -230,6 +230,11 @@ function TodosRegistros() {
               Enviar Relatório de Teste
             </Button>
           )}
+          {baseRole === "admin" && (
+            <Button onClick={() => setMostrarSql((v) => !v)} variant="outline">
+              <Terminal className="w-4 h-4 mr-2" /> {mostrarSql ? "Ocultar SQL do Cron" : "Agendar Cron Diário (SQL)"}
+            </Button>
+          )}
           <Button onClick={exportarExcel} disabled={!intervaloValido}>
             <Download className="w-4 h-4 mr-2" /> Exportar Excel
           </Button>
