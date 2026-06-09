@@ -12,9 +12,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const RESEND_API_KEY = "re_42X7YjrW_4yUdo8Xu9QetJGVUbfiDM3Ah";
-const SENDER = "BA Elétrica <relatorio@baeletrica.com.br>";
+const FALLBACK_SUPABASE_URL = "https://rdmbayprbfqbjhfqcasp.supabase.co";
+const SENDER = Deno.env.get("REPORT_FROM_EMAIL") || "BA Elétrica <relatorio@baeletrica.com.br>";
+const REPLY_TO = Deno.env.get("REPORT_REPLY_TO") || "suporte04@baeletrica.com";
 const MANAUS_OFFSET_MS = -4 * 60 * 60 * 1000;
+const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Check-in da Ronda",
@@ -28,6 +30,19 @@ function fmtManaus(iso: string, withSec = true) {
   const d = toManaus(new Date(iso));
   return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}${withSec ? ":" + pad(d.getUTCSeconds()) : ""}`;
 }
+
+function normalizeEmail(email: unknown): string | null {
+  if (typeof email !== "string") return null;
+  const normalized = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return null;
+  return normalized;
+}
+
+function isCorporateEmail(email: string) {
+  const domain = email.split("@")[1] ?? "";
+  return CORPORATE_DOMAINS.includes(domain);
+}
+
 function rangeFor(modo: "teste" | "diario") {
   const now = new Date();
   const m = toManaus(now);
