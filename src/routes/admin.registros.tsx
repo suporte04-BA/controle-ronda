@@ -107,12 +107,26 @@ function TodosRegistros() {
     try {
       const r = await sendTestReport();
       if (!r?.ok) {
-        toast.error(`Falha no Resend: ${r?.error ?? r?.message ?? "domínio não verificado ou chave inválida"}`, { id, duration: 12000 });
+        const errMsg = r?.error ?? r?.message ?? "Erro desconhecido";
+        if (errMsg.includes("RESEND_API_KEY não configurada")) {
+          toast.error("Chave RESEND_API_KEY não configurada. Configure via Supabase Dashboard > Edge Functions > Secrets.", { id, duration: 15000 });
+        } else if (errMsg.includes("Domínio não verificado")) {
+          toast.error("Domínio do remetente não verificado no Resend. Verifique baeletrica.com.br ou use onboarding@resend.dev.", { id, duration: 15000 });
+        } else if (errMsg.includes("Nenhum admin")) {
+          toast.error("Nenhum destinatário encontrado. Cadastre um admin no setor GESTOR.", { id, duration: 12000 });
+        } else {
+          toast.error(`Falha: ${errMsg}`, { id, duration: 12000 });
+        }
       } else {
         toast.success(`Enviado para: ${(r.recipients ?? []).join(", ") || "(ninguém)"}`, { id });
       }
     } catch (e: any) {
-      toast.error(`Falha no Resend: ${e?.message ?? "erro desconhecido"}`, { id, duration: 12000 });
+      const errMsg = e?.message ?? "erro desconhecido";
+      if (errMsg.includes("RESEND_API_KEY")) {
+        toast.error("Chave RESEND_API_KEY não configurada no Supabase. Veja os logs da Edge Function.", { id, duration: 15000 });
+      } else {
+        toast.error(`Falha: ${errMsg}`, { id, duration: 12000 });
+      }
     } finally {
       setEnviando(false);
     }
