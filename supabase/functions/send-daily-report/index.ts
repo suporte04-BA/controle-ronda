@@ -160,11 +160,11 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
     ensurePage(rowH + 10);
 
     const tipoLabel = TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao;
-    const dataHora = fmtManaus(r.horario_acao);
-    const parts = dataHora.split(" ");
-    const data = parts[0] ?? "";
-    const horaFoto = fmtManaus(r.horario_foto);
-    const horaEnvio = dataHora;
+    const dataCompleta = fmtManaus(r.horario_acao);
+    const data = dataCompleta.split(" ")[0] ?? "";
+    const horaFoto = dataCompleta.split(" ")[1] ?? "";
+    const envioCompleto = fmtManaus(r.horario_foto);
+    const horaEnvio = envioCompleto.split(" ")[1] ?? "";
 
     const cells = [
       String(r.nome ?? "—").slice(0, 18),
