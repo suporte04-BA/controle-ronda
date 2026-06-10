@@ -90,72 +90,81 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
   const pageW = 595;
   const pageH = 842;
-  const marginX = 36;
-  const colWidths = [110, 70, 120, 65, 95, 95];
+  const marginX = 40;
+  const tableW = pageW - marginX * 2;
+  const colWidths = [100, 65, 115, 65, 90, 100];
   const headers = ["COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HORÁRIO DA FOTO", "HORÁRIO DO ENVIOS"];
-  const rowH = 18;
-  const headerH = 20;
-  const topY = pageH - 40;
+  const rowH = 20;
+  const headerH = 22;
   const brandRed = rgb(0.85, 0.15, 0.15);
   const darkText = rgb(0.04, 0.07, 0.14);
   const grayText = rgb(0.5, 0.5, 0.5);
-  const lightLine = rgb(0.8, 0.8, 0.8);
+  const lightGray = rgb(0.94, 0.94, 0.94);
+  const lineColor = rgb(0.82, 0.82, 0.82);
 
   let page = pdf.addPage([pageW, pageH]);
-  let y = topY;
+  let y = pageH - 36;
 
-  const draw = (txt: string, x: number, yPos: number, size: number, bold = false, color = darkText) => {
-    page.drawText(txt, { x, y: yPos, size, font: bold ? fontB : font, color });
+  const draw = (txt: string, xPos: number, yPos: number, size: number, bold = false, color = darkText) => {
+    page.drawText(txt, { x: xPos, y: yPos, size, font: bold ? fontB : font, color });
   };
-  const drawLine = (x1: number, x2: number, yPos: number) => {
-    page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness: 0.5, color: lightLine });
+  const line = (x1: number, x2: number, yPos: number, thickness = 0.5, color = lineColor) => {
+    page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness, color });
   };
-  const drawLineThick = (x1: number, x2: number, yPos: number) => {
-    page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness: 1, color: brandRed });
-  };
-
   const ensurePage = (needed: number) => {
-    if (y - needed < 50) {
+    if (y - needed < 60) {
       page = pdf.addPage([pageW, pageH]);
-      y = topY;
+      y = pageH - 36;
     }
   };
 
-  // Header area
-  draw("BA Elétrica", marginX, y, 20, true, brandRed);
-  draw("Controle de Ronda", pageW - 160, y, 10, false, grayText);
-  y -= 8;
-  drawLineThick(marginX, pageW - marginX, y);
-  y -= 16;
+  // ── Logo (fetch from app) ──
+  try {
+    const logoRes = await fetch("https://controle-ronda.lovable.app/logo.png");
+    if (logoRes.ok) {
+      const logoBytes = new Uint8Array(await logoRes.arrayBuffer());
+      const logoImg = await pdf.embedPng(logoBytes);
+      const logoW = 50;
+      const logoH = (logoImg.height / logoImg.width) * logoW;
+      page.drawImage(logoImg, { x: marginX, y: y - logoH + 5, width: logoW, height: logoH });
+    }
+  } catch (_) { /* logo opcional */ }
 
-  // Title
-  draw("Folha Oficial de Controle de Ronda", marginX, y, 14, true, darkText);
-  draw("BA Elétrica — Fuso America/Manaus", pageW - 200, y, 8, false, grayText);
-  y -= 12;
-  draw(`Período: ${periodo} — ${rows.length} registro(s) — emitido em ${fmtManaus(new Date().toISOString(), false)}`, marginX, y, 8, false, grayText);
-  y -= 16;
-  drawLineThick(marginX, pageW - marginX, y);
+  // ── Header text (direita) ──
+  draw("Controle de Ronda", pageW - marginX - 110, y, 11, false, grayText);
+  y -= 6;
+  line(marginX, pageW - marginX, y, 1.5, brandRed);
   y -= 20;
 
-  // Table header
+  // ── Titulo ──
+  draw("Folha Oficial de Controle de Ronda", marginX, y, 15, true, darkText);
+  y -= 14;
+  draw("BA Elétrica — Fuso America/Manaus", marginX, y, 9, false, grayText);
+  y -= 14;
+  draw(`Período: ${periodo} — ${rows.length} registro(s) — emitido em ${fmtManaus(new Date().toISOString(), false)}`, marginX, y, 8, false, grayText);
+  y -= 12;
+  line(marginX, pageW - marginX, y, 1.5, brandRed);
+  y -= 20;
+
+  // ── Table header ──
   const tableX = marginX;
-  let x = tableX;
   page.drawRectangle({
     x: tableX,
-    y: y - 4,
-    width: colWidths.reduce((s, w) => s + w, 0),
+    y: y - 5,
+    width: tableW,
     height: headerH,
-    color: rgb(0.95, 0.95, 0.95),
+    color: lightGray,
   });
+  let x = tableX;
   for (let i = 0; i < headers.length; i++) {
     draw(headers[i], x + 4, y, 7, true, darkText);
     x += colWidths[i];
   }
   y -= headerH;
-  drawLine(tableX, tableX + colWidths.reduce((s, w) => s + w, 0), y);
-  y -= 2;
+  line(tableX, tableX + tableW, y);
+  y -= 4;
 
-  // Table rows
+  // ── Table rows ──
   for (const r of rows) {
     ensurePage(rowH + 10);
 
@@ -177,16 +186,18 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
 
     x = tableX;
     for (let i = 0; i < cells.length; i++) {
-      draw(cells[i], x + 4, y, 7, false, darkText);
+      draw(cells[i], x + 4, y, 8, false, darkText);
       x += colWidths[i];
     }
     y -= rowH;
-    drawLine(tableX, tableX + colWidths.reduce((s, w) => s + w, 0), y);
-    y -= 2;
+    line(tableX, tableX + tableW, y);
+    y -= 4;
   }
 
-  // Footer
-  y -= 10;
+  // ── Footer ──
+  y -= 12;
+  line(marginX, pageW - marginX, y, 0.5, lineColor);
+  y -= 12;
   draw("Documento gerado automaticamente — BA Elétrica", marginX, y, 7, false, grayText);
   y -= 10;
   draw("Fuso horário: America/Manaus (UTC-4)", marginX, y, 7, false, grayText);
