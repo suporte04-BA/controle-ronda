@@ -68,16 +68,18 @@ function toBase64(u8: Uint8Array): string {
 
 async function buildXlsx(rows: any[]): Promise<Uint8Array> {
   const data = rows.map((r) => ({
-    "Data/Hora": fmtManaus(r.horario_acao),
-    "Ponto de Ronda": r.setor ?? "—",
-    "Status do Check-in": TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao,
-    "Nome do Vigilante": r.nome,
-    "Observações Registradas": r.foto_url || "—",
+    "Colaborador": r.nome,
+    "Email": r.email ?? "—",
+    "Setor": r.setor ?? "—",
+    "Tipo de Ronda": TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao,
+    "Horário da Foto (Manaus)": fmtManaus(r.horario_foto),
+    "Horário de Envio (Manaus)": fmtManaus(r.horario_acao),
+    "Caminho do Arquivo": r.foto_url || "—",
   }));
   const ws = XLSX.utils.json_to_sheet(data);
-  ws["!cols"] = [{ wch: 22 }, { wch: 20 }, { wch: 22 }, { wch: 28 }, { wch: 60 }];
+  ws["!cols"] = [{ wch: 28 }, { wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 26 }, { wch: 26 }, { wch: 60 }];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Auditoria Dados Brutos");
+  XLSX.utils.book_append_sheet(wb, ws, "Rondas");
   const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
   return new Uint8Array(out as ArrayBuffer);
 }
@@ -205,7 +207,7 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
           <tr><td style="font-size:13px;color:#0B1120;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Anexos do E-mail</td></tr>
           <tr><td style="font-size:12px;color:#64748B;padding:6px 0 0 0;font-family:Arial,Helvetica,sans-serif">
             Relatorio_Ronda_BA_Eletrica.pdf — Relatório gerencial<br>
-            Auditoria_Dados_Brutos.xlsx — Dados brutos de auditoria
+            Auditoria_Dados_Brutos.xlsx — Dados detalhados de cada registro
           </td></tr>
           </table>
         </td></tr>
@@ -248,26 +250,21 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
   const seen = new Set<string>();
   const recipients: string[] = [];
 
-  const { data: adminRoles } = await admin.from("user_roles").select("user_id").eq("role", "admin");
-  console.log("Admin roles:", adminRoles?.length ?? 0);
+  // Buscar TODOS os usuários com email corporativo (admin e user)
+  const { data: allProfiles } = await admin.from("profiles").select("id,nome,email,setor_id");
+  console.log("Total profiles:", allProfiles?.length ?? 0);
 
-  if (adminRoles?.length) {
-    const adminIds = adminRoles.map((r: any) => r.user_id);
-    const { data: adminProfiles } = await admin.from("profiles").select("id,nome,email,setor_id").in("id", adminIds);
-    console.log("Admin profiles:", adminProfiles?.length ?? 0);
+  if (allProfiles?.length) {
+    const { data: sets } = await admin.from("setores").select("id,nome");
+    const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
 
-    if (adminProfiles?.length) {
-      const { data: sets } = await admin.from("setores").select("id,nome");
-      const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
-
-      for (const p of adminProfiles) {
-        const email = normalizeEmail(p.email);
-        if (!email || !isCorporateEmail(email) || seen.has(email)) continue;
-        seen.add(email);
-        const setorNome = p.setor_id ? setMap.get(p.setor_id) ?? "—" : "—";
-        console.log(`Admin: ${p.nome} (${email}) - Setor: ${setorNome}`);
-        recipients.push(email);
-      }
+    for (const p of allProfiles) {
+      const email = normalizeEmail(p.email);
+      if (!email || !isCorporateEmail(email) || seen.has(email)) continue;
+      seen.add(email);
+      const setorNome = p.setor_id ? setMap.get(p.setor_id) ?? "—" : "—";
+      console.log(`Destinatário: ${p.nome} (${email}) - Setor: ${setorNome}`);
+      recipients.push(email);
     }
   }
 

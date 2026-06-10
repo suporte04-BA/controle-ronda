@@ -35,10 +35,9 @@ function LoginPage() {
     e.preventDefault();
     setBusy(true);
     const emailLimpo = email.trim().toLowerCase().replace(/,$/, "");
-    const emailLogin = emailLimpo === "suporte04@baeletrica.com.br" ? "suporte04@baeletrica.com" : emailLimpo;
     try {
-      await bootstrapAdmin({ data: { email: emailLogin, password: senha } });
-      const { error } = await supabase.auth.signInWithPassword({ email: emailLogin, password: senha });
+      await bootstrapAdmin({ data: { email: emailLimpo, password: senha } });
+      const { error } = await supabase.auth.signInWithPassword({ email: emailLimpo, password: senha });
       if (error) toast.error("Falha no login", { description: error.message });
       else toast.success("Bem-vindo de volta!");
     } catch (error) {

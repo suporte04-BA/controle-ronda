@@ -14,7 +14,7 @@ export const Route = createFileRoute("/admin/usuarios")({
   component: Usuarios,
 });
 
-const SUPPORT_EMAIL = "suporte04@baeletrica.com";
+const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 interface User {
   id: string;

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const SUPPORT_EMAIL = "suporte04@baeletrica.com";
+const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 async function assertAdmin(ctx: { supabase: any; userId: string }) {
   const { data } = await ctx.supabase

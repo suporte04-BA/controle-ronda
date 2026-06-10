@@ -9,7 +9,7 @@ export const Route = createFileRoute("/app/perfil")({
   component: Perfil,
 });
 
-const SUPPORT_EMAIL = "suporte04@baeletrica.com";
+const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 function Perfil() {
   const { profile, role, baseRole, devViewRole, setDevViewRole, signOut } = useAuth();

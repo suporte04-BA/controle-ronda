@@ -10,7 +10,7 @@ const items = [
   { to: "/admin/setores", label: "Setores", icon: Building2 },
 ];
 
-const SUPPORT_EMAIL = "suporte04@baeletrica.com";
+const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 export function AdminSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
