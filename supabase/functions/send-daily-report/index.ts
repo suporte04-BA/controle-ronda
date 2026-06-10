@@ -1,5 +1,6 @@
 // Supabase Edge Function: send-daily-report
-// Deno runtime. Invoked via supabase.functions.invoke('send-daily-report', { body: { modo } }).
+// Deployed on project: rdmbayprbfqbjhfqcasp
+// Deno runtime. Invoked via fetch or supabase.functions.invoke.
 // Body: { modo: "teste" | "diario" }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -12,17 +13,13 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const FALLBACK_SUPABASE_URL = "https://hhrlgmqbcjzevpvmqisr.supabase.co";
-const SENDER = Deno.env.get("REPORT_FROM_EMAIL") || "BA Elétrica <onboarding@resend.dev>";
-const REPLY_TO = Deno.env.get("REPORT_REPLY_TO") || "suporte04@baeletrica.com.br";
+const FALLBACK_SUPABASE_URL = "https://rdmbayprbfqbjhfqcasp.supabase.co";
+const SENDER = "BA Elétrica <relatorio@baeletrica.com.br>";
+const REPLY_TO = "suporte04@baeletrica.com.br";
 const MANAUS_OFFSET_MS = -4 * 60 * 60 * 1000;
 const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
-const DASHBOARD_URL = Deno.env.get("DASHBOARD_URL") || "https://controle-ronda.lovable.app";
-
-// Destinatários fixos de fallback (sempre enviar para estes)
-const FALLBACK_RECIPIENTS = [
-  "suporte04@baeletrica.com.br",
-];
+const DASHBOARD_URL = "https://controle-ronda.lovable.app";
+const RESEND_API_KEY_FALLBACK = "re_42X7YjrW_4yUdo8Xu9QetJGVUbfiDM3Ah";
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Check-in da Ronda",
@@ -71,7 +68,7 @@ function toBase64(u8: Uint8Array): string {
   return btoa(bin);
 }
 
-// ─── MÓDULO 1: Geração de anexos reais ───────────────────────────────────────
+// ─── Geração de anexos ───────────────────────────────────────────────────────
 
 async function buildXlsx(rows: any[]): Promise<Uint8Array> {
   const data = rows.map((r) => ({
@@ -180,18 +177,16 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   return pdf.save();
 }
 
-// ─── MÓDULO 3: Design do corpo do e-mail (HTML compatível Outlook/Gmail) ──────
+// ─── HTML do e-mail (compatível Outlook/Gmail) ───────────────────────────────
 
 function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, agentes: number): string {
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#f1f5f9">
 <tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;max-width:600px;background-color:#FFFFFF;border-radius:8px;overflow:hidden">
-
   <tr><td style="background-color:#DC2626;padding:24px 32px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
     <tr>
@@ -200,22 +195,17 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
     </tr>
     </table>
   </td></tr>
-
   <tr><td style="padding:32px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
-
       <tr><td style="font-size:16px;font-weight:bold;color:#0B1120;line-height:24px;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">
         Olá, Gestor.
       </td></tr>
-
       <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">
         O relatório diário consolidado do <strong>Controle de Ronda da BA Elétrica</strong> foi processado com sucesso pelo sistema de segurança.
       </td></tr>
-
       <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">
         Em anexo a este e-mail, você encontrará o <strong>PDF gerencial</strong> (com gráficos e indicadores de conformidade) e a <strong>planilha Excel</strong> com a auditoria detalhada de todos os pontos de check-in. Ambos os arquivos refletem fielmente os dados extraídos do sistema.
       </td></tr>
-
       <tr><td style="padding:0 0 24px 0">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0">
         <tr><td style="padding:16px 20px">
@@ -236,7 +226,6 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
         </td></tr>
         </table>
       </td></tr>
-
       <tr><td align="center" style="padding:0 0 24px 0">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
         <tr><td style="background-color:#DC2626;border-radius:6px">
@@ -244,35 +233,29 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
         </td></tr>
         </table>
       </td></tr>
-
       <tr><td style="padding:0 0 8px 0">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0">
         <tr><td style="padding:12px 16px">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
-          <tr>
-            <td style="font-size:13px;color:#0B1120;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Anexos do E-mail</td>
-          </tr>
+          <tr><td style="font-size:13px;color:#0B1120;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Anexos do E-mail</td></tr>
           <tr><td style="font-size:12px;color:#64748B;padding:6px 0 0 0;font-family:Arial,Helvetica,sans-serif">
-            Relatorio_Ronda_BA_Eletrica.pdf — Relatório gerencial com gráficos e indicadores<br>
-            Auditoria_Dados_Brutos.xlsx — Dados brutos de auditoria detalhada
+            Relatorio_Ronda_BA_Eletrica.pdf — Relatório gerencial<br>
+            Auditoria_Dados_Brutos.xlsx — Dados brutos de auditoria
           </td></tr>
           </table>
         </td></tr>
         </table>
       </td></tr>
-
     </table>
   </td></tr>
-
   <tr><td style="background-color:#F1F5F9;padding:16px 32px;border-top:1px solid #E2E8F0">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
     <tr><td style="font-size:11px;color:#94A3B8;line-height:16px;font-family:Arial,Helvetica,sans-serif">
-      Este é um e-mail automático gerado pelo Sistema de Controle de Ronda — BA Elétrica.<br>
+      E-mail automático — Sistema de Controle de Ronda — BA Elétrica<br>
       Fuso horário: America/Manaus (UTC-4)
     </td></tr>
     </table>
   </td></tr>
-
 </table>
 </td></tr>
 </table>
@@ -280,7 +263,7 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
 </html>`;
 }
 
-// ─── MÓDULO 1 & 2: Query de dados e envio via Resend ─────────────────────────
+// ─── Query de dados ──────────────────────────────────────────────────────────
 
 async function fetchRows(admin: any, fromIso: string, toIso: string) {
   const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
@@ -304,110 +287,91 @@ async function fetchRows(admin: any, fromIso: string, toIso: string) {
   });
 }
 
-async function fetchGestorAdmins(admin: any): Promise<{ email: string; nome: string }[]> {
-  const recipients: { email: string; nome: string }[] = [];
+// ─── Busca de destinatários: TODOS os admins com email corporativo ────────────
+
+async function fetchRecipientEmails(admin: any): Promise<string[]> {
   const seen = new Set<string>();
+  const recipients: string[] = [];
 
-  // 1. Buscar admins do setor "gestor"
-  try {
-    const { data: setor } = await admin.from("setores").select("id,nome").ilike("nome", "gestor").maybeSingle();
-    if (setor) {
-      const { data: profs } = await admin.from("profiles").select("id,nome,email").eq("setor_id", setor.id);
-      if (profs?.length) {
-        const ids = profs.map((p: any) => p.id);
-        const { data: roles } = await admin.from("user_roles").select("user_id").eq("role", "admin").in("user_id", ids);
-        const adminSet = new Set((roles ?? []).map((r: any) => r.user_id));
-        profs
-          .filter((p: any) => adminSet.has(p.id))
-          .map((p: any) => ({ email: normalizeEmail(p.email), nome: p.nome }))
-          .filter((p: any): p is { email: string; nome: string } => Boolean(p.email) && isCorporateEmail(p.email))
-          .filter((p) => {
-            if (seen.has(p.email)) return false;
-            seen.add(p.email);
-            return true;
-          })
-          .forEach((p) => recipients.push(p));
+  // 1. Buscar TODOS os user_roles com role admin
+  const { data: adminRoles } = await admin.from("user_roles").select("user_id").eq("role", "admin");
+  console.log("Admin roles encontrados:", adminRoles?.length ?? 0);
+
+  if (adminRoles?.length) {
+    const adminIds = adminRoles.map((r: any) => r.user_id);
+
+    // 2. Buscar profiles desses admins
+    const { data: adminProfiles } = await admin.from("profiles").select("id,nome,email,setor_id").in("id", adminIds);
+    console.log("Profiles de admins encontrados:", adminProfiles?.length ?? 0);
+
+    if (adminProfiles?.length) {
+      // 3. Buscar setores para log
+      const { data: sets } = await admin.from("setores").select("id,nome");
+      const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
+
+      for (const p of adminProfiles) {
+        const email = normalizeEmail(p.email);
+        if (!email) continue;
+        if (!isCorporateEmail(email)) continue;
+        if (seen.has(email)) continue;
+        seen.add(email);
+        const setorNome = p.setor_id ? setMap.get(p.setor_id) ?? "—" : "—";
+        console.log(`Admin destinatário: ${p.nome} (${email}) - Setor: ${setorNome}`);
+        recipients.push(email);
       }
     }
-  } catch (e) {
-    console.warn("Erro ao buscar gestores:", e);
   }
 
-  // 2. Buscar TODOS os admins com email corporativo (não apenas gestores)
-  try {
-    const { data: allAdminRoles } = await admin.from("user_roles").select("user_id").eq("role", "admin");
-    if (allAdminRoles?.length) {
-      const adminIds = allAdminRoles.map((r: any) => r.user_id);
-      const { data: allAdminProfiles } = await admin.from("profiles").select("id,nome,email").in("id", adminIds);
-      if (allAdminProfiles?.length) {
-        allAdminProfiles
-          .map((p: any) => ({ email: normalizeEmail(p.email), nome: p.nome }))
-          .filter((p: any): p is { email: string; nome: string } => Boolean(p.email) && isCorporateEmail(p.email))
-          .filter((p) => {
-            if (seen.has(p.email)) return false;
-            seen.add(p.email);
-            return true;
-          })
-          .forEach((p) => recipients.push(p));
-      }
-    }
-  } catch (e) {
-    console.warn("Erro ao buscar todos os admins:", e);
+  // 4. Sempre incluir suporte04@baeletrica.com.br
+  const suporte = normalizeEmail("suporte04@baeletrica.com.br");
+  if (suporte && !seen.has(suporte)) {
+    seen.add(suporte);
+    recipients.push(suporte);
+    console.log("Adicionado destinatário fallback: suporte04@baeletrica.com.br");
   }
 
-  // 3. Sempre incluir destinatários fallback
-  for (const email of FALLBACK_RECIPIENTS) {
-    const normalized = normalizeEmail(email);
-    if (normalized && !seen.has(normalized)) {
-      seen.add(normalized);
-      recipients.push({ email: normalized, nome: "Suporte BA" });
-    }
-  }
-
-  console.log("Destinatários encontrados:", recipients.map((r) => r.email));
+  console.log("Total de destinatários:", recipients.length);
   return recipients;
 }
 
+// ─── Envio via Resend ────────────────────────────────────────────────────────
+
 async function sendResend(to: string[], subject: string, html: string, attachments: { filename: string; content: string }[]) {
-  const resendKey = Deno.env.get("RESEND_API_KEY");
+  const resendKey = Deno.env.get("RESEND_API_KEY") || RESEND_API_KEY_FALLBACK;
   if (!resendKey) {
-    console.error("RESEND_API_KEY não está configurada como secret na Edge Function.");
-    console.error("Para configurar: supabase secrets set REEND_API_KEY=sua_chave_aqui");
-    throw new Error("RESEND_API_KEY não configurada no ambiente da função. Configure via Supabase Dashboard > Edge Functions > Secrets.");
+    throw new Error("RESEND_API_KEY não configurada. Configure via Supabase Dashboard > Edge Functions > Secrets.");
   }
 
   const payload = { from: SENDER, to, reply_to: REPLY_TO, subject, html, attachments };
   console.log("=== RESEND REQUEST ===");
   console.log("From:", SENDER);
-  console.log("To:", to);
-  console.log("Reply-To:", REPLY_TO);
+  console.log("To:", JSON.stringify(to));
   console.log("Subject:", subject);
-  console.log("Attachments:", attachments.map((a) => `${a.filename} (${a.content.length} bytes base64)`));
+  console.log("Attachments:", attachments.map((a) => a.filename));
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${resendKey}`,
+    },
     body: JSON.stringify(payload),
   });
+
   const text = await res.text();
   console.log("=== RESEND RESPONSE ===");
   console.log("Status:", res.status);
   console.log("Body:", text);
 
   if (!res.ok) {
-    const errorData = JSON.parse(text);
-    // Erro 403 = domínio não verificado — sugerir usar domínio padrão do Resend
-    if (res.status === 403) {
-      console.error("DOMÍNIO NÃO VERIFICADO. O domínio do remetente não está verificado no Resend.");
-      console.error("Solução 1: Verifique o domínio baeletrica.com.br no painel do Resend");
-      console.error("Solução 2: Use o domínio padrão do Resend: onboarding@resend.dev");
-      throw new Error(`Domínio não verificado no Resend. Use "BA Elétrica <onboarding@resend.dev>" ou verifique o domínio. Erro: ${errorData.message}`);
-    }
-    if (res.status === 422) {
-      throw new Error(`Dados inválidos no payload Resend: ${errorData.message}`);
-    }
-    throw new Error(`Resend ${res.status}: ${text}`);
+    let errorMsg = text;
+    try {
+      const parsed = JSON.parse(text);
+      errorMsg = parsed.message ?? parsed.error ?? text;
+    } catch {}
+    throw new Error(`Resend ${res.status}: ${errorMsg}`);
   }
+
   try { return JSON.parse(text); } catch { return { raw: text }; }
 }
 
@@ -423,11 +387,10 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || FALLBACK_SUPABASE_URL;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+
     console.log("=== SEND-DAILY-REPORT START ===");
     console.log("Modo:", modo);
     console.log("Supabase URL:", SUPABASE_URL);
-    console.log("Sender:", SENDER);
-    console.log("Reply-To:", REPLY_TO);
 
     const { fromUtc, toUtc } = rangeFor(modo);
     const periodo = `${fmtManaus(fromUtc.toISOString(), false)} a ${fmtManaus(toUtc.toISOString(), false)} (America/Manaus)`;
@@ -436,21 +399,28 @@ Deno.serve(async (req) => {
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
     console.log("Registros encontrados:", rows.length);
 
-    const recipients = await fetchGestorAdmins(admin);
+    const recipients = await fetchRecipientEmails(admin);
     if (!recipients.length) {
       console.error("NENHUM DESTINATÁRIO ENCONTRADO");
-      return new Response(JSON.stringify({ ok: false, message: "Nenhum destinatário encontrado. Verifique se existem admins cadastrados.", recipients: [], count: rows.length }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+      return new Response(JSON.stringify({
+        ok: false,
+        message: "Nenhum destinatário encontrado. Cadastre um admin com email corporativo (baeletrica.com ou baeletrica.com.br).",
+        recipients: [],
+        count: rows.length,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
+    // Gerar anexos
     const [xlsxBytes, pdfBytes] = await Promise.all([buildXlsx(rows), buildPdf(rows, periodo)]);
-
     const ciclos = rows.filter((r: any) => r.tipo_acao === "check_out_2").length;
     const ag = new Set(rows.map((r: any) => r.user_id)).size;
+
+    // HTML do e-mail
     const html = buildEmailHtml(periodo, rows.length, ciclos, ag);
 
+    // Enviar
     const result = await sendResend(
-      recipients.map((r) => r.email),
+      recipients,
       `BA Elétrica — Controle de Ronda (${periodo})`,
       html,
       [
@@ -462,12 +432,18 @@ Deno.serve(async (req) => {
     console.log("=== ENVIO CONCLUÍDO ===");
     console.log("ID:", (result as any)?.id);
 
-    return new Response(JSON.stringify({ ok: true, modo, periodo, count: rows.length, recipients: recipients.map((r) => r.email), id: (result as any)?.id ?? null }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+    return new Response(JSON.stringify({
+      ok: true,
+      modo,
+      periodo,
+      count: rows.length,
+      recipients,
+      id: (result as any)?.id ?? null,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+
   } catch (e: any) {
     console.error("=== ERRO NA EDGE FUNCTION ===");
     console.error("Mensagem:", e?.message);
-    console.error("Stack:", e?.stack);
     return new Response(JSON.stringify({ ok: false, error: String(e?.message ?? e) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 });
   }

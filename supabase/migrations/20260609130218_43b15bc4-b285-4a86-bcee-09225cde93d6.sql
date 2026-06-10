@@ -11,8 +11,8 @@ BEGIN
     '0 11 * * *',
     $job$
     SELECT net.http_post(
-      url := 'https://hhrlgmqbcjzevpvmqisr.supabase.co/functions/v1/send-daily-report',
-      headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhocmxnbXFiY2p6ZXZwdm1xaXNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTIxOTUsImV4cCI6MjA5NTg4ODE5NX0.R2sIvaFvBZbX-zgp5XSBJvcY92AtOV9TCCA2tKJEq_k"}'::jsonb,
+      url := 'https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report',
+      headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w"}'::jsonb,
       body := '{"modo":"diario"}'::jsonb
     );
     $job$
