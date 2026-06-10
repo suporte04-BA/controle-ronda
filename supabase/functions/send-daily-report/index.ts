@@ -88,66 +88,108 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const porSetor = new Map<string, number>();
-  const porUser = new Map<string, { nome: string; setor: string; ciclos: number; eventos: number }>();
-  const eventosPorUser = new Map<string, number>();
-  rows.forEach((r) => {
-    eventosPorUser.set(r.user_id, (eventosPorUser.get(r.user_id) ?? 0) + 1);
-    if (r.tipo_acao === "check_out_2") {
-      porSetor.set(r.setor ?? "—", (porSetor.get(r.setor ?? "—") ?? 0) + 1);
-      const cur = porUser.get(r.user_id) ?? { nome: r.nome, setor: r.setor ?? "—", ciclos: 0, eventos: 0 };
-      cur.ciclos += 1;
-      porUser.set(r.user_id, cur);
-    }
-  });
-  porUser.forEach((v, k) => { v.eventos = eventosPorUser.get(k) ?? 0; });
-
-  let page = pdf.addPage([595, 842]);
-  let y = 800;
+  const pageW = 595;
+  const pageH = 842;
+  const marginX = 36;
+  const colWidths = [110, 70, 120, 65, 95, 95];
+  const headers = ["COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HORÁRIO DA FOTO", "HORÁRIO DO ENVIOS"];
+  const rowH = 18;
+  const headerH = 20;
+  const topY = pageH - 40;
   const brandRed = rgb(0.85, 0.15, 0.15);
   const darkText = rgb(0.04, 0.07, 0.14);
-  const draw = (txt: string, x: number, size = 10, bold = false, color = darkText) => {
-    page.drawText(txt, { x, y, size, font: bold ? fontB : font, color });
+  const grayText = rgb(0.5, 0.5, 0.5);
+  const lightLine = rgb(0.8, 0.8, 0.8);
+
+  let page = pdf.addPage([pageW, pageH]);
+  let y = topY;
+
+  const draw = (txt: string, x: number, yPos: number, size: number, bold = false, color = darkText) => {
+    page.drawText(txt, { x, y: yPos, size, font: bold ? fontB : font, color });
   };
-  const drawLine = (x1: number, x2: number, yLine: number) => {
-    page.drawLine({ start: { x: x1, y: yLine }, end: { x: x2, y: yLine }, thickness: 1, color: rgb(0.8, 0.8, 0.8) });
+  const drawLine = (x1: number, x2: number, yPos: number) => {
+    page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness: 0.5, color: lightLine });
   };
-  const newLine = (h = 14) => {
-    y -= h;
-    if (y < 60) { page = pdf.addPage([595, 842]); y = 800; }
+  const drawLineThick = (x1: number, x2: number, yPos: number) => {
+    page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness: 1, color: brandRed });
   };
 
-  draw("BA Elétrica — Relatório de Controle de Ronda", 40, 16, true, brandRed);
-  newLine(22); drawLine(40, 555, y); newLine(10);
-  draw(`Período: ${periodo}`, 40, 10); newLine();
-  const totalCiclos = Array.from(porUser.values()).reduce((s, v) => s + v.ciclos, 0);
-  const agentesAtivos = new Set(rows.map((r: any) => r.user_id)).size;
-  draw(`Total de eventos: ${rows.length}   |   Ciclos concluídos: ${totalCiclos}   |   Agentes ativos: ${agentesAtivos}`, 40, 10);
-  newLine(22);
+  const ensurePage = (needed: number) => {
+    if (y - needed < 50) {
+      page = pdf.addPage([pageW, pageH]);
+      y = topY;
+    }
+  };
 
-  draw("CICLOS CONCLUÍDOS POR SETOR", 40, 12, true, brandRed);
-  newLine(6); drawLine(40, 555, y); newLine(14);
-  draw("Setor", 50, 10, true); draw("Ciclos", 400, 10, true);
-  newLine(14); drawLine(50, 555, y + 4); newLine(4);
-  Array.from(porSetor.entries()).sort((a, b) => b[1] - a[1]).forEach(([s, n]) => {
-    draw(String(s).slice(0, 40), 50, 10); draw(String(n), 400, 10, true); newLine();
+  // Header area
+  draw("BA Elétrica", marginX, y, 20, true, brandRed);
+  draw("Controle de Ronda", pageW - 160, y, 10, false, grayText);
+  y -= 8;
+  drawLineThick(marginX, pageW - marginX, y);
+  y -= 16;
+
+  // Title
+  draw("Folha Oficial de Controle de Ronda", marginX, y, 14, true, darkText);
+  draw("BA Elétrica — Fuso America/Manaus", pageW - 200, y, 8, false, grayText);
+  y -= 12;
+  draw(`Período: ${periodo} — ${rows.length} registro(s) — emitido em ${fmtManaus(new Date().toISOString(), false)}`, marginX, y, 8, false, grayText);
+  y -= 16;
+  drawLineThick(marginX, pageW - marginX, y);
+  y -= 20;
+
+  // Table header
+  const tableX = marginX;
+  let x = tableX;
+  page.drawRectangle({
+    x: tableX,
+    y: y - 4,
+    width: colWidths.reduce((s, w) => s + w, 0),
+    height: headerH,
+    color: rgb(0.95, 0.95, 0.95),
   });
-  newLine(10);
+  for (let i = 0; i < headers.length; i++) {
+    draw(headers[i], x + 4, y, 7, true, darkText);
+    x += colWidths[i];
+  }
+  y -= headerH;
+  drawLine(tableX, tableX + colWidths.reduce((s, w) => s + w, 0), y);
+  y -= 2;
 
-  draw("RANKING DE VIGILANTES (CICLOS CONCLUÍDOS)", 40, 12, true, brandRed);
-  newLine(6); drawLine(40, 555, y); newLine(14);
-  draw("Colaborador", 50, 10, true); draw("Setor", 250, 10, true);
-  draw("Eventos", 380, 10, true); draw("Ciclos", 480, 10, true);
-  newLine(14); drawLine(50, 555, y + 4); newLine(4);
-  Array.from(porUser.values()).sort((a, b) => b.ciclos - a.ciclos).forEach((u) => {
-    draw(String(u.nome).slice(0, 36), 50, 10); draw(String(u.setor).slice(0, 24), 250, 10);
-    draw(String(u.eventos), 380, 10); draw(String(u.ciclos), 480, 10, true); newLine();
-  });
+  // Table rows
+  for (const r of rows) {
+    ensurePage(rowH + 10);
 
-  newLine(20); drawLine(40, 555, y); newLine(10);
-  draw(`Documento gerado automaticamente — BA Elétrica`, 40, 8, false, rgb(0.5, 0.5, 0.5));
-  newLine(10);
-  draw(`Fuso horário: America/Manaus (UTC-4)`, 40, 8, false, rgb(0.5, 0.5, 0.5));
+    const tipoLabel = TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao;
+    const dataHora = fmtManaus(r.horario_acao);
+    const parts = dataHora.split(" ");
+    const data = parts[0] ?? "";
+    const horaFoto = fmtManaus(r.horario_foto);
+    const horaEnvio = dataHora;
+
+    const cells = [
+      String(r.nome ?? "—").slice(0, 18),
+      String(r.setor ?? "—").slice(0, 12),
+      tipoLabel,
+      data,
+      horaFoto,
+      horaEnvio,
+    ];
+
+    x = tableX;
+    for (let i = 0; i < cells.length; i++) {
+      draw(cells[i], x + 4, y, 7, false, darkText);
+      x += colWidths[i];
+    }
+    y -= rowH;
+    drawLine(tableX, tableX + colWidths.reduce((s, w) => s + w, 0), y);
+    y -= 2;
+  }
+
+  // Footer
+  y -= 10;
+  draw("Documento gerado automaticamente — BA Elétrica", marginX, y, 7, false, grayText);
+  y -= 10;
+  draw("Fuso horário: America/Manaus (UTC-4)", marginX, y, 7, false, grayText);
 
   return pdf.save();
 }
@@ -206,7 +248,7 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
           <tr><td style="font-size:13px;color:#0B1120;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Anexos do E-mail</td></tr>
           <tr><td style="font-size:12px;color:#64748B;padding:6px 0 0 0;font-family:Arial,Helvetica,sans-serif">
-            Relatorio_Ronda_BA_Eletrica.pdf — Relatório gerencial<br>
+            Relatorio_Ronda_BA_Eletrica.pdf — Folha oficial com horários de cada registro<br>
             Auditoria_Dados_Brutos.xlsx — Dados detalhados de cada registro
           </td></tr>
           </table>
