@@ -1,6 +1,5 @@
 // Supabase Edge Function: send-daily-report
-// Deployed on project: rdmbayprbfqbjhfqcasp
-// Deno runtime. Invoked via fetch or supabase.functions.invoke.
+// Deployed on: hhrlgmqbcjzevpvmqisr (Lovable)
 // Body: { modo: "teste" | "diario" }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -13,13 +12,12 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const FALLBACK_SUPABASE_URL = "https://rdmbayprbfqbjhfqcasp.supabase.co";
 const SENDER = "BA Elétrica <relatorio@baeletrica.com.br>";
 const REPLY_TO = "suporte04@baeletrica.com.br";
 const MANAUS_OFFSET_MS = -4 * 60 * 60 * 1000;
 const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
 const DASHBOARD_URL = "https://controle-ronda.lovable.app";
-const RESEND_API_KEY_FALLBACK = "re_42X7YjrW_4yUdo8Xu9QetJGVUbfiDM3Ah";
+const RESEND_API_KEY_FALLBACK = Deno.env.get("RESEND_API_KEY") || "";
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Check-in da Ronda",
@@ -68,8 +66,6 @@ function toBase64(u8: Uint8Array): string {
   return btoa(bin);
 }
 
-// ─── Geração de anexos ───────────────────────────────────────────────────────
-
 async function buildXlsx(rows: any[]): Promise<Uint8Array> {
   const data = rows.map((r) => ({
     "Data/Hora": fmtManaus(r.horario_acao),
@@ -90,7 +86,6 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
-
   const porSetor = new Map<string, number>();
   const porUser = new Map<string, { nome: string; setor: string; ciclos: number; eventos: number }>();
   const eventosPorUser = new Map<string, number>();
@@ -109,7 +104,6 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   let y = 800;
   const brandRed = rgb(0.85, 0.15, 0.15);
   const darkText = rgb(0.04, 0.07, 0.14);
-
   const draw = (txt: string, x: number, size = 10, bold = false, color = darkText) => {
     page.drawText(txt, { x, y, size, font: bold ? fontB : font, color });
   };
@@ -122,62 +116,39 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   };
 
   draw("BA Elétrica — Relatório de Controle de Ronda", 40, 16, true, brandRed);
-  newLine(22);
-  drawLine(40, 555, y);
-  newLine(10);
-  draw(`Período: ${periodo}`, 40, 10);
-  newLine();
+  newLine(22); drawLine(40, 555, y); newLine(10);
+  draw(`Período: ${periodo}`, 40, 10); newLine();
   const totalCiclos = Array.from(porUser.values()).reduce((s, v) => s + v.ciclos, 0);
   const agentesAtivos = new Set(rows.map((r: any) => r.user_id)).size;
   draw(`Total de eventos: ${rows.length}   |   Ciclos concluídos: ${totalCiclos}   |   Agentes ativos: ${agentesAtivos}`, 40, 10);
   newLine(22);
 
   draw("CICLOS CONCLUÍDOS POR SETOR", 40, 12, true, brandRed);
-  newLine(6);
-  drawLine(40, 555, y);
-  newLine(14);
-  draw("Setor", 50, 10, true);
-  draw("Ciclos", 400, 10, true);
-  newLine(14);
-  drawLine(50, 555, y + 4);
-  newLine(4);
+  newLine(6); drawLine(40, 555, y); newLine(14);
+  draw("Setor", 50, 10, true); draw("Ciclos", 400, 10, true);
+  newLine(14); drawLine(50, 555, y + 4); newLine(4);
   Array.from(porSetor.entries()).sort((a, b) => b[1] - a[1]).forEach(([s, n]) => {
-    draw(String(s).slice(0, 40), 50, 10);
-    draw(String(n), 400, 10, true);
-    newLine();
+    draw(String(s).slice(0, 40), 50, 10); draw(String(n), 400, 10, true); newLine();
   });
   newLine(10);
 
   draw("RANKING DE VIGILANTES (CICLOS CONCLUÍDOS)", 40, 12, true, brandRed);
-  newLine(6);
-  drawLine(40, 555, y);
-  newLine(14);
-  draw("Colaborador", 50, 10, true);
-  draw("Setor", 250, 10, true);
-  draw("Eventos", 380, 10, true);
-  draw("Ciclos", 480, 10, true);
-  newLine(14);
-  drawLine(50, 555, y + 4);
-  newLine(4);
+  newLine(6); drawLine(40, 555, y); newLine(14);
+  draw("Colaborador", 50, 10, true); draw("Setor", 250, 10, true);
+  draw("Eventos", 380, 10, true); draw("Ciclos", 480, 10, true);
+  newLine(14); drawLine(50, 555, y + 4); newLine(4);
   Array.from(porUser.values()).sort((a, b) => b.ciclos - a.ciclos).forEach((u) => {
-    draw(String(u.nome).slice(0, 36), 50, 10);
-    draw(String(u.setor).slice(0, 24), 250, 10);
-    draw(String(u.eventos), 380, 10);
-    draw(String(u.ciclos), 480, 10, true);
-    newLine();
+    draw(String(u.nome).slice(0, 36), 50, 10); draw(String(u.setor).slice(0, 24), 250, 10);
+    draw(String(u.eventos), 380, 10); draw(String(u.ciclos), 480, 10, true); newLine();
   });
 
-  newLine(20);
-  drawLine(40, 555, y);
-  newLine(10);
-  draw(`Documento gerado automaticamente pelo Sistema de Controle de Ronda — BA Elétrica`, 40, 8, false, rgb(0.5, 0.5, 0.5));
+  newLine(20); drawLine(40, 555, y); newLine(10);
+  draw(`Documento gerado automaticamente — BA Elétrica`, 40, 8, false, rgb(0.5, 0.5, 0.5));
   newLine(10);
   draw(`Fuso horário: America/Manaus (UTC-4)`, 40, 8, false, rgb(0.5, 0.5, 0.5));
 
   return pdf.save();
 }
-
-// ─── HTML do e-mail (compatível Outlook/Gmail) ───────────────────────────────
 
 function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, agentes: number): string {
   return `<!DOCTYPE html>
@@ -197,15 +168,9 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
   </td></tr>
   <tr><td style="padding:32px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
-      <tr><td style="font-size:16px;font-weight:bold;color:#0B1120;line-height:24px;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">
-        Olá, Gestor.
-      </td></tr>
-      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">
-        O relatório diário consolidado do <strong>Controle de Ronda da BA Elétrica</strong> foi processado com sucesso pelo sistema de segurança.
-      </td></tr>
-      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">
-        Em anexo a este e-mail, você encontrará o <strong>PDF gerencial</strong> (com gráficos e indicadores de conformidade) e a <strong>planilha Excel</strong> com a auditoria detalhada de todos os pontos de check-in. Ambos os arquivos refletem fielmente os dados extraídos do sistema.
-      </td></tr>
+      <tr><td style="font-size:16px;font-weight:bold;color:#0B1120;line-height:24px;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">Olá, Gestor.</td></tr>
+      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">O relatório diário consolidado do <strong>Controle de Ronda da BA Elétrica</strong> foi processado com sucesso pelo sistema de segurança.</td></tr>
+      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará o <strong>PDF gerencial</strong> (com gráficos e indicadores de conformidade) e a <strong>planilha Excel</strong> com a auditoria detalhada de todos os pontos de check-in. Ambos os arquivos refletem fielmente os dados extraídos do sistema.</td></tr>
       <tr><td style="padding:0 0 24px 0">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0">
         <tr><td style="padding:16px 20px">
@@ -251,8 +216,7 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
   <tr><td style="background-color:#F1F5F9;padding:16px 32px;border-top:1px solid #E2E8F0">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
     <tr><td style="font-size:11px;color:#94A3B8;line-height:16px;font-family:Arial,Helvetica,sans-serif">
-      E-mail automático — Sistema de Controle de Ronda — BA Elétrica<br>
-      Fuso horário: America/Manaus (UTC-4)
+      E-mail automático — Sistema de Controle de Ronda — BA Elétrica<br>Fuso horário: America/Manaus (UTC-4)
     </td></tr>
     </table>
   </td></tr>
@@ -262,8 +226,6 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
 </body>
 </html>`;
 }
-
-// ─── Query de dados ──────────────────────────────────────────────────────────
 
 async function fetchRows(admin: any, fromIso: string, toIso: string) {
   const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
@@ -278,104 +240,71 @@ async function fetchRows(admin: any, fromIso: string, toIso: string) {
   const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
   return (regs ?? []).map((r: any) => {
     const p: any = profMap.get(r.user_id);
-    return {
-      ...r,
-      nome: p?.nome ?? "—",
-      email: p?.email ?? "",
-      setor: p?.setor_id ? setMap.get(p.setor_id) ?? null : null,
-    };
+    return { ...r, nome: p?.nome ?? "—", email: p?.email ?? "", setor: p?.setor_id ? setMap.get(p.setor_id) ?? null : null };
   });
 }
-
-// ─── Busca de destinatários: TODOS os admins com email corporativo ────────────
 
 async function fetchRecipientEmails(admin: any): Promise<string[]> {
   const seen = new Set<string>();
   const recipients: string[] = [];
 
-  // 1. Buscar TODOS os user_roles com role admin
   const { data: adminRoles } = await admin.from("user_roles").select("user_id").eq("role", "admin");
-  console.log("Admin roles encontrados:", adminRoles?.length ?? 0);
+  console.log("Admin roles:", adminRoles?.length ?? 0);
 
   if (adminRoles?.length) {
     const adminIds = adminRoles.map((r: any) => r.user_id);
-
-    // 2. Buscar profiles desses admins
     const { data: adminProfiles } = await admin.from("profiles").select("id,nome,email,setor_id").in("id", adminIds);
-    console.log("Profiles de admins encontrados:", adminProfiles?.length ?? 0);
+    console.log("Admin profiles:", adminProfiles?.length ?? 0);
 
     if (adminProfiles?.length) {
-      // 3. Buscar setores para log
       const { data: sets } = await admin.from("setores").select("id,nome");
       const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
 
       for (const p of adminProfiles) {
         const email = normalizeEmail(p.email);
-        if (!email) continue;
-        if (!isCorporateEmail(email)) continue;
-        if (seen.has(email)) continue;
+        if (!email || !isCorporateEmail(email) || seen.has(email)) continue;
         seen.add(email);
         const setorNome = p.setor_id ? setMap.get(p.setor_id) ?? "—" : "—";
-        console.log(`Admin destinatário: ${p.nome} (${email}) - Setor: ${setorNome}`);
+        console.log(`Admin: ${p.nome} (${email}) - Setor: ${setorNome}`);
         recipients.push(email);
       }
     }
   }
 
-  // 4. Sempre incluir suporte04@baeletrica.com.br
+  // Sempre incluir suporte04@baeletrica.com.br
   const suporte = normalizeEmail("suporte04@baeletrica.com.br");
   if (suporte && !seen.has(suporte)) {
     seen.add(suporte);
     recipients.push(suporte);
-    console.log("Adicionado destinatário fallback: suporte04@baeletrica.com.br");
+    console.log("Fallback: suporte04@baeletrica.com.br");
   }
 
-  console.log("Total de destinatários:", recipients.length);
+  console.log("Total destinatários:", recipients.length);
   return recipients;
 }
 
-// ─── Envio via Resend ────────────────────────────────────────────────────────
-
 async function sendResend(to: string[], subject: string, html: string, attachments: { filename: string; content: string }[]) {
   const resendKey = Deno.env.get("RESEND_API_KEY") || RESEND_API_KEY_FALLBACK;
-  if (!resendKey) {
-    throw new Error("RESEND_API_KEY não configurada. Configure via Supabase Dashboard > Edge Functions > Secrets.");
-  }
+  if (!resendKey) throw new Error("RESEND_API_KEY não configurada.");
 
   const payload = { from: SENDER, to, reply_to: REPLY_TO, subject, html, attachments };
-  console.log("=== RESEND REQUEST ===");
-  console.log("From:", SENDER);
-  console.log("To:", JSON.stringify(to));
-  console.log("Subject:", subject);
-  console.log("Attachments:", attachments.map((a) => a.filename));
+  console.log("Resend ->", JSON.stringify({ from: SENDER, to, subject }));
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${resendKey}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
     body: JSON.stringify(payload),
   });
-
   const text = await res.text();
-  console.log("=== RESEND RESPONSE ===");
-  console.log("Status:", res.status);
-  console.log("Body:", text);
+  console.log("Resend response:", res.status, text);
 
   if (!res.ok) {
-    let errorMsg = text;
-    try {
-      const parsed = JSON.parse(text);
-      errorMsg = parsed.message ?? parsed.error ?? text;
-    } catch {}
-    throw new Error(`Resend ${res.status}: ${errorMsg}`);
+    let msg = text;
+    try { msg = JSON.parse(text).message ?? text; } catch {}
+    throw new Error(`Resend ${res.status}: ${msg}`);
   }
-
   try { return JSON.parse(text); } catch { return { raw: text }; }
 }
-
-// ─── Handler principal ────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -384,66 +313,40 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const modo: "teste" | "diario" = body?.modo === "diario" ? "diario" : "teste";
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || FALLBACK_SUPABASE_URL;
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    console.log("=== SEND-DAILY-REPORT START ===");
-    console.log("Modo:", modo);
-    console.log("Supabase URL:", SUPABASE_URL);
+    console.log("=== START ===", { modo, url: SUPABASE_URL });
 
     const { fromUtc, toUtc } = rangeFor(modo);
     const periodo = `${fmtManaus(fromUtc.toISOString(), false)} a ${fmtManaus(toUtc.toISOString(), false)} (America/Manaus)`;
-    console.log("Período:", periodo);
 
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
-    console.log("Registros encontrados:", rows.length);
+    console.log("Rows:", rows.length);
 
     const recipients = await fetchRecipientEmails(admin);
     if (!recipients.length) {
-      console.error("NENHUM DESTINATÁRIO ENCONTRADO");
-      return new Response(JSON.stringify({
-        ok: false,
-        message: "Nenhum destinatário encontrado. Cadastre um admin com email corporativo (baeletrica.com ou baeletrica.com.br).",
-        recipients: [],
-        count: rows.length,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+      return new Response(JSON.stringify({ ok: false, message: "Nenhum destinatário.", recipients: [], count: rows.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
-    // Gerar anexos
     const [xlsxBytes, pdfBytes] = await Promise.all([buildXlsx(rows), buildPdf(rows, periodo)]);
     const ciclos = rows.filter((r: any) => r.tipo_acao === "check_out_2").length;
     const ag = new Set(rows.map((r: any) => r.user_id)).size;
-
-    // HTML do e-mail
     const html = buildEmailHtml(periodo, rows.length, ciclos, ag);
 
-    // Enviar
-    const result = await sendResend(
-      recipients,
-      `BA Elétrica — Controle de Ronda (${periodo})`,
-      html,
-      [
-        { filename: "Relatorio_Ronda_BA_Eletrica.pdf", content: toBase64(pdfBytes) },
-        { filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
-      ],
-    );
+    const result = await sendResend(recipients, `BA Elétrica — Controle de Ronda (${periodo})`, html, [
+      { filename: "Relatorio_Ronda_BA_Eletrica.pdf", content: toBase64(pdfBytes) },
+      { filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
+    ]);
 
-    console.log("=== ENVIO CONCLUÍDO ===");
-    console.log("ID:", (result as any)?.id);
-
-    return new Response(JSON.stringify({
-      ok: true,
-      modo,
-      periodo,
-      count: rows.length,
-      recipients,
-      id: (result as any)?.id ?? null,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+    console.log("=== OK ===", (result as any)?.id);
+    return new Response(JSON.stringify({ ok: true, modo, periodo, count: rows.length, recipients, id: (result as any)?.id ?? null }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
 
   } catch (e: any) {
-    console.error("=== ERRO NA EDGE FUNCTION ===");
-    console.error("Mensagem:", e?.message);
+    console.error("ERROR:", e?.message);
     return new Response(JSON.stringify({ ok: false, error: String(e?.message ?? e) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 });
   }

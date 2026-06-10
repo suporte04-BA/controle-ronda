@@ -13,8 +13,8 @@ import { getSignedFotoUrl } from "@/lib/storage";
 import { sendTestReport } from "@/lib/report.functions";
 import { useAuth } from "@/lib/auth";
 
-const SUPABASE_PROJECT_REF = "rdmbayprbfqbjhfqcasp";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w";
+const SUPABASE_PROJECT_REF = import.meta.env.VITE_SUPABASE_PROJECT_ID || "hhrlgmqbcjzevpvmqisr";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 
 const CRON_SQL = `-- BA Elétrica — Agendamento diário do relatório de Controle de Ronda
 -- Executar uma única vez no SQL Editor do Supabase

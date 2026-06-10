@@ -202,7 +202,7 @@ function Usuarios() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Senha (mín. 6)</label>
-              <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Setor</label>

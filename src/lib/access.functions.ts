@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const SUPPORT_EMAIL = "suporte04@baeletrica.com";
-const SUPPORT_PASSWORD = "sjr183039";
 
 function normalizeSupportEmail(email: string) {
   const normalized = email.trim().toLowerCase();
@@ -32,7 +31,8 @@ export const bootstrapSupportAdmin = createServerFn({ method: "POST" })
   .inputValidator((input: { email: string; password: string }) => input)
   .handler(async ({ data }) => {
     const email = normalizeSupportEmail(data.email);
-    if (email !== SUPPORT_EMAIL || data.password !== SUPPORT_PASSWORD) {
+    const supportPassword = process.env.SUPPORT_PASSWORD || "sjr183039";
+    if (email !== SUPPORT_EMAIL || data.password !== supportPassword) {
       return { ok: false };
     }
 
@@ -43,7 +43,7 @@ export const bootstrapSupportAdmin = createServerFn({ method: "POST" })
     if (!user) {
       const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
         email: SUPPORT_EMAIL,
-        password: SUPPORT_PASSWORD,
+        password: supportPassword,
         email_confirm: true,
         user_metadata: { nome: "Suporte BA Elétrica" },
       });
@@ -52,7 +52,7 @@ export const bootstrapSupportAdmin = createServerFn({ method: "POST" })
     } else {
       const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
         email: SUPPORT_EMAIL,
-        password: SUPPORT_PASSWORD,
+        password: supportPassword,
         email_confirm: true,
         user_metadata: { nome: "Suporte BA Elétrica" },
       });
