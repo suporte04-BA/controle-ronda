@@ -1,30 +1,16 @@
-const REPORT_FUNCTION_URL = "https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report";
-const REPORT_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w";
-
-async function parseReportResponse(response: Response) {
-  const text = await response.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { error: text };
-  }
-}
+import { supabase } from "@/integrations/supabase/client";
 
 export async function sendTestReport() {
-  const response = await fetch(REPORT_FUNCTION_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: REPORT_ANON_KEY,
-      Authorization: `Bearer ${REPORT_ANON_KEY}`,
-    },
-    body: JSON.stringify({ modo: "teste" }),
+  const { data, error } = await supabase.functions.invoke("send-daily-report", {
+    body: { modo: "teste" },
   });
 
-  const data = await parseReportResponse(response);
-  if (!response.ok || data?.ok === false) {
-    const detail = data?.error ?? data?.message ?? `Falha HTTP ${response.status}`;
+  if (error) {
+    throw new Error(error.message ?? "Erro ao invocar Edge Function");
+  }
+
+  if (!data?.ok) {
+    const detail = data?.error ?? data?.message ?? "Falha desconhecida na Edge Function";
     throw new Error(detail);
   }
 
