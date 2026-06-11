@@ -16,10 +16,14 @@ import { useAuth } from "@/lib/auth";
 const SUPABASE_PROJECT_REF = import.meta.env.VITE_SUPABASE_PROJECT_ID || "rdmbayprbfqbjhfqcasp";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 
-const CRON_SQL = `-- BA Elétrica — Agendamento diário do relatório de Controle de Ronda
+const CRON_SQL = `-- BA Elétrica — Agendamento de relatórios de Controle de Ronda
 -- Executar uma única vez no SQL Editor do Supabase
 CREATE EXTENSION IF NOT EXISTS pg_net;
 CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- ══════════════════════════════════════════════════════════════════
+-- RELATÓRIO DIÁRIO — Todos os dias às 07:00 America/Manaus
+-- ══════════════════════════════════════════════════════════════════
 
 -- Remove agendamento anterior (se existir) para evitar duplicidade
 SELECT cron.unschedule('ba-report-daily')
@@ -34,6 +38,27 @@ SELECT cron.schedule(
     url := 'https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/send-daily-report',
     headers := '{"Content-Type":"application/json","Authorization":"Bearer ${SUPABASE_ANON_KEY}"}'::jsonb,
     body := '{"modo":"diario"}'::jsonb
+  );
+  $$
+);
+
+-- ══════════════════════════════════════════════════════════════════
+-- RELATÓRIO MENSAL — Dia 1 de cada mês às 08:00 America/Manaus
+-- ══════════════════════════════════════════════════════════════════
+
+-- Remove agendamento anterior (se existir) para evitar duplicidade
+SELECT cron.unschedule('ba-report-monthly')
+WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'ba-report-monthly');
+
+-- Agenda para 12:00 UTC = 08:00 America/Manaus, dia 1 de cada mês
+SELECT cron.schedule(
+  'ba-report-monthly',
+  '0 12 1 * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/send-monthly-report',
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer ${SUPABASE_ANON_KEY}"}'::jsonb,
+    body := '{}'::jsonb
   );
   $$
 );`;
@@ -309,7 +334,7 @@ function TodosRegistros() {
       </div>
 
       <div className="print-area bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-        <div className="hidden print:flex items-center justify-between gap-4 px-6 py-4 border-b">
+        <div className="hidden print:flex items-center justify-between gap-4 px-6 py-4 border-b print-header">
           <img src="/logo.png" className="h-12 object-contain" alt="BA Elétrica" />
           <div className="text-right">
             <h2 className="text-xl font-bold">Folha Oficial de Controle de Ronda</h2>
@@ -362,6 +387,11 @@ function TodosRegistros() {
             </table>
           </div>
         )}
+        <div className="hidden print:block print-footer px-6 py-4">
+          <p>Documento gerado automaticamente — BA Elétrica — Sistema de Controle de Ronda</p>
+          <p>Fuso horário: America/Manaus (UTC-4) — Emitido em {formatManaus(new Date())}</p>
+          <p className="font-semibold text-foreground mt-2">CONFIDENCIAL — Uso interno da BA Elétrica</p>
+        </div>
       </div>
 
       <DetalheModal row={detalhe} onClose={() => setDetalhe(null)} todos={rows} />

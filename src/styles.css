@@ -138,5 +138,58 @@
     background: white !important;
     padding: 24px !important;
   }
+
+  /* Print header styling */
+  .print-area .print-header {
+    border-bottom: 2px solid #DC2626;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Print table styling */
+  .print-area table {
+    font-size: 10px;
+    border-collapse: collapse;
+  }
+
+  .print-area thead {
+    background-color: #DC2626;
+    color: white;
+  }
+
+  .print-area th {
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: bold;
+    border: 1px solid #DC2626;
+  }
+
+  .print-area td {
+    padding: 6px 12px;
+    border: 1px solid #E2E8F0;
+  }
+
+  .print-area tbody tr:nth-child(even) {
+    background-color: #F8FAFC;
+  }
+
+  /* Print footer */
+  .print-area .print-footer {
+    border-top: 1px solid #E2E8F0;
+    margin-top: 24px;
+    padding-top: 12px;
+    font-size: 8px;
+    color: #64748B;
+  }
+
+  /* Page break handling */
+  .print-area tr {
+    page-break-inside: avoid;
+  }
+
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
 }
 

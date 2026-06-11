@@ -1,6 +1,6 @@
-// Supabase Edge Function: send-daily-report
-// Deployed on: rdmbayprbfqbjhfqcasp (Lovable)
-// Body: { modo: "teste" | "diario" }
+// Supabase Edge Function: send-monthly-report
+// Executa no dia 1 de cada mês via pg_cron
+// Gera relatório consolidado do mês anterior
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
@@ -17,7 +17,6 @@ const REPLY_TO = "suporte04@baeletrica.com.br";
 const MANAUS_OFFSET_MS = -4 * 60 * 60 * 1000;
 const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
 const DASHBOARD_URL = "https://controle-ronda.vercel.app";
-const RESEND_API_KEY_FALLBACK = Deno.env.get("RESEND_API_KEY") || "";
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Check-in da Ronda",
@@ -44,17 +43,28 @@ function isCorporateEmail(email: string) {
   return CORPORATE_DOMAINS.includes(domain);
 }
 
-function rangeFor(modo: "teste" | "diario") {
+function getLastMonthRange() {
   const now = new Date();
   const m = toManaus(now);
-  const startTodayManaus = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth(), m.getUTCDate(), 0, 0, 0));
-  const startYdayManaus = new Date(startTodayManaus.getTime() - 86400000);
-  const endTodayManaus = new Date(startTodayManaus.getTime() + 86400000 - 1);
+  const currentYear = m.getUTCFullYear();
+  const currentMonth = m.getUTCMonth();
+  
+  // Mês anterior
+  const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const lastYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+  
+  const startDate = new Date(Date.UTC(lastYear, lastMonth, 1, 0, 0, 0));
+  const endDate = new Date(Date.UTC(lastYear, lastMonth + 1, 0, 23, 59, 59));
+  
   const toUtc = (d: Date) => new Date(d.getTime() - MANAUS_OFFSET_MS);
-  if (modo === "diario") {
-    return { fromUtc: toUtc(startYdayManaus), toUtc: toUtc(new Date(startTodayManaus.getTime() - 1)) };
-  }
-  return { fromUtc: toUtc(startYdayManaus), toUtc: toUtc(endTodayManaus) };
+  
+  return {
+    fromUtc: toUtc(startDate),
+    toUtc: toUtc(endDate),
+    monthName: startDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
+  };
 }
 
 function toBase64(u8: Uint8Array): string {
@@ -66,7 +76,7 @@ function toBase64(u8: Uint8Array): string {
   return btoa(bin);
 }
 
-async function buildXlsx(rows: any[]): Promise<Uint8Array> {
+async function buildXlsx(rows: any[], monthName: string): Promise<Uint8Array> {
   const data = rows.map((r) => ({
     "Colaborador": r.nome,
     "Email": r.email ?? "—",
@@ -84,7 +94,7 @@ async function buildXlsx(rows: any[]): Promise<Uint8Array> {
   return new Uint8Array(out as ArrayBuffer);
 }
 
-async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
+async function buildPdf(rows: any[], periodo: string, monthName: string, stats: any): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -137,13 +147,35 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   y -= 20;
 
   // ── Titulo ──
-  draw("Folha Oficial de Controle de Ronda", marginX, y, 14, true, darkText);
+  draw("Relatório Mensal — Controle de Ronda", marginX, y, 14, true, darkText);
   y -= 14;
-  draw("BA Elétrica — Fuso America/Manaus (UTC-4)", marginX, y, 9, false, grayText);
+  draw(`BA Elétrica — ${monthName}`, marginX, y, 10, false, grayText);
   y -= 12;
   draw(`Período: ${periodo} — ${rows.length} registro(s) — emitido em ${fmtManaus(new Date().toISOString(), false)}`, marginX, y, 8, false, grayText);
   y -= 10;
   line(marginX, pageW - marginX, y, 1.5, brandRed);
+  y -= 20;
+
+  // ── Resumo Estatístico ──
+  draw("RESUMO DO MÊS", marginX, y, 10, true, brandRed);
+  y -= 14;
+  
+  const statsData = [
+    `Total de registros: ${stats.total}`,
+    `Check-ins: ${stats.checkIns}`,
+    `Check-outs 1: ${stats.checkOuts1}`,
+    `Check-outs 2: ${stats.checkOuts2}`,
+    `Colaboradores únicos: ${stats.uniqueUsers}`,
+    `Setores ativos: ${stats.uniqueSetores}`,
+    `Ciclos completos: ${stats.ciclos}`,
+  ];
+  
+  for (const stat of statsData) {
+    draw(stat, marginX + 10, y, 8, false, darkText);
+    y -= 12;
+  }
+  y -= 8;
+  line(marginX, pageW - marginX, y, 0.5, lineColor);
   y -= 16;
 
   // ── Table header ──
@@ -153,11 +185,11 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
     y: y - 4,
     width: tableW,
     height: headerH,
-    color: rgb(0.85, 0.15, 0.15), // brandRed background
+    color: brandRed,
   });
   let x = tableX;
   for (let i = 0; i < headers.length; i++) {
-    draw(headers[i], x + 4, y, 7, true, rgb(1, 1, 1)); // white text
+    draw(headers[i], x + 4, y, 7, true, rgb(1, 1, 1));
     x += colWidths[i];
   }
   y -= headerH;
@@ -220,7 +252,7 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   return pdf.save();
 }
 
-function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, agentes: number): string {
+function buildEmailHtml(periodo: string, monthName: string, stats: any): string {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -239,23 +271,23 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
   <tr><td style="padding:32px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
       <tr><td style="font-size:16px;font-weight:bold;color:#0B1120;line-height:24px;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">Olá, Gestor.</td></tr>
-      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">O relatório diário consolidado do <strong>Controle de Ronda da BA Elétrica</strong> foi processado com sucesso pelo sistema de segurança.</td></tr>
-      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará o <strong>PDF gerencial</strong> (com gráficos e indicadores de conformidade) e a <strong>planilha Excel</strong> com a auditoria detalhada de todos os pontos de check-in. Ambos os arquivos refletem fielmente os dados extraídos do sistema.</td></tr>
+      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">O <strong>relatório mensal consolidado</strong> do <strong>Controle de Ronda da BA Elétrica</strong> referente a <strong>${monthName}</strong> foi processado com sucesso.</td></tr>
+      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará o <strong>PDF gerencial</strong> com o resumo estatístico e a <strong>planilha Excel</strong> com a auditoria detalhada de todos os registros do mês.</td></tr>
       <tr><td style="padding:0 0 24px 0">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0">
         <tr><td style="padding:16px 20px">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
           <tr>
-            <td style="font-size:12px;color:#64748B;padding:0 0 4px 0;font-family:Arial,Helvetica,sans-serif">Período</td>
-            <td style="font-size:12px;color:#64748B;padding:0 0 4px 0;font-family:Arial,Helvetica,sans-serif" align="center">Eventos</td>
+            <td style="font-size:12px;color:#64748B;padding:0 0 4px 0;font-family:Arial,Helvetica,sans-serif">Mês</td>
+            <td style="font-size:12px;color:#64748B;padding:0 0 4px 0;font-family:Arial,Helvetica,sans-serif" align="center">Registros</td>
+            <td style="font-size:12px;color:#64748B;padding:0 0 4px 0;font-family:Arial,Helvetica,sans-serif" align="center">Colaboradores</td>
             <td style="font-size:12px;color:#64748B;padding:0 0 4px 0;font-family:Arial,Helvetica,sans-serif" align="center">Ciclos</td>
-            <td style="font-size:12px;color:#64748B;padding:0 0 4px 0;font-family:Arial,Helvetica,sans-serif" align="center">Agentes</td>
           </tr>
           <tr>
-            <td style="font-size:13px;color:#0B1120;font-weight:bold;padding:0;font-family:Arial,Helvetica,sans-serif">${periodo}</td>
-            <td style="font-size:13px;color:#0B1120;font-weight:bold;padding:0;text-align:center;font-family:Arial,Helvetica,sans-serif">${totalEventos}</td>
-            <td style="font-size:13px;color:#0B1120;font-weight:bold;padding:0;text-align:center;font-family:Arial,Helvetica,sans-serif">${ciclos}</td>
-            <td style="font-size:13px;color:#0B1120;font-weight:bold;padding:0;text-align:center;font-family:Arial,Helvetica,sans-serif">${agentes}</td>
+            <td style="font-size:13px;color:#0B1120;font-weight:bold;padding:0;font-family:Arial,Helvetica,sans-serif">${monthName}</td>
+            <td style="font-size:13px;color:#0B1120;font-weight:bold;padding:0;text-align:center;font-family:Arial,Helvetica,sans-serif">${stats.total}</td>
+            <td style="font-size:13px;color:#0B1120;font-weight:bold;padding:0;text-align:center;font-family:Arial,Helvetica,sans-serif">${stats.uniqueUsers}</td>
+            <td style="font-size:13px;color:#0B1120;font-weight:bold;padding:0;text-align:center;font-family:Arial,Helvetica,sans-serif">${stats.ciclos}</td>
           </tr>
           </table>
         </td></tr>
@@ -274,8 +306,8 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
           <tr><td style="font-size:13px;color:#0B1120;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Anexos do E-mail</td></tr>
           <tr><td style="font-size:12px;color:#64748B;padding:6px 0 0 0;font-family:Arial,Helvetica,sans-serif">
-            Relatorio_Ronda_BA_Eletrica.pdf — Folha oficial com horários de cada registro<br>
-            Auditoria_Dados_Brutos.xlsx — Dados detalhados de cada registro
+            Relatorio_Mensal_Ronda_BA_Eletrica.pdf — Resumo mensal com estatísticas<br>
+            Auditoria_Mensal_Dados_Brutos.xlsx — Dados detalhados de todos os registros
           </td></tr>
           </table>
         </td></tr>
@@ -314,11 +346,29 @@ async function fetchRows(admin: any, fromIso: string, toIso: string) {
   });
 }
 
+function calculateStats(rows: any[]) {
+  const checkIns = rows.filter(r => r.tipo_acao === "check_in").length;
+  const checkOuts1 = rows.filter(r => r.tipo_acao === "check_out_1").length;
+  const checkOuts2 = rows.filter(r => r.tipo_acao === "check_out_2").length;
+  const uniqueUsers = new Set(rows.map(r => r.user_id)).size;
+  const uniqueSetores = new Set(rows.filter(r => r.setor).map(r => r.setor)).size;
+  const ciclos = Math.min(checkIns, checkOuts1, checkOuts2);
+  
+  return {
+    total: rows.length,
+    checkIns,
+    checkOuts1,
+    checkOuts2,
+    uniqueUsers,
+    uniqueSetores,
+    ciclos,
+  };
+}
+
 async function fetchRecipientEmails(admin: any): Promise<string[]> {
   const seen = new Set<string>();
   const recipients: string[] = [];
 
-  // Buscar TODOS os usuários com email corporativo (admin e user)
   const { data: allProfiles } = await admin.from("profiles").select("id,nome,email,setor_id");
   console.log("Total profiles:", allProfiles?.length ?? 0);
 
@@ -336,7 +386,6 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
     }
   }
 
-  // Sempre incluir suporte04@baeletrica.com.br
   const suporte = normalizeEmail("suporte04@baeletrica.com.br");
   if (suporte && !seen.has(suporte)) {
     seen.add(suporte);
@@ -349,7 +398,7 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
 }
 
 async function sendResend(to: string[], subject: string, html: string, attachments: { filename: string; content: string }[]) {
-  const resendKey = Deno.env.get("RESEND_API_KEY") || RESEND_API_KEY_FALLBACK;
+  const resendKey = Deno.env.get("RESEND_API_KEY") || "";
   if (!resendKey) throw new Error("RESEND_API_KEY não configurada.");
 
   const payload = { from: SENDER, to, reply_to: REPLY_TO, subject, html, attachments };
@@ -375,17 +424,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const modo: "teste" | "diario" = body?.modo === "diario" ? "diario" : "teste";
-
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    console.log("=== START ===", { modo, url: SUPABASE_URL });
+    console.log("=== START MONTHLY REPORT ===", { url: SUPABASE_URL });
 
-    const { fromUtc, toUtc } = rangeFor(modo);
-    const periodo = `${fmtManaus(fromUtc.toISOString(), false)} a ${fmtManaus(toUtc.toISOString(), false)} (America/Manaus)`;
+    const { fromUtc, toUtc, monthName, startDate, endDate } = getLastMonthRange();
+    const periodo = `${startDate} a ${endDate} (America/Manaus)`;
 
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
     console.log("Rows:", rows.length);
@@ -396,22 +442,21 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
-    const [xlsxBytes, pdfBytes] = await Promise.all([buildXlsx(rows), buildPdf(rows, periodo)]);
-    const ciclos = rows.filter((r: any) => r.tipo_acao === "check_out_2").length;
-    const ag = new Set(rows.map((r: any) => r.user_id)).size;
-    const html = buildEmailHtml(periodo, rows.length, ciclos, ag);
+    const stats = calculateStats(rows);
+    const [xlsxBytes, pdfBytes] = await Promise.all([buildXlsx(rows, monthName), buildPdf(rows, periodo, monthName, stats)]);
+    const html = buildEmailHtml(periodo, monthName, stats);
 
-    const result = await sendResend(recipients, `BA Elétrica — Controle de Ronda (${periodo})`, html, [
-      { filename: "Relatorio_Ronda_BA_Eletrica.pdf", content: toBase64(pdfBytes) },
-      { filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
+    const result = await sendResend(recipients, `BA Elétrica — Relatório Mensal (${monthName})`, html, [
+      { filename: "Relatorio_Mensal_Ronda_BA_Eletrica.pdf", content: toBase64(pdfBytes) },
+      { filename: "Auditoria_Mensal_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
     ]);
 
-    console.log("=== OK ===", (result as any)?.id);
-    return new Response(JSON.stringify({ ok: true, modo, periodo, count: rows.length, recipients, id: (result as any)?.id ?? null }),
+    console.log("=== OK MONTHLY ===", (result as any)?.id);
+    return new Response(JSON.stringify({ ok: true, monthName, periodo, count: rows.length, stats, recipients, id: (result as any)?.id ?? null }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
 
   } catch (e: any) {
-    console.error("ERROR:", e?.message);
+    console.error("ERROR MONTHLY:", e?.message);
     return new Response(JSON.stringify({ ok: false, error: String(e?.message ?? e) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 });
   }
