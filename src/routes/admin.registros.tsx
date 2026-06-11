@@ -376,72 +376,138 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
       const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
       const pageW = 595;
       const pageH = 842;
-      const marginX = 40;
-      const brandRed = rgb(0.85, 0.15, 0.15);
-      const darkText = rgb(0.04, 0.07, 0.14);
-      const grayText = rgb(0.5, 0.5, 0.5);
-      const borderColor = rgb(0.88, 0.88, 0.88);
+      const marginX = 36;
 
-      const page = pdf.addPage([pageW, pageH]);
+      // Professional color palette
+      const brandRed = rgb(0.83, 0.15, 0.12);
+      const navyBlue = rgb(0.12, 0.17, 0.33);
+      const darkText = rgb(0.07, 0.09, 0.15);
+      const grayText = rgb(0.45, 0.48, 0.53);
+      const lineColor = rgb(0.83, 0.86, 0.90);
+      const borderColor = rgb(0.88, 0.90, 0.93);
+      const lightGray = rgb(0.96, 0.97, 0.98);
+      const white = rgb(1, 1, 1);
+      const softRed = rgb(0.99, 0.93, 0.93);
+
+      let page = pdf.addPage([pageW, pageH]);
+      let pageNum = 1;
       let y = pageH - 40;
 
       const draw = (txt: string, xPos: number, yPos: number, size: number, bold = false, color = darkText) => {
         page.drawText(txt, { x: xPos, y: yPos, size, font: bold ? fontB : font, color });
       };
-      const lineH = (x1: number, x2: number, yPos: number, thickness = 0.5, color = borderColor) => {
+      const lineH = (x1: number, x2: number, yPos: number, thickness = 0.5, color = lineColor) => {
         page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness, color });
       };
+      const drawPageFooter = (pg: number) => {
+        lineH(marginX, pageW - marginX, 52, 0.4, borderColor);
+        draw("BA Elétrica — Sistema de Controle de Ronda", marginX, 40, 6, false, grayText);
+        draw(`Página ${pg}`, pageW - marginX - 40, 40, 6, false, grayText);
+        draw("CONFIDENCIAL", pageW / 2 - 24, 40, 6, true, brandRed);
+      };
+      const ensurePage = (needed: number, isNew = false) => {
+        if (isNew || y - needed < 80) {
+          drawPageFooter(pageNum);
+          page = pdf.addPage([pageW, pageH]);
+          pageNum++;
+          y = pageH - 36;
+          page.drawRectangle({ x: 0, y: pageH - 8, width: pageW, height: 8, color: brandRed });
+          draw("BA Elétrica — Controle de Ronda", marginX, pageH - 28, 8, true, navyBlue);
+          y = pageH - 44;
+        }
+      };
+
+      // ═══ COVER ═══
+
+      page.drawRectangle({ x: 0, y: pageH - 10, width: pageW, height: 10, color: brandRed });
+      y = pageH - 40;
 
       // Logo
+      let logoW = 0;
       try {
         const logoRes = await fetch("/logo.png");
         if (logoRes.ok) {
           const logoBytes = new Uint8Array(await logoRes.arrayBuffer());
           const logoImg = await pdf.embedPng(logoBytes);
-          const logoW = 50;
+          logoW = 55;
           const logoH = (logoImg.height / logoImg.width) * logoW;
-          page.drawImage(logoImg, { x: marginX, y: y - logoH + 2, width: logoW, height: logoH });
+          page.drawImage(logoImg, { x: marginX, y: y - logoH + 5, width: logoW, height: logoH });
         }
       } catch (_) {}
 
-      // Header
-      draw("BA Elétrica — Controle de Ronda", marginX + 65, y - 4, 14, true, darkText);
-      draw("Documento de auditoria", marginX + 65, y - 18, 9, false, grayText);
-      y -= 36;
-      lineH(marginX, pageW - marginX, y, 1.5, brandRed);
+      const titleX = marginX + logoW + 16;
+      draw("BA ELÉTRICA", titleX, y, 18, true, brandRed);
+      y -= 16;
+      draw("Sistema de Controle de Ronda", titleX, y, 10, false, navyBlue);
+      y -= 14;
+      draw("Documento de Auditoria Individual", titleX, y, 9, false, grayText);
       y -= 20;
 
-      // Info
-      draw("Funcionário", marginX, y, 8, true, grayText);
-      draw(row.nome, marginX, y - 12, 10, true, darkText);
-      draw("E-mail", marginX + 200, y, 8, true, grayText);
-      draw(row.email || "—", marginX + 200, y - 12, 9, false, darkText);
-      draw("Setor", marginX + 380, y, 8, true, grayText);
-      draw(row.setor ?? "—", marginX + 380, y - 12, 9, false, darkText);
-      y -= 28;
-      draw("Data do ciclo", marginX, y, 8, true, grayText);
-      draw(formatData(row.horario_acao), marginX, y - 12, 10, false, darkText);
-      y -= 28;
-      lineH(marginX, pageW - marginX, y, 0.5, borderColor);
-      y -= 20;
+      lineH(marginX, pageW - marginX, y, 2, brandRed);
+      y -= 6;
+      lineH(marginX, pageW - marginX, y, 0.5, lineColor);
+      y -= 24;
 
-      // Timeline
+      // Info card
+      const cardH = 100;
+      const tableW = pageW - marginX * 2;
+      page.drawRectangle({
+        x: marginX, y: y - cardH, width: tableW, height: cardH,
+        borderColor: borderColor, borderWidth: 0.8, color: lightGray,
+      });
+      page.drawRectangle({ x: marginX, y: y - cardH, width: 4, height: cardH, color: brandRed });
+
+      const cardPad = marginX + 16;
+      let cy = y - 16;
+
+      draw("FUNCIONÁRIO", cardPad, cy, 7, true, grayText);
+      draw("E-MAIL", cardPad + 200, cy, 7, true, grayText);
+      draw("SETOR", cardPad + 400, cy, 7, true, grayText);
+      cy -= 14;
+      draw(row.nome, cardPad, cy, 11, true, darkText);
+      draw((row.email || "—").slice(0, 30), cardPad + 200, cy, 8, false, darkText);
+      draw(row.setor ?? "—", cardPad + 400, cy, 9, false, darkText);
+      cy -= 22;
+
+      draw("DATA DO CICLO", cardPad, cy, 7, true, grayText);
+      draw("HORÁRIO CAPTURA", cardPad + 200, cy, 7, true, grayText);
+      draw("TOTAL DE ETAPAS", cardPad + 400, cy, 7, true, grayText);
+      cy -= 14;
+      draw(formatData(row.horario_acao), cardPad, cy, 10, false, darkText);
+      draw(formatManaus(row.horario_acao), cardPad + 200, cy, 9, false, darkText);
+      draw(String(ciclo.length), cardPad + 400, cy, 12, true, brandRed);
+
+      y -= cardH + 24;
+
+      // ── Timeline ──
+      draw("CRONOLOGIA DO CICLO", marginX, y, 10, true, brandRed);
+      y -= 16;
+
       for (let idx = 0; idx < ciclo.length; idx++) {
         const r = ciclo[idx];
-        if (y < 200) break;
 
-        // Timeline dot
-        page.drawCircle({
-          x: marginX + 4,
-          y: y - 2,
-          size: 4,
-          color: brandRed,
+        const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33)
+          : r.tipo_acao === "check_out_1" ? rgb(0.20, 0.55, 0.85)
+          : rgb(0.85, 0.55, 0.10);
+
+        ensurePage(120, false);
+
+        // Step card
+        const stepCardH = 88;
+        page.drawRectangle({
+          x: marginX + 20, y: y - stepCardH + 8, width: tableW - 20, height: stepCardH,
+          borderColor: borderColor, borderWidth: 0.5, color: white,
         });
+        page.drawRectangle({ x: marginX + 20, y: y - stepCardH + 8, width: 3, height: stepCardH, color: accentColor });
 
-        draw(`${idx + 1}. ${TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao}`, marginX + 16, y - 4, 10, true, darkText);
+        // Step number circle
+        page.drawCircle({ x: marginX + 14, y: y - 2, size: 10, color: accentColor });
+        draw(String(idx + 1), marginX + (idx + 1 > 9 ? 10 : 11.5), y - 5, 9, true, white);
+
+        draw(TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao, marginX + 34, y - 4, 10, true, darkText);
         y -= 16;
-        draw(`Horário da captura: ${formatManaus(r.horario_acao)}`, marginX + 16, y, 8, false, grayText);
-        draw(`Horário de envio: ${formatManaus(r.horario_foto)}`, marginX + 280, y, 8, false, grayText);
+        draw(`Horário da captura: ${formatManaus(r.horario_acao)}`, marginX + 34, y, 8, false, grayText);
+        draw(`Horário de envio: ${formatManaus(r.horario_foto)}`, marginX + 300, y, 8, false, grayText);
         y -= 16;
 
         // Photo
@@ -452,55 +518,41 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
             if (imgRes.ok) {
               const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
               let img;
-              try {
-                img = await pdf.embedJpg(imgBytes);
-              } catch {
-                img = await pdf.embedPng(imgBytes);
-              }
-              const maxW = pageW - marginX * 2 - 16;
-              const maxH = 180;
+              try { img = await pdf.embedJpg(imgBytes); } catch { img = await pdf.embedPng(imgBytes); }
+              const maxW = tableW - 50;
+              const maxH = 160;
               const scale = Math.min(maxW / img.width, maxH / img.height, 1);
               const drawW = img.width * scale;
               const drawH = img.height * scale;
-              page.drawImage(img, {
-                x: marginX + 16,
-                y: y - drawH,
-                width: drawW,
-                height: drawH,
+              page.drawRectangle({
+                x: marginX + 32, y: y - drawH - 2, width: drawW + 4, height: drawH + 4,
+                borderColor: borderColor, borderWidth: 0.5,
               });
-              y -= drawH + 12;
+              page.drawImage(img, { x: marginX + 34, y: y - drawH, width: drawW, height: drawH });
+              y -= drawH + 14;
             }
           } catch {
-            draw("Foto: erro ao carregar", marginX + 16, y, 8, false, grayText);
+            draw("Foto: erro ao carregar", marginX + 34, y, 8, false, grayText);
             y -= 14;
           }
         } else {
-          // Draw placeholder
           page.drawRectangle({
-            x: marginX + 16,
-            y: y - 80,
-            width: 200,
-            height: 80,
-            borderColor: borderColor,
-            borderWidth: 0.5,
+            x: marginX + 34, y: y - 80, width: 220, height: 80,
+            borderColor: borderColor, borderWidth: 0.5, color: lightGray,
           });
-          draw("Foto indisponível", marginX + 60, y - 38, 8, false, grayText);
+          draw("Foto indisponível", marginX + 90, y - 38, 8, false, grayText);
           y -= 92;
         }
 
+        y -= 12;
         if (idx < ciclo.length - 1) {
-          lineH(marginX + 16, pageW - marginX, y, 0.3, borderColor);
-          y -= 12;
+          // Vertical connector line
+          page.drawLine({ start: { x: marginX + 14, y: y + 6 }, end: { x: marginX + 14, y: y - 6 }, thickness: 1.5, color: accentColor });
+          y -= 8;
         }
       }
 
-      // Footer
-      y -= 16;
-      lineH(marginX, pageW - marginX, y, 0.5, brandRed);
-      y -= 12;
-      draw("CONFIDENCIAL — Uso interno da BA Elétrica", marginX, y, 7, true, brandRed);
-      y -= 10;
-      draw(`Gerado em ${formatManaus(new Date())} · Fuso America/Manaus`, marginX, y, 7, false, grayText);
+      drawPageFooter(pageNum);
 
       const pdfBytes = await pdf.save();
       const blob = new Blob([pdfBytes], { type: "application/pdf" });

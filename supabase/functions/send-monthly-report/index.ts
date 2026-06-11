@@ -100,101 +100,143 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
   const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
   const pageW = 595;
   const pageH = 842;
-  const marginX = 40;
+  const marginX = 36;
   const tableW = pageW - marginX * 2;
-  const colWidths = [100, 65, 115, 65, 90, 100];
-  const headers = ["COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HORÁRIO DA FOTO", "HORÁRIO DO ENVIO"];
+  const colWidths = [105, 68, 110, 68, 85, 100];
+  const headers = ["COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HOR. FOTO", "HOR. ENVIO"];
   const rowH = 20;
   const headerH = 22;
-  const brandRed = rgb(0.85, 0.15, 0.15);
-  const darkText = rgb(0.04, 0.07, 0.14);
-  const grayText = rgb(0.5, 0.5, 0.5);
-  const lightGray = rgb(0.94, 0.94, 0.94);
-  const lineColor = rgb(0.82, 0.82, 0.82);
+
+  // Professional color palette
+  const brandRed = rgb(0.83, 0.15, 0.12);
+  const darkRed = rgb(0.65, 0.10, 0.09);
+  const navyBlue = rgb(0.12, 0.17, 0.33);
+  const darkText = rgb(0.07, 0.09, 0.15);
+  const grayText = rgb(0.45, 0.48, 0.53);
+  const lightGray = rgb(0.96, 0.97, 0.98);
+  const lineColor = rgb(0.83, 0.86, 0.90);
+  const borderColor = rgb(0.88, 0.90, 0.93);
+  const white = rgb(1, 1, 1);
 
   let page = pdf.addPage([pageW, pageH]);
+  let pageNum = 1;
   let y = pageH - 36;
 
   const draw = (txt: string, xPos: number, yPos: number, size: number, bold = false, color = darkText) => {
     page.drawText(txt, { x: xPos, y: yPos, size, font: bold ? fontB : font, color });
   };
-  const line = (x1: number, x2: number, yPos: number, thickness = 0.5, color = lineColor) => {
+  const lineH = (x1: number, x2: number, yPos: number, thickness = 0.5, color = lineColor) => {
     page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness, color });
   };
-  const ensurePage = (needed: number) => {
-    if (y - needed < 60) {
+  const drawPageFooter = (pg: number) => {
+    lineH(marginX, pageW - marginX, 52, 0.4, borderColor);
+    draw("BA Elétrica — Sistema de Controle de Ronda", marginX, 40, 6, false, grayText);
+    draw(`Página ${pg}`, pageW - marginX - 40, 40, 6, false, grayText);
+    draw("CONFIDENCIAL", pageW / 2 - 24, 40, 6, true, brandRed);
+  };
+  const ensurePage = (needed: number, isNew = false) => {
+    if (isNew || y - needed < 70) {
+      drawPageFooter(pageNum);
       page = pdf.addPage([pageW, pageH]);
+      pageNum++;
       y = pageH - 36;
+      page.drawRectangle({ x: 0, y: pageH - 8, width: pageW, height: 8, color: brandRed });
+      draw("BA Elétrica — Controle de Ronda", marginX, pageH - 28, 8, true, navyBlue);
+      draw(`Período: ${periodo}`, pageW / 2 + 20, pageH - 28, 7, false, grayText);
+      y = pageH - 44;
     }
   };
 
-  // ── Header: Logo top-left, company name top-right ──
+  // ═══ PAGE 1: COVER ═══
+
+  page.drawRectangle({ x: 0, y: pageH - 10, width: pageW, height: 10, color: brandRed });
+  y = pageH - 40;
+
+  // Logo
+  let logoW = 0;
   try {
     const logoRes = await fetch("https://controle-ronda.suporte04.workers.dev/logo.png");
     if (logoRes.ok) {
       const logoBytes = new Uint8Array(await logoRes.arrayBuffer());
       const logoImg = await pdf.embedPng(logoBytes);
-      const logoW = 45;
+      logoW = 55;
       const logoH = (logoImg.height / logoImg.width) * logoW;
-      page.drawImage(logoImg, { x: marginX, y: y - logoH + 4, width: logoW, height: logoH });
+      page.drawImage(logoImg, { x: marginX, y: y - logoH + 5, width: logoW, height: logoH });
     }
   } catch (_) { /* logo opcional */ }
 
-  draw("BA Elétrica", pageW - marginX - 60, y, 12, true, brandRed);
-  draw("Controle de Ronda", pageW - marginX - 70, y - 14, 9, false, grayText);
-  y -= 18;
-  line(marginX, pageW - marginX, y, 1.5, brandRed);
-  y -= 20;
-
-  // ── Titulo ──
-  draw("Relatório Mensal — Controle de Ronda", marginX, y, 14, true, darkText);
-  y -= 14;
-  draw(`BA Elétrica — ${monthName}`, marginX, y, 10, false, grayText);
-  y -= 12;
-  draw(`Período: ${periodo} — ${rows.length} registro(s) — emitido em ${fmtManaus(new Date().toISOString(), false)}`, marginX, y, 8, false, grayText);
-  y -= 10;
-  line(marginX, pageW - marginX, y, 1.5, brandRed);
-  y -= 20;
-
-  // ── Resumo Estatístico ──
-  draw("RESUMO DO MÊS", marginX, y, 10, true, brandRed);
-  y -= 14;
-  
-  const statsData = [
-    `Total de registros: ${stats.total}`,
-    `Check-ins: ${stats.checkIns}`,
-    `Check-outs 1: ${stats.checkOuts1}`,
-    `Check-outs 2: ${stats.checkOuts2}`,
-    `Colaboradores únicos: ${stats.uniqueUsers}`,
-    `Setores ativos: ${stats.uniqueSetores}`,
-    `Ciclos completos: ${stats.ciclos}`,
-  ];
-  
-  for (const stat of statsData) {
-    draw(stat, marginX + 10, y, 8, false, darkText);
-    y -= 12;
-  }
-  y -= 8;
-  line(marginX, pageW - marginX, y, 0.5, lineColor);
+  const titleX = marginX + logoW + 16;
+  draw("BA ELÉTRICA", titleX, y, 18, true, brandRed);
   y -= 16;
+  draw("Sistema de Controle de Ronda", titleX, y, 10, false, navyBlue);
+  y -= 14;
+  draw("Relatório Mensal Consolidado", titleX, y, 9, false, grayText);
+  y -= 20;
+
+  lineH(marginX, pageW - marginX, y, 2, brandRed);
+  y -= 6;
+  lineH(marginX, pageW - marginX, y, 0.5, lineColor);
+  y -= 24;
+
+  // Info card
+  const cardH = 80;
+  page.drawRectangle({
+    x: marginX, y: y - cardH, width: tableW, height: cardH,
+    borderColor: borderColor, borderWidth: 0.8, color: lightGray,
+  });
+  page.drawRectangle({ x: marginX, y: y - cardH, width: 4, height: cardH, color: brandRed });
+
+  const cardPad = marginX + 16;
+  let cy = y - 16;
+  draw("PERÍODO DO RELATÓRIO", cardPad, cy, 7, true, grayText);
+  cy -= 12;
+  draw(periodo, cardPad, cy, 10, true, darkText);
+  cy -= 18;
+  draw("MÊS DE REFERÊNCIA", cardPad + 260, cy + 18, 7, true, grayText);
+  draw(monthName, cardPad + 260, cy + 6, 10, true, brandRed);
+  draw("TOTAL DE REGISTROS", cardPad + 420, cy + 18, 7, true, grayText);
+  draw(String(stats.total), cardPad + 420, cy + 6, 12, true, brandRed);
+
+  y -= cardH + 24;
+
+  // ── Stats dashboard ──
+  draw("PAINEL ESTATÍSTICO", marginX, y, 10, true, brandRed);
+  y -= 16;
+
+  const statCards = [
+    { label: "TOTAL", value: String(stats.total), color: brandRed },
+    { label: "CHECK-INS", value: String(stats.checkIns), color: rgb(0.16, 0.63, 0.33) },
+    { label: "CHECK-OUTS 1", value: String(stats.checkOuts1), color: rgb(0.20, 0.55, 0.85) },
+    { label: "CHECK-OUTS 2", value: String(stats.checkOuts2), color: rgb(0.85, 0.55, 0.10) },
+    { label: "COLABORADORES", value: String(stats.uniqueUsers), color: navyBlue },
+    { label: "SETORES", value: String(stats.uniqueSetores), color: darkRed },
+    { label: "CICLOS", value: String(stats.ciclos), color: rgb(0.45, 0.20, 0.65) },
+  ];
+  const statCardW = (tableW - 18) / 7;
+  statCards.forEach((s, i) => {
+    const sx = marginX + i * (statCardW + 3);
+    page.drawRectangle({
+      x: sx, y: y - 48, width: statCardW, height: 48,
+      borderColor: borderColor, borderWidth: 0.5, color: white,
+    });
+    page.drawRectangle({ x: sx, y: y, width: statCardW, height: 3, color: s.color });
+    const valLen = s.value.length;
+    draw(s.value, sx + statCardW / 2 - (valLen * 4), y - 22, 14, true, s.color);
+    draw(s.label, sx + 3, y - 40, 5, true, grayText);
+  });
+  y -= 64;
 
   // ── Table header ──
   const tableX = marginX;
-  page.drawRectangle({
-    x: tableX,
-    y: y - 4,
-    width: tableW,
-    height: headerH,
-    color: brandRed,
-  });
+  page.drawRectangle({ x: tableX, y: y - 2, width: tableW, height: headerH, color: navyBlue });
   let x = tableX;
   for (let i = 0; i < headers.length; i++) {
-    draw(headers[i], x + 4, y, 7, true, rgb(1, 1, 1));
+    draw(headers[i], x + 4, y, 6.5, true, white);
     x += colWidths[i];
   }
-  y -= headerH;
-  line(tableX, tableX + tableW, y, 0.5, brandRed);
-  y -= 4;
+  y -= headerH + 2;
+  lineH(tableX, tableX + tableW, y, 0.5, navyBlue);
+  y -= 2;
 
   // ── Table rows ──
   let rowIdx = 0;
@@ -209,45 +251,35 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
     const horaFoto = fotoCompleto.split(" ")[1] ?? "";
 
     const cells = [
-      String(r.nome ?? "—").slice(0, 18),
-      String(r.setor ?? "—").slice(0, 12),
+      String(r.nome ?? "—").slice(0, 20),
+      String(r.setor ?? "—").slice(0, 13),
       tipoLabel,
       data,
       horaFoto,
       horaEnvio,
     ];
 
-    // Alternating row background
     if (rowIdx % 2 === 0) {
-      page.drawRectangle({
-        x: tableX,
-        y: y - 4,
-        width: tableW,
-        height: rowH,
-        color: lightGray,
-      });
+      page.drawRectangle({ x: tableX, y: y - 4, width: tableW, height: rowH, color: lightGray });
     }
+
+    const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33)
+      : r.tipo_acao === "check_out_1" ? rgb(0.20, 0.55, 0.85)
+      : rgb(0.85, 0.55, 0.10);
+    page.drawRectangle({ x: tableX, y: y - 4, width: 2, height: rowH, color: accentColor });
 
     x = tableX;
     for (let i = 0; i < cells.length; i++) {
-      draw(cells[i], x + 4, y, 8, false, darkText);
+      draw(cells[i], x + 6, y, 7.5, false, darkText);
       x += colWidths[i];
     }
     y -= rowH;
-    line(tableX, tableX + tableW, y, 0.3, lineColor);
+    lineH(tableX, tableX + tableW, y, 0.3, borderColor);
     y -= 4;
     rowIdx++;
   }
 
-  // ── Footer ──
-  y -= 8;
-  line(marginX, pageW - marginX, y, 0.5, brandRed);
-  y -= 12;
-  draw("Documento gerado automaticamente — BA Elétrica — Sistema de Controle de Ronda", marginX, y, 7, false, grayText);
-  y -= 10;
-  draw(`Fuso horário: America/Manaus (UTC-4) — Emitido em ${fmtManaus(new Date().toISOString())}`, marginX, y, 7, false, grayText);
-  y -= 10;
-  draw("CONFIDENCIAL — Uso interno da BA Elétrica", marginX, y, 7, true, brandRed);
+  drawPageFooter(pageNum);
 
   return pdf.save();
 }
