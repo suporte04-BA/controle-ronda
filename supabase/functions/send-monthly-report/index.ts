@@ -369,23 +369,30 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
   const seen = new Set<string>();
   const recipients: string[] = [];
 
+  // Buscar setor GESTOR
+  const { data: sets } = await admin.from("setores").select("id,nome");
+  const gestorSetores = (sets ?? []).filter((s: any) => s.nome?.toUpperCase().includes("GESTOR"));
+  const gestorIds = new Set(gestorSetores.map((s: any) => s.id));
+  console.log("Setores GESTOR:", gestorSetores.map((s: any) => s.nome));
+
+  // Buscar profiles que são do setor GESTOR
   const { data: allProfiles } = await admin.from("profiles").select("id,nome,email,setor_id");
   console.log("Total profiles:", allProfiles?.length ?? 0);
 
   if (allProfiles?.length) {
-    const { data: sets } = await admin.from("setores").select("id,nome");
-    const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
-
     for (const p of allProfiles) {
       const email = normalizeEmail(p.email);
       if (!email || !isCorporateEmail(email) || seen.has(email)) continue;
+      // Apenas setor GESTOR
+      if (!p.setor_id || !gestorIds.has(p.setor_id)) continue;
       seen.add(email);
-      const setorNome = p.setor_id ? setMap.get(p.setor_id) ?? "—" : "—";
+      const setorNome = gestorSetores.find((s: any) => s.id === p.setor_id)?.nome ?? "—";
       console.log(`Destinatário: ${p.nome} (${email}) - Setor: ${setorNome}`);
       recipients.push(email);
     }
   }
 
+  // Sempre incluir suporte04@baeletrica.com.br (admin)
   const suporte = normalizeEmail("suporte04@baeletrica.com.br");
   if (suporte && !seen.has(suporte)) {
     seen.add(suporte);

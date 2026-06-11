@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import * as XLSX from "xlsx";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { Loader2, Search, Download, Printer, FileText, X, Send, Copy, Terminal, ImageOff } from "lucide-react";
+import { Loader2, Search, Download, Printer, FileText, X, Send, ImageOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -13,56 +13,6 @@ import { formatData, formatHora, TIPO_ACAO_LABEL, formatManaus } from "@/lib/tim
 import { getSignedFotoUrl } from "@/lib/storage";
 import { sendTestReport } from "@/lib/report.functions";
 import { useAuth } from "@/lib/auth";
-
-const SUPABASE_PROJECT_REF = import.meta.env.VITE_SUPABASE_PROJECT_ID || "rdmbayprbfqbjhfqcasp";
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
-
-const CRON_SQL = `-- BA Elétrica — Agendamento de relatórios de Controle de Ronda
--- Executar uma única vez no SQL Editor do Supabase
-CREATE EXTENSION IF NOT EXISTS pg_net;
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
--- ══════════════════════════════════════════════════════════════════
--- RELATÓRIO DIÁRIO — Todos os dias às 07:00 America/Manaus
--- ══════════════════════════════════════════════════════════════════
-
--- Remove agendamento anterior (se existir) para evitar duplicidade
-SELECT cron.unschedule('ba-report-daily')
-WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'ba-report-daily');
-
--- Agenda para 11:00 UTC = 07:00 America/Manaus, todos os dias
-SELECT cron.schedule(
-  'ba-report-daily',
-  '0 11 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/send-daily-report',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer ${SUPABASE_ANON_KEY}"}'::jsonb,
-    body := '{"modo":"diario"}'::jsonb
-  );
-  $$
-);
-
--- ══════════════════════════════════════════════════════════════════
--- RELATÓRIO MENSAL — Dia 1 de cada mês às 08:00 America/Manaus
--- ══════════════════════════════════════════════════════════════════
-
--- Remove agendamento anterior (se existir) para evitar duplicidade
-SELECT cron.unschedule('ba-report-monthly')
-WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'ba-report-monthly');
-
--- Agenda para 12:00 UTC = 08:00 America/Manaus, dia 1 de cada mês
-SELECT cron.schedule(
-  'ba-report-monthly',
-  '0 12 1 * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/send-monthly-report',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer ${SUPABASE_ANON_KEY}"}'::jsonb,
-    body := '{}'::jsonb
-  );
-  $$
-);`;
 
 export const Route = createFileRoute("/admin/registros")({
   component: TodosRegistros,
@@ -125,7 +75,6 @@ function TodosRegistros() {
   const [dataAte, setDataAte] = useState<string>(initial.to);
   const [setores, setSetores] = useState<{ id: string; nome: string }[]>([]);
   const [detalhe, setDetalhe] = useState<Row | null>(null);
-  const [mostrarSql, setMostrarSql] = useState(false);
 
   const dispararTeste = async () => {
     setEnviando(true);
@@ -155,15 +104,6 @@ function TodosRegistros() {
       }
     } finally {
       setEnviando(false);
-    }
-  };
-
-  const copiarSql = async () => {
-    try {
-      await navigator.clipboard.writeText(CRON_SQL);
-      toast.success("Script SQL copiado. Cole no SQL Editor do Supabase.");
-    } catch {
-      toast.error("Não foi possível copiar — selecione e copie manualmente.");
     }
   };
 
@@ -270,11 +210,6 @@ function TodosRegistros() {
               Enviar Relatório de Teste
             </Button>
           )}
-          {baseRole === "admin" && (
-            <Button onClick={() => setMostrarSql((v) => !v)} variant="outline">
-              <Terminal className="w-4 h-4 mr-2" /> {mostrarSql ? "Ocultar SQL do Cron" : "Agendar Cron Diário (SQL)"}
-            </Button>
-          )}
           <Button onClick={exportarExcel} disabled={!intervaloValido}>
             <Download className="w-4 h-4 mr-2" /> Exportar Excel
           </Button>
@@ -283,25 +218,6 @@ function TodosRegistros() {
           </Button>
         </div>
       </header>
-
-      {mostrarSql && baseRole === "admin" && (
-        <div className="no-print bg-card border border-border rounded-xl p-4 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="font-semibold flex items-center gap-2"><Terminal className="w-4 h-4" /> Agendamento Automático (pg_cron + pg_net)</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Cole o script abaixo no <b>SQL Editor</b> do Supabase e execute uma única vez.
-                Ele dispara a Edge Function <code>send-daily-report</code> todos os dias às <b>07:00 (America/Manaus)</b>
-                e o <code>send-monthly-report</code> no dia 1 de cada mês às <b>08:00</b>.
-              </p>
-            </div>
-            <Button size="sm" variant="secondary" onClick={copiarSql}><Copy className="w-4 h-4 mr-2" /> Copiar SQL</Button>
-          </div>
-          <pre className="text-xs bg-muted text-foreground p-3 rounded-lg overflow-auto max-h-72 whitespace-pre"><code>{CRON_SQL}</code></pre>
-        </div>
-      )}
-
-
 
       <div className="no-print bg-card border border-border rounded-xl p-4 space-y-3">
         <div className="flex flex-wrap gap-2">
