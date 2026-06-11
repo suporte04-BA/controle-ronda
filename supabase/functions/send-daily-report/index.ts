@@ -16,7 +16,7 @@ const SENDER = "BA Elétrica <relatorio@baeletrica.com.br>";
 const REPLY_TO = "suporte04@baeletrica.com.br";
 const MANAUS_OFFSET_MS = -4 * 60 * 60 * 1000;
 const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
-const DASHBOARD_URL = "https://controle-ronda.lovable.app";
+const DASHBOARD_URL = "https://controle-ronda.vercel.app";
 const RESEND_API_KEY_FALLBACK = Deno.env.get("RESEND_API_KEY") || "";
 
 const TIPO_LABEL: Record<string, string> = {
@@ -93,7 +93,7 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   const marginX = 40;
   const tableW = pageW - marginX * 2;
   const colWidths = [100, 65, 115, 65, 90, 100];
-  const headers = ["COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HORÁRIO DA FOTO", "HORÁRIO DO ENVIOS"];
+  const headers = ["COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HORÁRIO DA FOTO", "HORÁRIO DO ENVIO"];
   const rowH = 20;
   const headerH = 22;
   const brandRed = rgb(0.85, 0.15, 0.15);
@@ -118,23 +118,25 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
     }
   };
 
-  // ── Logo (fetch from app) ──
+  // ── Header: Logo left + "Controle de Ronda" right ──
+  let logoBottomY = y;
   try {
-    const logoRes = await fetch("https://controle-ronda.lovable.app/logo.png");
+    const logoRes = await fetch("https://controle-ronda.vercel.app/logo.png");
     if (logoRes.ok) {
       const logoBytes = new Uint8Array(await logoRes.arrayBuffer());
       const logoImg = await pdf.embedPng(logoBytes);
-      const logoW = 50;
+      const logoW = 40;
       const logoH = (logoImg.height / logoImg.width) * logoW;
-      page.drawImage(logoImg, { x: marginX, y: y - logoH + 5, width: logoW, height: logoH });
+      const logoY = y - logoH;
+      page.drawImage(logoImg, { x: marginX, y: logoY, width: logoW, height: logoH });
+      logoBottomY = logoY;
     }
   } catch (_) { /* logo opcional */ }
 
-  // ── Header text (direita) ──
-  draw("Controle de Ronda", pageW - marginX - 110, y, 11, false, grayText);
-  y -= 6;
+  draw("Controle de Ronda", pageW - marginX - 110, y - 4, 11, false, grayText);
+  y -= 12;
   line(marginX, pageW - marginX, y, 1.5, brandRed);
-  y -= 20;
+  y -= 22;
 
   // ── Titulo ──
   draw("Folha Oficial de Controle de Ronda", marginX, y, 15, true, darkText);
@@ -171,9 +173,9 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
     const tipoLabel = TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao;
     const dataCompleta = fmtManaus(r.horario_acao);
     const data = dataCompleta.split(" ")[0] ?? "";
-    const horaFoto = dataCompleta.split(" ")[1] ?? "";
-    const envioCompleto = fmtManaus(r.horario_foto);
-    const horaEnvio = envioCompleto.split(" ")[1] ?? "";
+    const horaEnvio = dataCompleta.split(" ")[1] ?? "";
+    const fotoCompleto = fmtManaus(r.horario_foto);
+    const horaFoto = fotoCompleto.split(" ")[1] ?? "";
 
     const cells = [
       String(r.nome ?? "—").slice(0, 18),
