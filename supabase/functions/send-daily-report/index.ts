@@ -16,7 +16,8 @@ const SENDER = "BA Elétrica <relatorio@baeletrica.com.br>";
 const REPLY_TO = "suporte04@baeletrica.com.br";
 const MANAUS_OFFSET_MS = -4 * 60 * 60 * 1000;
 const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
-const DASHBOARD_URL = "https://controle-ronda.vercel.app";
+// ATUALIZAR com o domínio do Cloudflare Pages após o primeiro deploy
+const DASHBOARD_URL = "https://controle-ronda.pages.dev";
 const RESEND_API_KEY_FALLBACK = Deno.env.get("RESEND_API_KEY") || "";
 
 const TIPO_LABEL: Record<string, string> = {

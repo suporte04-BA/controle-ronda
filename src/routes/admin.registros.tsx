@@ -290,7 +290,8 @@ function TodosRegistros() {
               <h3 className="font-semibold flex items-center gap-2"><Terminal className="w-4 h-4" /> Agendamento Automático (pg_cron + pg_net)</h3>
               <p className="text-xs text-muted-foreground mt-1">
                 Cole o script abaixo no <b>SQL Editor</b> do Supabase e execute uma única vez.
-                Ele dispara a Edge Function <code>send-daily-report</code> todos os dias às <b>07:00 (America/Manaus)</b>.
+                Ele dispara a Edge Function <code>send-daily-report</code> todos os dias às <b>07:00 (America/Manaus)</b>
+                e o <code>send-monthly-report</code> no dia 1 de cada mês às <b>08:00</b>.
               </p>
             </div>
             <Button size="sm" variant="secondary" onClick={copiarSql}><Copy className="w-4 h-4 mr-2" /> Copiar SQL</Button>
