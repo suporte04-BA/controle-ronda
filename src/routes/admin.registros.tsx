@@ -12,6 +12,7 @@ import { formatData, formatHora, TIPO_ACAO_LABEL, formatManaus } from "@/lib/tim
 import { getSignedFotoUrl } from "@/lib/storage";
 import { sendTestReport } from "@/lib/report.functions";
 import { useAuth } from "@/lib/auth";
+import { gerarPdfRelatorio } from "@/lib/pdf-relatorio";
 
 const SUPABASE_PROJECT_REF = import.meta.env.VITE_SUPABASE_PROJECT_ID || "hhrlgmqbcjzevpvmqisr";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
@@ -218,7 +219,7 @@ function TodosRegistros() {
     XLSX.writeFile(wb, `controle_ronda_${dataDe}_a_${dataAte}.xlsx`);
   };
 
-  const imprimirRelatorio = () => {
+  const imprimirRelatorio = async () => {
     if (!intervaloValido) {
       toast.error("Selecione um período de datas antes de imprimir.");
       return;
@@ -227,7 +228,23 @@ function TodosRegistros() {
       toast.error("Nenhum registro no período selecionado.");
       return;
     }
-    window.print();
+    const id = toast.loading("Gerando PDF...");
+    try {
+      await gerarPdfRelatorio(
+        filtrados.map((r) => ({
+          nome: r.nome,
+          setor: r.setor,
+          tipo_acao: r.tipo_acao,
+          horario_acao: r.horario_acao,
+          horario_foto: r.horario_foto,
+        })),
+        dataDe,
+        dataAte
+      );
+      toast.success("PDF gerado com sucesso!", { id });
+    } catch (e: any) {
+      toast.error(`Erro ao gerar PDF: ${e?.message ?? "desconhecido"}`, { id });
+    }
   };
 
   return (
