@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://hhrlgmqbcjzevpvmqisr.supabase.co";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://rdmbayprbfqbjhfqcasp.supabase.co";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 
 const REPORT_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-daily-report`;

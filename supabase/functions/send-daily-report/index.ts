@@ -1,5 +1,5 @@
 // Supabase Edge Function: send-daily-report
-// Deployed on: hhrlgmqbcjzevpvmqisr (Lovable)
+// Deployed on: rdmbayprbfqbjhfqcasp (Lovable)
 // Body: { modo: "teste" | "diario" }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";

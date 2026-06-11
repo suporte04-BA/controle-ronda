@@ -13,7 +13,7 @@ import { getSignedFotoUrl } from "@/lib/storage";
 import { sendTestReport } from "@/lib/report.functions";
 import { useAuth } from "@/lib/auth";
 
-const SUPABASE_PROJECT_REF = import.meta.env.VITE_SUPABASE_PROJECT_ID || "hhrlgmqbcjzevpvmqisr";
+const SUPABASE_PROJECT_REF = import.meta.env.VITE_SUPABASE_PROJECT_ID || "rdmbayprbfqbjhfqcasp";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 
 const CRON_SQL = `-- BA Elétrica — Agendamento diário do relatório de Controle de Ronda
