@@ -1,10 +1,10 @@
 // Supabase Edge Function: send-daily-report
-// Deployed on: rdmbayprbfqbjhfqcasp (Lovable)
+// Deployed on: rdmbayprbfqbjhfqcasp
 // Body: { modo: "teste" | "diario" }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
-import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, StandardFonts, rgb, degrees } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -84,23 +84,49 @@ async function buildXlsx(rows: any[]): Promise<Uint8Array> {
   return new Uint8Array(out as ArrayBuffer);
 }
 
-async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
+async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceKey: string): Promise<string | null> {
+  try {
+    if (!fotoUrl) return null;
+    const marker = "/fotos_ponto/";
+    const idx = fotoUrl.indexOf(marker);
+    const path = idx >= 0 ? fotoUrl.substring(idx + marker.length) : fotoUrl;
+    if (!path) return null;
+
+    const signedRes = await fetch(
+      `${supabaseUrl}/storage/v1/object/sign/fotos_ponto/${path}?expiresIn=3600`,
+      { headers: { "Authorization": `Bearer ${serviceKey}` } }
+    );
+    if (!signedRes.ok) return null;
+    const signedData = await signedRes.json();
+    const signedUrl = signedData.signedUrl;
+    if (!signedUrl) return null;
+
+    const imgRes = await fetch(signedUrl);
+    if (!imgRes.ok) return null;
+    const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
+    return toBase64(imgBytes);
+  } catch {
+    return null;
+  }
+}
+
+async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, serviceKey: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const fontI = await pdf.embedFont(StandardFonts.HelveticaOblique);
   const pageW = 595;
   const pageH = 842;
   const marginX = 40;
   const tableW = pageW - marginX * 2;
-  const colWidths = [100, 65, 115, 65, 90, 100];
-  const headers = ["COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HORÁRIO DA FOTO", "HORÁRIO DO ENVIO"];
-  const rowH = 20;
-  const headerH = 22;
+  const rowH = 18;
+  const headerH = 20;
   const brandRed = rgb(0.85, 0.15, 0.15);
   const darkText = rgb(0.04, 0.07, 0.14);
   const grayText = rgb(0.5, 0.5, 0.5);
-  const lightGray = rgb(0.94, 0.94, 0.94);
+  const lightGray = rgb(0.96, 0.96, 0.96);
   const lineColor = rgb(0.82, 0.82, 0.82);
+  const borderColor = rgb(0.88, 0.88, 0.88);
 
   let page = pdf.addPage([pageW, pageH]);
   let y = pageH - 36;
@@ -112,59 +138,75 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
     page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness, color });
   };
   const ensurePage = (needed: number) => {
-    if (y - needed < 60) {
+    if (y - needed < 80) {
       page = pdf.addPage([pageW, pageH]);
       y = pageH - 36;
     }
   };
 
-  // ── Header: Logo top-left, company name top-right ──
+  // ── Page header (date + company) ──
+  const now = fmtManaus(new Date(), false);
+  draw(now, marginX, y, 8, false, grayText);
+  draw("BA Elétrica — Controle de Ronda", pageW / 2 - 80, y, 9, true, darkText);
+  y -= 10;
+  line(marginX, pageW - marginX, y, 1, brandRed);
+  y -= 20;
+
+  // ── Centered card with border ──
+  const cardTop = y + 8;
+  const cardBottom = y - 40;
+
+  // Logo
   try {
-    const logoRes = await fetch("https://controle-ronda.vercel.app/logo.png");
+    const logoRes = await fetch("https://controle-ronda.suporte04.workers.dev/logo.png");
     if (logoRes.ok) {
       const logoBytes = new Uint8Array(await logoRes.arrayBuffer());
       const logoImg = await pdf.embedPng(logoBytes);
-      const logoW = 45;
+      const logoW = 50;
       const logoH = (logoImg.height / logoImg.width) * logoW;
-      page.drawImage(logoImg, { x: marginX, y: y - logoH + 4, width: logoW, height: logoH });
+      page.drawImage(logoImg, { x: marginX + 10, y: y - logoH + 2, width: logoW, height: logoH });
     }
   } catch (_) { /* logo opcional */ }
 
-  draw("BA Elétrica", pageW - marginX - 60, y, 12, true, brandRed);
-  draw("Controle de Ronda", pageW - marginX - 70, y - 14, 9, false, grayText);
-  y -= 18;
-  line(marginX, pageW - marginX, y, 1.5, brandRed);
-  y -= 20;
-
-  // ── Titulo ──
-  draw("Folha Oficial de Controle de Ronda", marginX, y, 14, true, darkText);
+  // Title centered
+  const titleX = marginX + 80;
+  draw("Folha Oficial de Controle de Ronda", titleX, y, 13, true, darkText);
   y -= 14;
-  draw("BA Elétrica — Fuso America/Manaus (UTC-4)", marginX, y, 9, false, grayText);
+  draw("BA Elétrica — Fuso America/Manaus", titleX, y, 9, false, grayText);
   y -= 12;
-  draw(`Período: ${periodo} — ${rows.length} registro(s) — emitido em ${fmtManaus(new Date().toISOString(), false)}`, marginX, y, 8, false, grayText);
-  y -= 10;
-  line(marginX, pageW - marginX, y, 1.5, brandRed);
+  draw(`Período: ${periodo} — ${rows.length} registro(s) — emitido em ${fmtManaus(new Date().toISOString(), false)}`, titleX, y, 7, false, grayText);
   y -= 16;
 
-  // ── Table header ──
+  line(marginX, pageW - marginX, y, 1, brandRed);
+  y -= 12;
+
+  // ── Table ──
+  const colWidths = [36, 90, 60, 105, 65, 80, 80];
+  const colHeaders = ["#", "COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HOR. FOTO", "HOR. ENVIO"];
   const tableX = marginX;
+
+  // Table border top
+  line(tableX, tableX + tableW, y, 0.5, borderColor);
+  y -= 2;
+
+  // Header row
   page.drawRectangle({
     x: tableX,
     y: y - 4,
     width: tableW,
     height: headerH,
-    color: rgb(0.85, 0.15, 0.15), // brandRed background
+    color: rgb(0.95, 0.95, 0.95),
   });
   let x = tableX;
-  for (let i = 0; i < headers.length; i++) {
-    draw(headers[i], x + 4, y, 7, true, rgb(1, 1, 1)); // white text
+  for (let i = 0; i < colHeaders.length; i++) {
+    draw(colHeaders[i], x + 3, y, 6.5, true, darkText);
     x += colWidths[i];
   }
   y -= headerH;
-  line(tableX, tableX + tableW, y, 0.5, brandRed);
+  line(tableX, tableX + tableW, y, 0.5, borderColor);
   y -= 4;
 
-  // ── Table rows ──
+  // Data rows
   let rowIdx = 0;
   for (const r of rows) {
     ensurePage(rowH + 10);
@@ -177,7 +219,8 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
     const horaFoto = fotoCompleto.split(" ")[1] ?? "";
 
     const cells = [
-      String(r.nome ?? "—").slice(0, 18),
+      String(rowIdx + 1),
+      String(r.nome ?? "—").slice(0, 20),
       String(r.setor ?? "—").slice(0, 12),
       tipoLabel,
       data,
@@ -198,11 +241,11 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
 
     x = tableX;
     for (let i = 0; i < cells.length; i++) {
-      draw(cells[i], x + 4, y, 8, false, darkText);
+      draw(cells[i], x + 3, y, 7.5, false, darkText);
       x += colWidths[i];
     }
     y -= rowH;
-    line(tableX, tableX + tableW, y, 0.3, lineColor);
+    line(tableX, tableX + tableW, y, 0.3, borderColor);
     y -= 4;
     rowIdx++;
   }
@@ -214,6 +257,85 @@ async function buildPdf(rows: any[], periodo: string): Promise<Uint8Array> {
   draw("Documento gerado automaticamente — BA Elétrica — Sistema de Controle de Ronda", marginX, y, 7, false, grayText);
   y -= 10;
   draw(`Fuso horário: America/Manaus (UTC-4) — Emitido em ${fmtManaus(new Date().toISOString())}`, marginX, y, 7, false, grayText);
+  y -= 10;
+  draw("CONFIDENCIAL — Uso interno da BA Elétrica", marginX, y, 7, true, brandRed);
+
+  // ── Page 2+: Photo evidence ──
+  page = pdf.addPage([pageW, pageH]);
+  y = pageH - 36;
+  draw("Evidência Fotográfica", marginX, y, 14, true, darkText);
+  y -= 12;
+  draw(`Período: ${periodo} — ${rows.length} registro(s)`, marginX, y, 8, false, grayText);
+  y -= 14;
+  line(marginX, pageW - marginX, y, 1, brandRed);
+  y -= 16;
+
+  const thumbW = 80;
+  const thumbH = 60;
+  let evidenceCount = 0;
+
+  for (const r of rows) {
+    ensurePage(thumbH + 50);
+
+    const photoB64 = r._photoBase64;
+    const photoLabel = `${TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao} — ${r.nome ?? "—"}`;
+    const photoTime = fmtManaus(r.horario_foto);
+
+    // Draw photo border/frame
+    page.drawRectangle({
+      x: marginX,
+      y: y - thumbH - 20,
+      width: thumbW + 10,
+      height: thumbH + 30,
+      borderColor: borderColor,
+      borderWidth: 0.5,
+    });
+
+    if (photoB64) {
+      try {
+        const imgBytes = Uint8Array.from(atob(photoB64), c => c.charCodeAt(0));
+        let img;
+        // Try JPEG first, then PNG
+        try {
+          img = await pdf.embedJpg(imgBytes);
+        } catch {
+          img = await pdf.embedPng(imgBytes);
+        }
+        const scale = Math.min(thumbW / img.width, thumbH / img.height);
+        const drawW = img.width * scale;
+        const drawH = img.height * scale;
+        const offsetX = marginX + 5 + (thumbW - drawW) / 2;
+        const offsetY = y - thumbH + (thumbH - drawH) / 2;
+        page.drawImage(img, { x: offsetX, y: offsetY, width: drawW, height: drawH });
+      } catch {
+        draw("Foto indisponível", marginX + 10, y - thumbH / 2, 7, false, grayText);
+      }
+    } else {
+      draw("Foto indisponível", marginX + 10, y - thumbH / 2, 7, false, grayText);
+    }
+
+    // Label next to photo
+    const labelX = marginX + thumbW + 20;
+    draw(photoLabel, labelX, y - 4, 8, true, darkText);
+    draw(`Data: ${photoTime}`, labelX, y - 16, 7, false, grayText);
+    draw(`Colaborador: ${r.nome ?? "—"}`, labelX, y - 26, 7, false, grayText);
+    draw(`Setor: ${r.setor ?? "—"}`, labelX, y - 36, 7, false, grayText);
+
+    y -= thumbH + 50;
+    evidenceCount++;
+
+    // Separator line
+    if (evidenceCount < rows.length) {
+      line(marginX, pageW - marginX, y, 0.3, borderColor);
+      y -= 12;
+    }
+  }
+
+  // Evidence page footer
+  y -= 8;
+  line(marginX, pageW - marginX, y, 0.5, brandRed);
+  y -= 12;
+  draw(`Total de evidências: ${evidenceCount} foto(s)`, marginX, y, 7, false, grayText);
   y -= 10;
   draw("CONFIDENCIAL — Uso interno da BA Elétrica", marginX, y, 7, true, brandRed);
 
@@ -274,7 +396,7 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
           <tr><td style="font-size:13px;color:#0B1120;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Anexos do E-mail</td></tr>
           <tr><td style="font-size:12px;color:#64748B;padding:6px 0 0 0;font-family:Arial,Helvetica,sans-serif">
-            Relatorio_Ronda_BA_Eletrica.pdf — Folha oficial com horários de cada registro<br>
+            Relatorio_Ronda_BA_Eletrica.pdf — Folha oficial com horários e fotos de cada registro<br>
             Auditoria_Dados_Brutos.xlsx — Dados detalhados de cada registro
           </td></tr>
           </table>
@@ -318,7 +440,6 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
   const seen = new Set<string>();
   const recipients: string[] = [];
 
-  // Buscar TODOS os usuários com email corporativo (admin e user)
   const { data: allProfiles } = await admin.from("profiles").select("id,nome,email,setor_id");
   console.log("Total profiles:", allProfiles?.length ?? 0);
 
@@ -336,7 +457,6 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
     }
   }
 
-  // Sempre incluir suporte04@baeletrica.com.br
   const suporte = normalizeEmail("suporte04@baeletrica.com.br");
   if (suporte && !seen.has(suporte)) {
     seen.add(suporte);
@@ -390,13 +510,31 @@ Deno.serve(async (req) => {
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
     console.log("Rows:", rows.length);
 
+    // Fetch photos for PDF evidence (parallel, with timeout)
+    const photoResults = await Promise.allSettled(
+      rows.map(async (r: any) => {
+        const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
+        return { id: r.id, photoBase64: b64 };
+      })
+    );
+    const photoMap = new Map<string, string | null>();
+    for (const pr of photoResults) {
+      if (pr.status === "fulfilled") {
+        photoMap.set(pr.value.id, pr.value.photoBase64);
+      }
+    }
+    // Attach photos to rows
+    for (const r of rows) {
+      r._photoBase64 = photoMap.get(r.id) ?? null;
+    }
+
     const recipients = await fetchRecipientEmails(admin);
     if (!recipients.length) {
       return new Response(JSON.stringify({ ok: false, message: "Nenhum destinatário.", recipients: [], count: rows.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
-    const [xlsxBytes, pdfBytes] = await Promise.all([buildXlsx(rows), buildPdf(rows, periodo)]);
+    const [xlsxBytes, pdfBytes] = await Promise.all([buildXlsx(rows), buildPdf(rows, periodo, SUPABASE_URL, SERVICE_KEY)]);
     const ciclos = rows.filter((r: any) => r.tipo_acao === "check_out_2").length;
     const ag = new Set(rows.map((r: any) => r.user_id)).size;
     const html = buildEmailHtml(periodo, rows.length, ciclos, ag);

@@ -130,7 +130,7 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
 
   // ── Header: Logo top-left, company name top-right ──
   try {
-    const logoRes = await fetch("https://controle-ronda.vercel.app/logo.png");
+    const logoRes = await fetch("https://controle-ronda.suporte04.workers.dev/logo.png");
     if (logoRes.ok) {
       const logoBytes = new Uint8Array(await logoRes.arrayBuffer());
       const logoImg = await pdf.embedPng(logoBytes);

@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import * as XLSX from "xlsx";
-import { Loader2, Search, Download, Printer, FileText, X, Send, Copy, Terminal } from "lucide-react";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { Loader2, Search, Download, Printer, FileText, X, Send, Copy, Terminal, ImageOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -404,19 +405,19 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
   const [ciclo, setCiclo] = useState<Row[]>([]);
   const [signed, setSigned] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(false);
+  const [photoErrors, setPhotoErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!row) { setCiclo([]); setSigned(new Map()); return; }
+    if (!row) { setCiclo([]); setSigned(new Map()); setPhotoErrors(new Set()); return; }
     setLoading(true);
-    // Reconstrói o ciclo cronológico do usuário até o registro clicado
+    setPhotoErrors(new Set());
     const userRows = todos
       .filter((r) => r.user_id === row.user_id)
-      .slice() // copy
+      .slice()
       .sort((a, b) => new Date(a.horario_acao).getTime() - new Date(b.horario_acao).getTime());
     const idxClicked = userRows.findIndex((r) => r.id === row.id);
     if (idxClicked < 0) { setCiclo([row]); setLoading(false); return; }
 
-    // Encontra início do ciclo: o último check_in antes/no clicado, depois do último check_out_2 anterior
     let inicio = idxClicked;
     for (let i = idxClicked; i >= 0; i--) {
       if (userRows[i].tipo_acao === "check_in") { inicio = i; break; }
@@ -427,23 +428,176 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
 
     (async () => {
       const map = new Map<string, string>();
+      const errors = new Set<string>();
       await Promise.all(cicloRows.map(async (r) => {
-        const u = await getSignedFotoUrl(r.foto_url, 600);
-        if (u) map.set(r.id, u);
+        try {
+          const u = await getSignedFotoUrl(r.foto_url, 3600);
+          if (u) {
+            map.set(r.id, u);
+          } else {
+            errors.add(r.id);
+          }
+        } catch {
+          errors.add(r.id);
+        }
       }));
       setSigned(map);
+      setPhotoErrors(errors);
       setLoading(false);
     })();
   }, [row, todos]);
 
-  const guardarPdf = () => {
-    document.body.classList.add("printing-modal");
-    const cleanup = () => {
-      document.body.classList.remove("printing-modal");
-      window.removeEventListener("afterprint", cleanup);
-    };
-    window.addEventListener("afterprint", cleanup);
-    setTimeout(() => window.print(), 50);
+  const handlePhotoError = useCallback((id: string) => {
+    setPhotoErrors(prev => new Set(prev).add(id));
+  }, []);
+
+  const gerarPdfIsolado = async () => {
+    if (!row) return;
+    const id = toast.loading("Gerando PDF...");
+    try {
+      const pdf = await PDFDocument.create();
+      const font = await pdf.embedFont(StandardFonts.Helvetica);
+      const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
+      const pageW = 595;
+      const pageH = 842;
+      const marginX = 40;
+      const brandRed = rgb(0.85, 0.15, 0.15);
+      const darkText = rgb(0.04, 0.07, 0.14);
+      const grayText = rgb(0.5, 0.5, 0.5);
+      const borderColor = rgb(0.88, 0.88, 0.88);
+
+      const page = pdf.addPage([pageW, pageH]);
+      let y = pageH - 40;
+
+      const draw = (txt: string, xPos: number, yPos: number, size: number, bold = false, color = darkText) => {
+        page.drawText(txt, { x: xPos, y: yPos, size, font: bold ? fontB : font, color });
+      };
+      const lineH = (x1: number, x2: number, yPos: number, thickness = 0.5, color = borderColor) => {
+        page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness, color });
+      };
+
+      // Logo
+      try {
+        const logoRes = await fetch("/logo.png");
+        if (logoRes.ok) {
+          const logoBytes = new Uint8Array(await logoRes.arrayBuffer());
+          const logoImg = await pdf.embedPng(logoBytes);
+          const logoW = 50;
+          const logoH = (logoImg.height / logoImg.width) * logoW;
+          page.drawImage(logoImg, { x: marginX, y: y - logoH + 2, width: logoW, height: logoH });
+        }
+      } catch (_) {}
+
+      // Header
+      draw("BA Elétrica — Controle de Ronda", marginX + 65, y - 4, 14, true, darkText);
+      draw("Documento de auditoria", marginX + 65, y - 18, 9, false, grayText);
+      y -= 36;
+      lineH(marginX, pageW - marginX, y, 1.5, brandRed);
+      y -= 20;
+
+      // Info
+      draw("Funcionário", marginX, y, 8, true, grayText);
+      draw(row.nome, marginX, y - 12, 10, true, darkText);
+      draw("E-mail", marginX + 200, y, 8, true, grayText);
+      draw(row.email || "—", marginX + 200, y - 12, 9, false, darkText);
+      draw("Setor", marginX + 380, y, 8, true, grayText);
+      draw(row.setor ?? "—", marginX + 380, y - 12, 9, false, darkText);
+      y -= 28;
+      draw("Data do ciclo", marginX, y, 8, true, grayText);
+      draw(formatData(row.horario_acao), marginX, y - 12, 10, false, darkText);
+      y -= 28;
+      lineH(marginX, pageW - marginX, y, 0.5, borderColor);
+      y -= 20;
+
+      // Timeline
+      for (let idx = 0; idx < ciclo.length; idx++) {
+        const r = ciclo[idx];
+        if (y < 200) break;
+
+        // Timeline dot
+        page.drawCircle({
+          x: marginX + 4,
+          y: y - 2,
+          size: 4,
+          color: brandRed,
+        });
+
+        draw(`${idx + 1}. ${TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao}`, marginX + 16, y - 4, 10, true, darkText);
+        y -= 16;
+        draw(`Horário da captura: ${formatManaus(r.horario_acao)}`, marginX + 16, y, 8, false, grayText);
+        draw(`Horário de envio: ${formatManaus(r.horario_foto)}`, marginX + 280, y, 8, false, grayText);
+        y -= 16;
+
+        // Photo
+        const photoUrl = signed.get(r.id);
+        if (photoUrl && !photoErrors.has(r.id)) {
+          try {
+            const imgRes = await fetch(photoUrl);
+            if (imgRes.ok) {
+              const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
+              let img;
+              try {
+                img = await pdf.embedJpg(imgBytes);
+              } catch {
+                img = await pdf.embedPng(imgBytes);
+              }
+              const maxW = pageW - marginX * 2 - 16;
+              const maxH = 180;
+              const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+              const drawW = img.width * scale;
+              const drawH = img.height * scale;
+              page.drawImage(img, {
+                x: marginX + 16,
+                y: y - drawH,
+                width: drawW,
+                height: drawH,
+              });
+              y -= drawH + 12;
+            }
+          } catch {
+            draw("Foto: erro ao carregar", marginX + 16, y, 8, false, grayText);
+            y -= 14;
+          }
+        } else {
+          // Draw placeholder
+          page.drawRectangle({
+            x: marginX + 16,
+            y: y - 80,
+            width: 200,
+            height: 80,
+            borderColor: borderColor,
+            borderWidth: 0.5,
+          });
+          draw("Foto indisponível", marginX + 60, y - 38, 8, false, grayText);
+          y -= 92;
+        }
+
+        if (idx < ciclo.length - 1) {
+          lineH(marginX + 16, pageW - marginX, y, 0.3, borderColor);
+          y -= 12;
+        }
+      }
+
+      // Footer
+      y -= 16;
+      lineH(marginX, pageW - marginX, y, 0.5, brandRed);
+      y -= 12;
+      draw("CONFIDENCIAL — Uso interno da BA Elétrica", marginX, y, 7, true, brandRed);
+      y -= 10;
+      draw(`Gerado em ${formatManaus(new Date())} · Fuso America/Manaus`, marginX, y, 7, false, grayText);
+
+      const pdfBytes = await pdf.save();
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Relatorio_Ronda_${row.nome?.replace(/\s+/g, "_")}_${formatData(row.horario_acao).replace(/\//g, "-")}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF baixado com sucesso!", { id });
+    } catch (e: any) {
+      toast.error(`Erro ao gerar PDF: ${e?.message ?? "desconhecido"}`, { id });
+    }
   };
 
   if (!row) return null;
@@ -493,14 +647,21 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
                     <div className="tabular-nums">{formatManaus(r.horario_foto)}</div>
                   </div>
                 </div>
-                {signed.get(r.id) ? (
+                {signed.get(r.id) && !photoErrors.has(r.id) ? (
                   <img
                     src={signed.get(r.id)}
                     alt={`Foto ${TIPO_ACAO_LABEL[r.tipo_acao]}`}
                     className="mt-3 w-full max-w-sm rounded-lg border border-border object-cover"
+                    onError={() => handlePhotoError(r.id)}
+                    loading="lazy"
                   />
                 ) : (
-                  <div className="mt-3 w-full max-w-sm aspect-[4/3] rounded-lg border border-border bg-muted animate-pulse" />
+                  <div className="mt-3 w-full max-w-sm aspect-[4/3] rounded-lg border border-border bg-muted flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
+                      <ImageOff className="w-8 h-8 mx-auto mb-1 opacity-50" />
+                      <span className="text-xs">Foto indisponível</span>
+                    </div>
+                  </div>
                 )}
               </li>
             ))}
@@ -511,8 +672,8 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
           <p className="text-xs text-muted-foreground">Gerado em {formatManaus(new Date())} · Fuso America/Manaus</p>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Fechar</Button>
-            <Button onClick={guardarPdf}>
-              <Printer className="w-4 h-4 mr-2" /> Guardar como PDF
+            <Button onClick={gerarPdfIsolado}>
+              <Download className="w-4 h-4 mr-2" /> Baixar PDF
             </Button>
           </div>
         </footer>
