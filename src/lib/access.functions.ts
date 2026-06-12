@@ -28,7 +28,7 @@ async function ensureAccessForUser(userId: string, email: string, nome?: string 
 }
 
 export const bootstrapSupportAdmin = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string; password: string }) => input)
+  .validator((input: { email: string; password: string }) => input)
   .handler(async ({ data }) => {
     const email = normalizeSupportEmail(data.email);
     const supportPassword = process.env.SUPPORT_PASSWORD;
