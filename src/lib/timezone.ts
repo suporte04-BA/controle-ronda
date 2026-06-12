@@ -24,9 +24,9 @@ export function isSameDayManaus(a: Date | string, b: Date | string): boolean {
 }
 
 export const TIPO_ACAO_LABEL: Record<string, string> = {
-  check_in: "Check-in da Ronda",
-  check_out_1: "Check-out 1 da Ronda",
-  check_out_2: "Check-out 2 da Ronda",
+  check_in: "Início de Ronda",
+  check_out_1: "Meio de Ronda",
+  check_out_2: "Fim de Ronda",
 };
 
 export type TipoAcao = "check_in" | "check_out_1" | "check_out_2";

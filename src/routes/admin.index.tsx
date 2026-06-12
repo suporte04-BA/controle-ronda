@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { formatData, formatHora, TIPO_ACAO_LABEL } from "@/lib/timezone";
+import { useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
@@ -22,6 +23,7 @@ interface UltimoPonto {
 const PIE_COLORS = ["#00F0FF", "#7700EE", "#FF006E", "#00FF88", "#EEFF00", "#FF8C00", "#4ECDC4", "#A855F7"];
 
 function AdminDashboard() {
+  const { theme } = useTheme();
   const [finalizadas, setFinalizadas] = useState(0);
   const [abertas, setAbertas] = useState(0);
   const [agentes, setAgentes] = useState(0);
@@ -147,7 +149,7 @@ function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="card-neon p-5 lg:col-span-2 transition-all duration-300">
           <h2 className="text-sm font-semibold mb-1 text-foreground">Ranking de Vigilantes</h2>
-          <p className="text-xs text-muted-foreground mb-4">Rondas completas (ciclo até Check-out 2)</p>
+          <p className="text-xs text-muted-foreground mb-4">Rondas completas (ciclo até Fim de Ronda)</p>
           <div className="h-72">
             {ranking.length === 0 ? (
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -156,11 +158,14 @@ function AdminDashboard() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ranking} margin={{ top: 8, right: 8, left: 0, bottom: 36 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="nome" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11, fill: "#8B8BA3" }} stroke="rgba(255,255,255,0.1)" />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#8B8BA3" }} stroke="rgba(255,255,255,0.1)" />
-                  <Tooltip contentStyle={{ background: "#12122A", color: "#F0F0FF", border: "1px solid rgba(0,240,255,0.2)", borderRadius: 8, boxShadow: "0 0 15px rgba(0,240,255,0.1)" }} />
-                  <Bar dataKey="rondas" fill="#00F0FF" radius={[6, 6, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"} />
+                  <XAxis dataKey="nome" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11, fill: theme === "dark" ? "#8B8BA3" : "#64748B" }} stroke={theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: theme === "dark" ? "#8B8BA3" : "#64748B" }} stroke={theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"} />
+                  <Tooltip contentStyle={theme === "dark"
+                    ? { background: "#12122A", color: "#F0F0FF", border: "1px solid rgba(0,240,255,0.2)", borderRadius: 8, boxShadow: "0 0 15px rgba(0,240,255,0.1)" }
+                    : { background: "#FFFFFF", color: "#1E293B", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }
+                  } />
+                  <Bar dataKey="rondas" fill={theme === "dark" ? "#00F0FF" : "#0284C7"} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -183,8 +188,11 @@ function AdminDashboard() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ background: "#12122A", color: "#F0F0FF", border: "1px solid rgba(0,240,255,0.2)", borderRadius: 8, boxShadow: "0 0 15px rgba(0,240,255,0.1)" }} />
-                  <Legend wrapperStyle={{ fontSize: 11, color: "#8B8BA3" }} />
+                  <Tooltip contentStyle={theme === "dark"
+                    ? { background: "#12122A", color: "#F0F0FF", border: "1px solid rgba(0,240,255,0.2)", borderRadius: 8, boxShadow: "0 0 15px rgba(0,240,255,0.1)" }
+                    : { background: "#FFFFFF", color: "#1E293B", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }
+                  } />
+                  <Legend wrapperStyle={{ fontSize: 11, color: theme === "dark" ? "#8B8BA3" : "#64748B" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}

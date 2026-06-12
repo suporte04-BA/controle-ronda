@@ -20,9 +20,9 @@ const DASHBOARD_URL = "https://controle-ronda.suporte04.workers.dev";
 const RESEND_API_KEY_FALLBACK = Deno.env.get("RESEND_API_KEY") || "";
 
 const TIPO_LABEL: Record<string, string> = {
-  check_in: "Check-in da Ronda",
-  check_out_1: "Check-out 1 da Ronda",
-  check_out_2: "Check-out 2 da Ronda",
+  check_in: "Início de Ronda",
+  check_out_1: "Meio de Ronda",
+  check_out_2: "Fim de Ronda",
 };
 
 function toManaus(d: Date) { return new Date(d.getTime() + MANAUS_OFFSET_MS); }
@@ -102,10 +102,16 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
     }
     console.log("[photo] fetching path:", path);
 
-    // Try to get signed URL using service role key (bypasses RLS)
-    const signUrl = `${supabaseUrl}/storage/v1/object/sign/fotos_ponto/${path}?expiresIn=3600`;
+    // Get signed URL via POST (required by Supabase Storage)
+    const signUrl = `${supabaseUrl}/storage/v1/object/sign/fotos_ponto`;
     const signedRes = await fetch(signUrl, {
-      headers: { "Authorization": `Bearer ${serviceKey}` },
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        "apikey": serviceKey,
+      },
+      body: JSON.stringify({ path, expiresIn: 3600 }),
       signal: AbortSignal.timeout(10000),
     });
     if (!signedRes.ok) {
@@ -258,9 +264,9 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
   y -= 16;
 
   const statCards = [
-    { label: "CHECK-INS", value: String(checkIns), color: rgb(0.16, 0.63, 0.33) },
-    { label: "CHECK-OUTS 1", value: String(checkOuts1), color: rgb(0.20, 0.55, 0.85) },
-    { label: "CHECK-OUTS 2", value: String(checkOuts2), color: rgb(0.85, 0.55, 0.10) },
+    { label: "INÍCIOS", value: String(checkIns), color: rgb(0.16, 0.63, 0.33) },
+    { label: "MEIOS", value: String(checkOuts1), color: rgb(0.20, 0.55, 0.85) },
+    { label: "FIMES", value: String(checkOuts2), color: rgb(0.85, 0.55, 0.10) },
     { label: "COLABORADORES", value: String(uniqueUsers), color: brandRed },
     { label: "SETORES", value: String(uniqueSetores), color: navyBlue },
   ];

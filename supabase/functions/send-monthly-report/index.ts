@@ -19,9 +19,9 @@ const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
 const DASHBOARD_URL = "https://controle-ronda.suporte04.workers.dev";
 
 const TIPO_LABEL: Record<string, string> = {
-  check_in: "Check-in da Ronda",
-  check_out_1: "Check-out 1 da Ronda",
-  check_out_2: "Check-out 2 da Ronda",
+  check_in: "Início de Ronda",
+  check_out_1: "Meio de Ronda",
+  check_out_2: "Fim de Ronda",
 };
 
 function toManaus(d: Date) { return new Date(d.getTime() + MANAUS_OFFSET_MS); }
@@ -85,9 +85,15 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
     if (!path) return null;
     console.log("[photo] monthly fetching path:", path);
 
-    const signUrl = `${supabaseUrl}/storage/v1/object/sign/fotos_ponto/${path}?expiresIn=3600`;
+    const signUrl = `${supabaseUrl}/storage/v1/object/sign/fotos_ponto`;
     const signedRes = await fetch(signUrl, {
-      headers: { "Authorization": `Bearer ${serviceKey}` },
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        "apikey": serviceKey,
+      },
+      body: JSON.stringify({ path, expiresIn: 3600 }),
       signal: AbortSignal.timeout(10000),
     });
     if (!signedRes.ok) {
@@ -241,9 +247,9 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
 
   const statCards = [
     { label: "TOTAL", value: String(stats.total), color: brandRed },
-    { label: "CHECK-INS", value: String(stats.checkIns), color: rgb(0.16, 0.63, 0.33) },
-    { label: "CHECK-OUTS 1", value: String(stats.checkOuts1), color: rgb(0.20, 0.55, 0.85) },
-    { label: "CHECK-OUTS 2", value: String(stats.checkOuts2), color: rgb(0.85, 0.55, 0.10) },
+    { label: "INÍCIOS", value: String(stats.checkIns), color: rgb(0.16, 0.63, 0.33) },
+    { label: "MEIOS", value: String(stats.checkOuts1), color: rgb(0.20, 0.55, 0.85) },
+    { label: "FIMES", value: String(stats.checkOuts2), color: rgb(0.85, 0.55, 0.10) },
     { label: "COLABORADORES", value: String(stats.uniqueUsers), color: navyBlue },
     { label: "SETORES", value: String(stats.uniqueSetores), color: darkRed },
     { label: "CICLOS", value: String(stats.ciclos), color: rgb(0.45, 0.20, 0.65) },

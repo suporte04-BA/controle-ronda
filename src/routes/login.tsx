@@ -69,11 +69,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background: "radial-gradient(ellipse at 30% 20%, rgba(0,240,255,0.08) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(119,0,238,0.06) 0%, transparent 50%), #080810",
-      }}
-    >
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
       {/* Neon glow orbs */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-neon-cyan/5 blur-3xl animate-glow-breathe pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-neon-violet/5 blur-3xl animate-glow-breathe pointer-events-none" style={{ animationDelay: "1.5s" }} />
