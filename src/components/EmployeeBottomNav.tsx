@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Clock, History, User } from "lucide-react";
+import { Clock, History, User, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/theme";
 
 const items = [
   { to: "/app", label: "Bater Ponto", icon: Clock },
@@ -10,9 +11,12 @@ const items = [
 
 export function EmployeeBottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { theme, toggle } = useTheme();
+  const isDark = theme === "dark";
+
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 glass-strong border-t border-border-subtle no-print">
-      <ul className="grid grid-cols-3 max-w-md mx-auto">
+      <ul className="grid grid-cols-4 max-w-md mx-auto">
         {items.map((it) => {
           const active = path === it.to;
           const Icon = it.icon;
@@ -34,6 +38,22 @@ export function EmployeeBottomNav() {
             </li>
           );
         })}
+        <li>
+          <button
+            onClick={toggle}
+            className={cn(
+              "flex flex-col items-center justify-center py-3 gap-1 text-xs transition-all duration-200 w-full",
+              "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {isDark ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+            <span className="font-medium">{isDark ? "Claro" : "Escuro"}</span>
+          </button>
+        </li>
       </ul>
     </nav>
   );

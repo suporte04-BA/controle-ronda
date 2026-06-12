@@ -15,11 +15,11 @@ export function ThemeToggle({ className, size = "md" }: ThemeToggleProps) {
     <button
       onClick={toggle}
       className={cn(
-        "flex items-center gap-2 rounded-lg transition-all duration-200",
+        "flex items-center gap-2 rounded-lg transition-all duration-200 border",
         size === "sm" ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm",
         isDark
-          ? "text-muted-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/40"
-          : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+          ? "text-neon-cyan border-neon-cyan/20 bg-neon-cyan/5 hover:bg-neon-cyan/10 hover:border-neon-cyan/40"
+          : "text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40",
         className
       )}
       title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
@@ -27,12 +27,12 @@ export function ThemeToggle({ className, size = "md" }: ThemeToggleProps) {
       {isDark ? (
         <>
           <Sun className={cn("transition-transform", size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4")} />
-          <span className="hidden sm:inline">Claro</span>
+          <span>Modo Claro</span>
         </>
       ) : (
         <>
           <Moon className={cn("transition-transform", size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4")} />
-          <span className="hidden sm:inline">Escuro</span>
+          <span>Modo Escuro</span>
         </>
       )}
     </button>
