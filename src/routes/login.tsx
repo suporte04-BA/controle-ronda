@@ -8,8 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useServerFn } from "@tanstack/react-start";
-import { bootstrapSupportAdmin } from "@/lib/access.functions";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — BA Elétrica" }] }),
@@ -19,7 +17,6 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { session, role, loading } = useAuth();
   const navigate = useNavigate();
-  const bootstrapAdmin = useServerFn(bootstrapSupportAdmin);
 
   useEffect(() => {
     if (loading) return;
@@ -36,7 +33,6 @@ function LoginPage() {
     setBusy(true);
     const emailLimpo = email.trim().toLowerCase().replace(/,$/, "");
     try {
-      await bootstrapAdmin({ data: { email: emailLimpo, password: senha } });
       const { error } = await supabase.auth.signInWithPassword({ email: emailLimpo, password: senha });
       if (error) toast.error("Falha no login", { description: error.message });
       else toast.success("Bem-vindo de volta!");
@@ -62,7 +58,7 @@ function LoginPage() {
         },
       });
       if (error) toast.error("Falha no cadastro", { description: error.message });
-      else toast.success("Cadastro realizado! Verifique seu e-mail para confirmar o acesso.");
+      else toast.success("Cadastro realizado! Faça login para acessar.");
     } catch (error) {
       toast.error("Erro de conexão", {
         description: "Não foi possível conectar ao backend agora. Verifique a internet e tente novamente.",
@@ -73,58 +69,79 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-primary/10 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <img src="/logo.png" className="h-12 object-contain mx-auto mb-3" alt="BA Elétrica" />
-          <h1 className="text-2xl font-bold text-primary">BA Elétrica - Controle de Ronda</h1>
-          <p className="text-sm text-muted-foreground">Acesso seguro para vigilantes e administração</p>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        background: "radial-gradient(ellipse at 30% 20%, rgba(0,240,255,0.08) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(119,0,238,0.06) 0%, transparent 50%), #080810",
+      }}
+    >
+      {/* Neon glow orbs */}
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-neon-cyan/5 blur-3xl animate-glow-breathe pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-neon-violet/5 blur-3xl animate-glow-breathe pointer-events-none" style={{ animationDelay: "1.5s" }} />
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="text-center mb-8">
+          <div className="relative inline-block mb-4">
+            <img src="/logo.png" className="h-14 object-contain mx-auto drop-shadow-[0_0_20px_rgba(0,240,255,0.3)]" alt="BA Elétrica" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            BA Elétrica
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Controle de Ronda</p>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+        <div className="glass-strong rounded-2xl p-6 glow-cyan">
           <Tabs defaultValue="entrar">
-            <TabsList className="grid grid-cols-2 mb-4 w-full">
-              <TabsTrigger value="entrar">Entrar</TabsTrigger>
-              <TabsTrigger value="cadastrar">Cadastrar</TabsTrigger>
+            <TabsList className="grid grid-cols-2 mb-5 w-full bg-secondary/50">
+              <TabsTrigger value="entrar" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-[0_0_10px_rgba(0,240,255,0.15)]">Entrar</TabsTrigger>
+              <TabsTrigger value="cadastrar" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-[0_0_10px_rgba(0,240,255,0.15)]">Cadastrar</TabsTrigger>
             </TabsList>
 
             <TabsContent value="entrar">
-              <form onSubmit={entrar} className="space-y-3">
+              <form onSubmit={entrar} className="space-y-3.5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Label htmlFor="email" className="text-muted-foreground text-xs uppercase tracking-wider">E-mail</Label>
+                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="senha">Senha</Label>
-                  <Input id="senha" type="password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
+                  <Label htmlFor="senha" className="text-muted-foreground text-xs uppercase tracking-wider">Senha</Label>
+                  <Input id="senha" type="password" required value={senha} onChange={(e) => setSenha(e.target.value)}
+                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all duration-200" disabled={busy}>
                   {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Entrar"}
                 </Button>
               </form>
             </TabsContent>
 
             <TabsContent value="cadastrar">
-              <form onSubmit={cadastrar} className="space-y-3">
+              <form onSubmit={cadastrar} className="space-y-3.5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="nome">Nome completo</Label>
-                  <Input id="nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
+                  <Label htmlFor="nome" className="text-muted-foreground text-xs uppercase tracking-wider">Nome completo</Label>
+                  <Input id="nome" required value={nome} onChange={(e) => setNome(e.target.value)}
+                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="email2">E-mail</Label>
-                  <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Label htmlFor="email2" className="text-muted-foreground text-xs uppercase tracking-wider">E-mail</Label>
+                  <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="senha2">Senha</Label>
-                  <Input id="senha2" type="password" required minLength={6} value={senha} onChange={(e) => setSenha(e.target.value)} />
+                  <Label htmlFor="senha2" className="text-muted-foreground text-xs uppercase tracking-wider">Senha</Label>
+                  <Input id="senha2" type="password" required minLength={6} value={senha} onChange={(e) => setSenha(e.target.value)}
+                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all duration-200" disabled={busy}>
                   {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar conta"}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
         </div>
+
+        <p className="text-center text-[11px] text-muted-foreground/50 mt-6">
+          Sistema de Controle de Ronda — BA Elétrica
+        </p>
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ interface UltimoPonto {
   tipo: string;
 }
 
-const PIE_COLORS = ["#0B1120", "#1e3a8a", "#3b82f6", "#60a5fa", "#93c5fd", "#dc2626", "#f59e0b", "#10b981"];
+const PIE_COLORS = ["#00F0FF", "#7700EE", "#FF006E", "#00FF88", "#EEFF00", "#FF8C00", "#4ECDC4", "#A855F7"];
 
 function AdminDashboard() {
   const [finalizadas, setFinalizadas] = useState(0);
@@ -122,7 +122,7 @@ function AdminDashboard() {
   return (
     <div className="p-8 space-y-6">
       <header>
-        <h1 className="text-2xl font-bold">Dashboard de Rondas</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard de Rondas</h1>
         <p className="text-sm text-muted-foreground">Monitoramento em tempo real ({formatData(new Date())})</p>
       </header>
 
@@ -130,14 +130,14 @@ function AdminDashboard() {
         {cards.map((c) => {
           const Icon = c.icon;
           return (
-            <div key={c.label} className="bg-card border border-border rounded-xl p-5 shadow-sm">
-              <div className={`w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3 ${c.color}`}>
+            <div key={c.label} className="card-neon p-5 transition-all duration-300">
+              <div className={`w-10 h-10 rounded-lg bg-secondary/80 flex items-center justify-center mb-3 ${c.color}`}>
                 <Icon className="w-5 h-5" />
               </div>
-              <div className="text-2xl font-bold tabular-nums">{c.value}</div>
-              <div className="text-sm text-muted-foreground">{c.label}</div>
+              <div className="text-2xl font-bold tabular-nums text-foreground">{c.value}</div>
+              <div className="text-sm text-muted-foreground mt-0.5">{c.label}</div>
               {"sub" in c && c.sub && (
-                <div className="text-xs text-muted-foreground/80 mt-1 truncate">{c.sub}</div>
+                <div className="text-xs text-muted-foreground/60 mt-1 truncate">{c.sub}</div>
               )}
             </div>
           );
@@ -145,8 +145,8 @@ function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm lg:col-span-2">
-          <h2 className="text-sm font-semibold mb-1">Ranking de Vigilantes</h2>
+        <div className="card-neon p-5 lg:col-span-2 transition-all duration-300">
+          <h2 className="text-sm font-semibold mb-1 text-foreground">Ranking de Vigilantes</h2>
           <p className="text-xs text-muted-foreground mb-4">Rondas completas (ciclo até Check-out 2)</p>
           <div className="h-72">
             {ranking.length === 0 ? (
@@ -156,19 +156,19 @@ function AdminDashboard() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ranking} margin={{ top: 8, right: 8, left: 0, bottom: 36 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground) / 0.2)" />
-                  <XAxis dataKey="nome" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11, fill: "currentColor" }} stroke="currentColor" className="text-foreground/70" />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "currentColor" }} stroke="currentColor" className="text-foreground/70" />
-                  <Tooltip contentStyle={{ background: "var(--card)", color: "var(--card-foreground)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                  <Bar dataKey="rondas" fill="currentColor" className="text-primary" radius={[6, 6, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="nome" angle={-25} textAnchor="end" interval={0} height={60} tick={{ fontSize: 11, fill: "#8B8BA3" }} stroke="rgba(255,255,255,0.1)" />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#8B8BA3" }} stroke="rgba(255,255,255,0.1)" />
+                  <Tooltip contentStyle={{ background: "#12122A", color: "#F0F0FF", border: "1px solid rgba(0,240,255,0.2)", borderRadius: 8, boxShadow: "0 0 15px rgba(0,240,255,0.1)" }} />
+                  <Bar dataKey="rondas" fill="#00F0FF" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-          <h2 className="text-sm font-semibold mb-1">Distribuição por Setor</h2>
+        <div className="card-neon p-5 transition-all duration-300">
+          <h2 className="text-sm font-semibold mb-1 text-foreground">Distribuição por Setor</h2>
           <p className="text-xs text-muted-foreground mb-4">Rondas concluídas por setor</p>
           <div className="h-72">
             {porSetor.length === 0 ? (
@@ -183,9 +183,8 @@ function AdminDashboard() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ background: "var(--card)", color: "var(--card-foreground)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                  <Legend wrapperStyle={{ fontSize: 11, color: "currentColor" }} />
-
+                  <Tooltip contentStyle={{ background: "#12122A", color: "#F0F0FF", border: "1px solid rgba(0,240,255,0.2)", borderRadius: 8, boxShadow: "0 0 15px rgba(0,240,255,0.1)" }} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: "#8B8BA3" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}

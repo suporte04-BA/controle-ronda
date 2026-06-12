@@ -23,15 +23,17 @@ export function AdminSidebar() {
   return (
     <aside className="no-print w-72 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col h-screen sticky top-0">
       <div className="px-5 pt-6 pb-4 border-b border-sidebar-border flex flex-col items-center gap-2 bg-transparent">
-        <img
-          src="/logo.png"
-          alt="BA Elétrica"
-          className="h-28 w-auto object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.45)]"
-          style={{ background: "transparent" }}
-        />
+        <div className="relative">
+          <img
+            src="/logo.png"
+            alt="BA Elétrica"
+            className="h-28 w-auto object-contain drop-shadow-[0_0_24px_rgba(0,240,255,0.25)]"
+            style={{ background: "transparent" }}
+          />
+        </div>
         <div className="text-center">
           <div className="text-base font-semibold text-white tracking-wide">BA Elétrica</div>
-          <div className="text-xs text-sidebar-foreground/70">Controle de Ronda</div>
+          <div className="text-xs text-sidebar-foreground/50">Controle de Ronda</div>
         </div>
       </div>
 
@@ -44,14 +46,15 @@ export function AdminSidebar() {
               key={it.to}
               to={it.to}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-colors",
+                "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[0_0_12px_rgba(0,240,255,0.12)]"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Icon className="w-5 h-5" />
+              <Icon className={cn("w-5 h-5", active && "text-neon-cyan")} />
               <span>{it.label}</span>
+              {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-neon-cyan shadow-[0_0_6px_rgba(0,240,255,0.6)]" />}
             </Link>
           );
         })}
@@ -60,12 +63,12 @@ export function AdminSidebar() {
       <div className="px-3 py-4 border-t border-sidebar-border">
         <div className="px-3 mb-2">
           <div className="text-sm text-white font-medium truncate">{profile?.nome ?? "Admin"}</div>
-          <div className="text-[11px] text-sidebar-foreground/60 truncate">{profile?.email}</div>
+          <div className="text-[11px] text-sidebar-foreground/40 truncate">{profile?.email}</div>
         </div>
         {canToggleView && (
           <button
             onClick={() => setDevViewRole(currentView === "admin" ? "user" : "admin")}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors mb-1"
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground transition-colors mb-1"
           >
             <UserRoundCog className="w-4 h-4" />
             {currentView === "admin" ? "Alternar para Visão Vigilante" : "Alternar para Visão Administrador"}
@@ -73,7 +76,7 @@ export function AdminSidebar() {
         )}
         <button
           onClick={signOut}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Sair

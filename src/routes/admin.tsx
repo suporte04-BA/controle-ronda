@@ -20,14 +20,16 @@ function AdminLayout() {
 
   if (loading || !session || role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#080810" }}>
+        <Loader2 className="w-8 h-8 animate-spin text-neon-cyan" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex" style={{
+      background: "radial-gradient(ellipse at 80% 20%, rgba(0,240,255,0.03) 0%, transparent 40%), #080810",
+    }}>
       <AdminSidebar />
       <main className="flex-1 overflow-x-auto">
         <Outlet />

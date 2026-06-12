@@ -82,7 +82,7 @@ function BaterPonto() {
   return (
     <div className="px-4 py-6 space-y-6">
       <header className="space-y-1">
-        <img src="/logo.png" className="h-12 object-contain mb-4" alt="BA Elétrica" />
+        <img src="/logo.png" className="h-12 object-contain mb-4 drop-shadow-[0_0_16px_rgba(0,240,255,0.2)]" alt="BA Elétrica" />
         <p className="text-sm text-muted-foreground capitalize">
           {now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
         </p>
@@ -92,9 +92,9 @@ function BaterPonto() {
         </div>
       </header>
 
-      <div className="bg-card border border-border rounded-3xl p-8 text-center shadow-sm">
-        <Clock className="w-6 h-6 mx-auto text-primary mb-2" />
-        <div className="text-5xl font-bold tabular-nums tracking-tight">{formatHora(new Date())}</div>
+      <div className="card-neon p-8 text-center glow-cyan animate-neon-pulse">
+        <Clock className="w-6 h-6 mx-auto text-neon-cyan mb-2" />
+        <div className="text-5xl font-bold tabular-nums tracking-tight text-foreground text-glow-cyan">{formatHora(new Date())}</div>
         <div className="text-sm text-muted-foreground mt-2">{formatData(new Date())}</div>
       </div>
 
@@ -106,8 +106,10 @@ function BaterPonto() {
             return (
               <div
                 key={t}
-                className={`rounded-xl p-3 text-center border ${
-                  doneCurrent ? "bg-success/10 border-success/30 text-success" : "bg-muted border-border text-muted-foreground"
+                className={`rounded-xl p-3 text-center border transition-all duration-300 ${
+                  doneCurrent
+                    ? "bg-success/10 border-success/30 text-success shadow-[0_0_12px_rgba(0,255,136,0.15)]"
+                    : "bg-secondary/50 border-white/5 text-muted-foreground"
                 }`}
               >
                 {doneCurrent && <CheckCircle2 className="w-4 h-4 mx-auto mb-1" />}
@@ -119,15 +121,15 @@ function BaterPonto() {
       </div>
 
       {proxima ? (
-        <Button onClick={() => setCamOpen(true)} size="lg" className="w-full h-16 text-base rounded-2xl">
+        <Button onClick={() => setCamOpen(true)} size="lg" className="w-full h-16 text-base rounded-2xl bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_24px_rgba(0,240,255,0.35)] transition-all duration-200 animate-neon-pulse">
           <Camera className="w-5 h-5 mr-2" />
           Registrar {TIPO_ACAO_LABEL[proxima]}
         </Button>
       ) : (
-        <div className="bg-success/10 border border-success/30 text-success rounded-2xl p-6 text-center">
-          <CheckCircle2 className="w-10 h-10 mx-auto mb-2" />
-          <p className="font-semibold">Todos os registros do dia concluídos!</p>
-          <p className="text-xs mt-1 text-success/80">Bom descanso. Volte amanhã.</p>
+        <div className="card-neon p-6 text-center glow-cyan">
+          <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-success" />
+          <p className="font-semibold text-foreground">Todos os registros do dia concluídos!</p>
+          <p className="text-xs mt-1 text-muted-foreground">Bom descanso. Volte amanhã.</p>
         </div>
       )}
 

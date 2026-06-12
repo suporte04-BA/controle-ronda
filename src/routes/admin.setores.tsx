@@ -41,27 +41,28 @@ function Setores() {
   return (
     <div className="p-8 space-y-6 max-w-2xl">
       <header>
-        <h1 className="text-2xl font-bold">Setores</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Setores</h1>
         <p className="text-sm text-muted-foreground">Organize os funcionários por área</p>
       </header>
 
       <form onSubmit={criar} className="flex gap-2">
-        <Input placeholder="Nome do setor" value={novo} onChange={(e) => setNovo(e.target.value)} />
-        <Button type="submit"><Plus className="w-4 h-4 mr-1" /> Criar</Button>
+        <Input placeholder="Nome do setor" value={novo} onChange={(e) => setNovo(e.target.value)}
+          className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20" />
+        <Button type="submit" className="bg-primary text-primary-foreground hover:shadow-[0_0_16px_rgba(0,240,255,0.25)]"><Plus className="w-4 h-4 mr-1" /> Criar</Button>
       </form>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="card-neon overflow-hidden">
         {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-neon-cyan" /></div>
         ) : items.length === 0 ? (
           <p className="py-10 text-center text-muted-foreground text-sm">Nenhum setor criado.</p>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-white/5">
             {items.map((s) => (
-              <li key={s.id} className="flex items-center justify-between px-4 py-3">
-                <span className="font-medium">{s.nome}</span>
-                <Button size="sm" variant="ghost" onClick={() => excluir(s.id)}>
-                  <Trash2 className="w-4 h-4 text-destructive" />
+              <li key={s.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors">
+                <span className="font-medium text-foreground">{s.nome}</span>
+                <Button size="sm" variant="ghost" onClick={() => excluir(s.id)} className="hover:bg-destructive/10 hover:text-destructive">
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </li>
             ))}

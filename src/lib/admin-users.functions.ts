@@ -15,7 +15,7 @@ async function assertAdmin(ctx: { supabase: any; userId: string }) {
 
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { nome: string; email: string; password: string; setor_id?: string | null; isAdmin?: boolean }) => d)
+  .inputValidator((d: { nome: string; email: string; password: string; setor_id?: string | null }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -41,9 +41,6 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       email,
       setor_id: data.setor_id ?? null,
     });
-    if (data.isAdmin) {
-      await supabaseAdmin.from("user_roles").upsert({ user_id: uid, role: "admin" });
-    }
     return { id: uid };
   });
 

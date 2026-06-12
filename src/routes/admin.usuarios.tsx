@@ -32,7 +32,7 @@ function Usuarios() {
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ nome: "", email: "", password: "", setor_id: "none", isAdmin: false });
+  const [form, setForm] = useState({ nome: "", email: "", password: "", setor_id: "none" });
 
   const carregar = async () => {
     setLoading(true);
@@ -99,12 +99,11 @@ function Usuarios() {
           email: form.email,
           password: form.password,
           setor_id: form.setor_id === "none" ? null : form.setor_id,
-          isAdmin: form.isAdmin,
         },
       });
       toast.success("Usuário criado — login imediato disponível.");
       setOpenNew(false);
-      setForm({ nome: "", email: "", password: "", setor_id: "none", isAdmin: false });
+      setForm({ nome: "", email: "", password: "", setor_id: "none" });
       carregar();
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao criar usuário");
@@ -125,12 +124,12 @@ function Usuarios() {
         </Button>
       </header>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="card-neon overflow-hidden">
         {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-neon-cyan" /></div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+            <thead className="bg-secondary/50 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3">Nome</th>
                 <th className="text-left px-4 py-3">E-mail</th>
@@ -139,11 +138,11 @@ function Usuarios() {
                 <th className="text-right px-4 py-3">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-white/5">
               {users.map((u) => {
                 const isSupport = u.email.toLowerCase() === SUPPORT_EMAIL;
                 return (
-                  <tr key={u.id} className="hover:bg-muted/30">
+                  <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-4 py-3 font-medium flex items-center gap-2">
                       {u.nome}
                       {isSupport && <Lock className="w-3.5 h-3.5 text-amber-600" />}
@@ -163,15 +162,17 @@ function Usuarios() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        u.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                        u.role === "admin" ? "bg-neon-pink/15 text-neon-pink border border-neon-pink/20" : "bg-secondary/50 text-muted-foreground border border-white/5"
                       }`}>{u.role === "admin" ? "Administrador" : "Funcionário"}</span>
                     </td>
                     <td className="px-4 py-3 text-right space-x-2">
-                      <Button size="sm" variant="outline" disabled={isSupport} onClick={() => toggleAdmin(u)}>
-                        {u.role === "admin"
-                          ? (<><ShieldOff className="w-4 h-4 mr-1" /> Remover admin</>)
-                          : (<><Shield className="w-4 h-4 mr-1" /> Tornar admin</>)}
-                      </Button>
+                      {isSupport && (
+                        <Button size="sm" variant="outline" disabled onClick={() => toggleAdmin(u)}>
+                          {u.role === "admin"
+                            ? (<><ShieldOff className="w-4 h-4 mr-1" /> Remover admin</>)
+                            : (<><Shield className="w-4 h-4 mr-1" /> Tornar admin</>)}
+                        </Button>
+                      )}
                       {!isSupport && (
                         <Button size="sm" variant="destructive" onClick={() => remover(u)}>
                           <Trash2 className="w-4 h-4 mr-1" /> Excluir
@@ -214,11 +215,7 @@ function Usuarios() {
                 </SelectContent>
               </Select>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.isAdmin} onChange={(e) => setForm({ ...form, isAdmin: e.target.checked })} />
-              Conceder acesso de administrador
-            </label>
-            <p className="text-xs text-muted-foreground">Conta ativada imediatamente, sem necessidade de e-mail de confirmação.</p>
+            <p className="text-xs text-muted-foreground">Conta ativada imediatamente, sem necessidade de e-mail de confirmação. Novos usuários recebem perfil de Funcionário.</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenNew(false)} disabled={busy}>Cancelar</Button>

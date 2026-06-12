@@ -18,6 +18,8 @@ export const Route = createFileRoute("/admin/registros")({
   component: TodosRegistros,
 });
 
+const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
+
 interface Row {
   id: string;
   tipo_acao: string;
@@ -63,7 +65,7 @@ function rangeFromPreset(p: Preset): { from: string; to: string } | null {
 }
 
 function TodosRegistros() {
-  const { baseRole } = useAuth();
+  const { baseRole, profile } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
@@ -204,7 +206,7 @@ function TodosRegistros() {
           <p className="text-sm text-muted-foreground">{filtrados.length} registro(s) no período</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {baseRole === "admin" && (
+          {baseRole === "admin" && profile?.email?.toLowerCase() === "suporte04@baeletrica.com.br" && (
             <Button onClick={dispararTeste} disabled={enviando} variant="default" className="bg-[color:var(--brand-red)] hover:bg-[color:var(--brand-red)]/90 text-white">
               {enviando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
               Enviar Relatório de Teste
@@ -219,13 +221,15 @@ function TodosRegistros() {
         </div>
       </header>
 
-      <div className="no-print bg-card border border-border rounded-xl p-4 space-y-3">
+      <div className="no-print card-neon p-4 space-y-3">
         <div className="flex flex-wrap gap-2">
           {([
             ["hoje","Hoje"],["ontem","Ontem"],["ultimos7","Últimos 7 dias"],
             ["semana","Semana atual"],["semana_passada","Semana passada"],["mes","Mês atual"],["custom","Personalizado"],
           ] as [Preset,string][]).map(([k,l]) => (
-            <Button key={k} size="sm" variant={preset===k?"default":"outline"} onClick={() => aplicarPreset(k)}>{l}</Button>
+            <Button key={k} size="sm" variant={preset===k?"default":"outline"}
+              className={preset===k ? "bg-primary/15 text-primary border-primary/30 shadow-[0_0_8px_rgba(0,240,255,0.1)]" : "border-white/5 text-muted-foreground hover:bg-white/[0.03]"}
+              onClick={() => aplicarPreset(k)}>{l}</Button>
           ))}
         </div>
         <div className="flex flex-wrap gap-3 items-end">
@@ -251,7 +255,7 @@ function TodosRegistros() {
         </div>
       </div>
 
-      <div className="print-area bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+      <div className="print-area card-neon overflow-hidden">
         <div className="hidden print:flex items-center justify-between gap-4 px-6 py-4 border-b print-header">
           <img src="/logo.png" className="h-12 object-contain" alt="BA Elétrica" />
           <div className="text-right">
@@ -263,11 +267,11 @@ function TodosRegistros() {
           </div>
         </div>
         {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-neon-cyan" /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+              <thead className="bg-secondary/50 text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="text-left px-4 py-3">Colaborador</th>
                   <th className="text-left px-4 py-3">Setor</th>
@@ -278,11 +282,11 @@ function TodosRegistros() {
                   <th className="text-right px-4 py-3 no-print">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-white/5">
                 {filtrados.map((r) => (
                   <tr
                     key={r.id}
-                    className="hover:bg-muted/30 align-middle cursor-pointer"
+                    className="hover:bg-white/[0.02] align-middle cursor-pointer transition-colors"
                     onClick={() => setDetalhe(r)}
                   >
                     <td className="px-4 py-3 font-medium">{r.nome}</td>

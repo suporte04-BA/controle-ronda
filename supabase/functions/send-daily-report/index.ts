@@ -86,26 +86,51 @@ async function buildXlsx(rows: any[]): Promise<Uint8Array> {
 
 async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceKey: string): Promise<string | null> {
   try {
-    if (!fotoUrl) return null;
+    if (!fotoUrl) {
+      console.log("[photo] fotoUrl is empty/null");
+      return null;
+    }
+
+    // Extract path: foto_url stores relative path like "uuid/timestamp.jpg"
+    // or full URL with /fotos_ponto/ marker
     const marker = "/fotos_ponto/";
     const idx = fotoUrl.indexOf(marker);
     const path = idx >= 0 ? fotoUrl.substring(idx + marker.length) : fotoUrl;
-    if (!path) return null;
+    if (!path) {
+      console.log("[photo] path extraction resulted in empty string from:", fotoUrl);
+      return null;
+    }
+    console.log("[photo] fetching path:", path);
 
-    const signedRes = await fetch(
-      `${supabaseUrl}/storage/v1/object/sign/fotos_ponto/${path}?expiresIn=3600`,
-      { headers: { "Authorization": `Bearer ${serviceKey}` } }
-    );
-    if (!signedRes.ok) return null;
+    // Try to get signed URL using service role key (bypasses RLS)
+    const signUrl = `${supabaseUrl}/storage/v1/object/sign/fotos_ponto/${path}?expiresIn=3600`;
+    const signedRes = await fetch(signUrl, {
+      headers: { "Authorization": `Bearer ${serviceKey}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!signedRes.ok) {
+      const errText = await signedRes.text().catch(() => "");
+      console.error("[photo] sign URL failed:", signedRes.status, errText, "path:", path);
+      return null;
+    }
     const signedData = await signedRes.json();
     const signedUrl = signedData.signedUrl;
-    if (!signedUrl) return null;
+    if (!signedUrl) {
+      console.error("[photo] signedUrl is null/empty in response:", JSON.stringify(signedData));
+      return null;
+    }
 
-    const imgRes = await fetch(signedUrl);
-    if (!imgRes.ok) return null;
+    // Download the actual image
+    const imgRes = await fetch(signedUrl, { signal: AbortSignal.timeout(15000) });
+    if (!imgRes.ok) {
+      console.error("[photo] image download failed:", imgRes.status, "signedUrl:", signedUrl);
+      return null;
+    }
     const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
+    console.log("[photo] success, bytes:", imgBytes.length, "path:", path);
     return toBase64(imgBytes);
-  } catch {
+  } catch (e) {
+    console.error("[photo] exception:", e);
     return null;
   }
 }
@@ -365,7 +390,17 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
       try {
         const imgBytes = Uint8Array.from(atob(photoB64), c => c.charCodeAt(0));
         let img;
-        try { img = await pdf.embedJpg(imgBytes); } catch { img = await pdf.embedPng(imgBytes); }
+        // Detect format from magic bytes and embed accordingly
+        const isJpeg = imgBytes[0] === 0xFF && imgBytes[1] === 0xD8;
+        const isPng = imgBytes[0] === 0x89 && imgBytes[1] === 0x50 && imgBytes[2] === 0x4E && imgBytes[3] === 0x47;
+        if (isJpeg) {
+          img = await pdf.embedJpg(imgBytes);
+        } else if (isPng) {
+          img = await pdf.embedPng(imgBytes);
+        } else {
+          // Fallback: try both
+          try { img = await pdf.embedJpg(imgBytes); } catch { img = await pdf.embedPng(imgBytes); }
+        }
         const scale = Math.min(thumbW / img.width, thumbH / img.height);
         const drawW = img.width * scale;
         const drawH = img.height * scale;
@@ -377,7 +412,8 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
           borderColor: borderColor, borderWidth: 0.5,
         });
         page.drawImage(img, { x: offsetX, y: offsetY, width: drawW, height: drawH });
-      } catch {
+      } catch (e) {
+        console.error("[pdf] failed to embed photo:", e);
         page.drawRectangle({
           x: marginX + 32, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
           borderColor: borderColor, borderWidth: 0.5, color: lightGray,

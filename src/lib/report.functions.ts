@@ -4,10 +4,18 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://rdmbayprbfqbj
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 
 const REPORT_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-daily-report`;
+const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 export async function sendTestReport() {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
+
+  if (!token) throw new Error("Sessão não encontrada. Faça login novamente.");
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user?.email?.toLowerCase() !== SUPPORT_EMAIL) {
+    throw new Error("Acesso negado: apenas a conta de suporte pode enviar relatórios de teste.");
+  }
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

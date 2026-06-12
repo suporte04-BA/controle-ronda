@@ -76,6 +76,42 @@ function toBase64(u8: Uint8Array): string {
   return btoa(bin);
 }
 
+async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceKey: string): Promise<string | null> {
+  try {
+    if (!fotoUrl) return null;
+    const marker = "/fotos_ponto/";
+    const idx = fotoUrl.indexOf(marker);
+    const path = idx >= 0 ? fotoUrl.substring(idx + marker.length) : fotoUrl;
+    if (!path) return null;
+    console.log("[photo] monthly fetching path:", path);
+
+    const signUrl = `${supabaseUrl}/storage/v1/object/sign/fotos_ponto/${path}?expiresIn=3600`;
+    const signedRes = await fetch(signUrl, {
+      headers: { "Authorization": `Bearer ${serviceKey}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!signedRes.ok) {
+      console.error("[photo] monthly sign URL failed:", signedRes.status, "path:", path);
+      return null;
+    }
+    const signedData = await signedRes.json();
+    const signedUrl = signedData.signedUrl;
+    if (!signedUrl) return null;
+
+    const imgRes = await fetch(signedUrl, { signal: AbortSignal.timeout(15000) });
+    if (!imgRes.ok) {
+      console.error("[photo] monthly image download failed:", imgRes.status);
+      return null;
+    }
+    const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
+    console.log("[photo] monthly success, bytes:", imgBytes.length);
+    return toBase64(imgBytes);
+  } catch (e) {
+    console.error("[photo] monthly exception:", e);
+    return null;
+  }
+}
+
 async function buildXlsx(rows: any[], monthName: string): Promise<Uint8Array> {
   const data = rows.map((r) => ({
     "Colaborador": r.nome,
@@ -281,6 +317,94 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
 
   drawPageFooter(pageNum);
 
+  // ═══ PHOTO EVIDENCE SECTION ═══
+  if (rows.some((r: any) => r._photoBase64)) {
+    page = pdf.addPage([pageW, pageH]);
+    pageNum++;
+    page.drawRectangle({ x: 0, y: pageH - 10, width: pageW, height: 10, color: brandRed });
+    y = pageH - 36;
+
+    draw("EVIDÊNCIA FOTOGRÁFICA — MENSAL", marginX, y, 14, true, brandRed);
+    y -= 14;
+    draw(`Período: ${periodo} — ${rows.length} registro(s)`, marginX, y, 8, false, grayText);
+    y -= 8;
+    lineH(marginX, pageW - marginX, y, 1.5, brandRed);
+    y -= 16;
+
+    const thumbW = 90;
+    const thumbH = 68;
+    let evidenceCount = 0;
+
+    for (const r of rows) {
+      if (!r._photoBase64) continue;
+      ensurePage(thumbH + 50, false);
+
+      const photoB64 = r._photoBase64;
+      const photoLabel = TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao;
+      const photoTime = fmtManaus(r.horario_foto);
+
+      const cardHeight = thumbH + 24;
+      page.drawRectangle({
+        x: marginX, y: y - cardHeight + 8, width: tableW, height: cardHeight,
+        borderColor: borderColor, borderWidth: 0.5, color: white,
+      });
+      const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33)
+        : r.tipo_acao === "check_out_1" ? rgb(0.20, 0.55, 0.85)
+        : rgb(0.85, 0.55, 0.10);
+      page.drawRectangle({ x: marginX, y: y - cardHeight + 8, width: 3, height: cardHeight, color: accentColor });
+
+      const badgeNum = String(evidenceCount + 1);
+      page.drawCircle({ x: marginX + 18, y: y - 2, size: 9, color: accentColor });
+      draw(badgeNum, marginX + (badgeNum.length === 1 ? 15.5 : 12), y - 5, 8, true, white);
+
+      try {
+        const imgBytes = Uint8Array.from(atob(photoB64), c => c.charCodeAt(0));
+        let img;
+        const isJpeg = imgBytes[0] === 0xFF && imgBytes[1] === 0xD8;
+        const isPng = imgBytes[0] === 0x89 && imgBytes[1] === 0x50 && imgBytes[2] === 0x4E && imgBytes[3] === 0x47;
+        if (isJpeg) {
+          img = await pdf.embedJpg(imgBytes);
+        } else if (isPng) {
+          img = await pdf.embedPng(imgBytes);
+        } else {
+          try { img = await pdf.embedJpg(imgBytes); } catch { img = await pdf.embedPng(imgBytes); }
+        }
+        const scale = Math.min(thumbW / img.width, thumbH / img.height);
+        const drawW = img.width * scale;
+        const drawH = img.height * scale;
+        const offsetX = marginX + 34 + (thumbW - drawW) / 2;
+        const offsetY = y - thumbH + (thumbH - drawH) / 2;
+        page.drawRectangle({
+          x: marginX + 32, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
+          borderColor: borderColor, borderWidth: 0.5,
+        });
+        page.drawImage(img, { x: offsetX, y: offsetY, width: drawW, height: drawH });
+      } catch {
+        page.drawRectangle({
+          x: marginX + 32, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
+          borderColor: borderColor, borderWidth: 0.5, color: lightGray,
+        });
+        draw("Foto indisponível", marginX + 55, y - thumbH / 2, 7, false, grayText);
+      }
+
+      const labelX = marginX + thumbW + 50;
+      draw(photoLabel, labelX, y - 4, 9, true, darkText);
+      draw(`Data: ${photoTime}`, labelX, y - 16, 7, false, grayText);
+      draw(`Colaborador: ${r.nome ?? "—"}`, labelX, y - 26, 7, false, grayText);
+      draw(`Setor: ${r.setor ?? "—"}`, labelX, y - 36, 7, false, grayText);
+
+      y -= cardHeight + 10;
+      evidenceCount++;
+
+      if (evidenceCount < rows.length) {
+        lineH(marginX, pageW - marginX, y, 0.3, borderColor);
+        y -= 8;
+      }
+    }
+
+    drawPageFooter(pageNum);
+  }
+
   return pdf.save();
 }
 
@@ -474,6 +598,24 @@ Deno.serve(async (req) => {
 
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
     console.log("Rows:", rows.length);
+
+    // Fetch photos for PDF evidence
+    const photoResults = await Promise.allSettled(
+      rows.map(async (r: any) => {
+        const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
+        return { id: r.id, photoBase64: b64 };
+      })
+    );
+    const photoMap = new Map<string, string | null>();
+    for (const pr of photoResults) {
+      if (pr.status === "fulfilled") {
+        photoMap.set(pr.value.id, pr.value.photoBase64);
+      }
+    }
+    for (const r of rows) {
+      r._photoBase64 = photoMap.get(r.id) ?? null;
+    }
+    console.log("Photos loaded:", Array.from(photoMap.values()).filter(Boolean).length, "of", rows.length);
 
     const recipients = await fetchRecipientEmails(admin);
     if (!recipients.length) {

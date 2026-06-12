@@ -31,14 +31,14 @@ function Perfil() {
 
   return (
     <div className="px-4 py-6 space-y-6">
-      <h1 className="text-xl font-bold">Perfil</h1>
+      <h1 className="text-xl font-bold text-foreground tracking-tight">Perfil</h1>
 
-      <div className="bg-card border border-border rounded-2xl p-6 text-center space-y-3">
-        <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+      <div className="card-neon p-6 text-center space-y-3">
+        <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto glow-cyan">
           <User className="w-10 h-10" />
         </div>
         <div>
-          <div className="font-semibold text-lg">{profile?.nome}</div>
+          <div className="font-semibold text-lg text-foreground">{profile?.nome}</div>
           <div className="text-sm text-muted-foreground">{profile?.email}</div>
           {setor && <div className="text-xs text-muted-foreground mt-1">Setor: {setor}</div>}
           <div className="text-xs text-muted-foreground mt-1">Perfil: {role === "admin" ? "Administrador" : "Vigilante"}</div>
@@ -46,13 +46,13 @@ function Perfil() {
       </div>
 
       {canToggleView && (
-        <Button onClick={alternarVisao} variant="ghost" className="w-full text-xs text-muted-foreground">
+        <Button onClick={alternarVisao} variant="ghost" className="w-full text-xs text-muted-foreground hover:bg-white/[0.03]">
           <Shield className="w-4 h-4 mr-2" />
           {currentView === "admin" ? "Alternar para Visão Vigilante" : "Alternar para Visão Administrador"}
         </Button>
       )}
 
-      <Button onClick={signOut} variant="outline" className="w-full">
+      <Button onClick={signOut} variant="outline" className="w-full border-white/5 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20">
         <LogOut className="w-4 h-4 mr-2" /> Sair
       </Button>
     </div>

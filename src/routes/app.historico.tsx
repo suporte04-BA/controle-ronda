@@ -53,27 +53,27 @@ function Historico() {
 
   return (
     <div className="px-4 py-6 space-y-4">
-      <h1 className="text-xl font-bold">Meu Histórico</h1>
+      <h1 className="text-xl font-bold text-foreground tracking-tight">Meu Histórico</h1>
 
       {loading ? (
-        <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-neon-cyan" /></div>
       ) : grupos.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-10">Nenhum registro ainda.</p>
       ) : (
         grupos.map(([data, regs]) => (
           <section key={data} className="space-y-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{data}</h2>
-            <div className="bg-card border border-border rounded-2xl divide-y divide-border overflow-hidden">
+            <div className="card-neon divide-y divide-white/5 overflow-hidden">
               {regs.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 p-3">
+                <div key={r.id} className="flex items-center gap-3 p-3 hover:bg-white/[0.02] transition-colors">
                   <img
                     src={signed.get(r.foto_url) ?? ""}
                     alt="foto"
-                    className="w-12 h-12 rounded-lg object-cover bg-muted flex-shrink-0"
+                    className="w-12 h-12 rounded-lg object-cover bg-secondary flex-shrink-0"
                     loading="lazy"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">{TIPO_ACAO_LABEL[r.tipo_acao]}</div>
+                    <div className="font-medium text-sm text-foreground">{TIPO_ACAO_LABEL[r.tipo_acao]}</div>
                     <div className="text-xs text-muted-foreground">
                       Ação: {formatHora(r.horario_acao)} · Foto: {formatHora(r.horario_foto)}
                     </div>
