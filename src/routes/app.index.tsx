@@ -109,7 +109,7 @@ function BaterPonto() {
                 className={`rounded-xl p-3 text-center border transition-all duration-300 ${
                   doneCurrent
                     ? "bg-success/10 border-success/30 text-success shadow-[0_0_12px_rgba(0,255,136,0.15)]"
-                    : "bg-secondary/50 border-white/5 text-muted-foreground"
+                    : "bg-secondary/50 border-border-subtle text-muted-foreground"
                 }`}
               >
                 {doneCurrent && <CheckCircle2 className="w-4 h-4 mx-auto mb-1" />}

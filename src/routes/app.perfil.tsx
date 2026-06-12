@@ -125,13 +125,13 @@ function Perfil() {
       <ThemeToggle className="w-full" />
 
       {canToggleView && (
-        <Button onClick={alternarVisao} variant="ghost" className="w-full text-xs text-muted-foreground hover:bg-white/[0.03]">
+        <Button onClick={alternarVisao} variant="ghost" className="w-full text-xs text-muted-foreground hover:bg-hover-subtle">
           <Shield className="w-4 h-4 mr-2" />
           {currentView === "admin" ? "Alternar para Visão Vigilante" : "Alternar para Visão Administrador"}
         </Button>
       )}
 
-      <Button onClick={signOut} variant="outline" className="w-full border-white/5 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20">
+      <Button onClick={signOut} variant="outline" className="w-full border-border-subtle hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20">
         <LogOut className="w-4 h-4 mr-2" /> Sair
       </Button>
     </div>

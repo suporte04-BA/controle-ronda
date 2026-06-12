@@ -125,11 +125,13 @@ function Usuarios() {
   const handleFormFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (formPreview) URL.revokeObjectURL(formPreview);
     setFormFile(file);
     setFormPreview(URL.createObjectURL(file));
   };
 
   const openEditPhoto = (userId: string, currentFotoUrl: string | null) => {
+    if (editingPreview) URL.revokeObjectURL(editingPreview);
     setEditingPhoto(userId);
     setEditingFile(null);
     setEditingPreview(null);
@@ -138,6 +140,7 @@ function Usuarios() {
   const handleEditFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (editingPreview) URL.revokeObjectURL(editingPreview);
     setEditingFile(file);
     setEditingPreview(URL.createObjectURL(file));
   };
@@ -212,11 +215,11 @@ function Usuarios() {
                   <th className="text-right px-4 py-3">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-subtle">
                 {users.map((u) => {
                   const isSupport = u.email.toLowerCase() === SUPPORT_EMAIL;
                   return (
-                    <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={u.id} className="hover:bg-hover-subtle transition-colors">
                       <td className="px-4 py-3 hidden sm:table-cell">
                         <div className="relative group cursor-pointer" onClick={() => openEditPhoto(u.id, u.foto_url)}>
                           {u.foto_url ? (
@@ -262,7 +265,7 @@ function Usuarios() {
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          u.role === "admin" ? "bg-neon-pink/15 text-neon-pink border border-neon-pink/20" : "bg-secondary/50 text-muted-foreground border border-white/5"
+                          u.role === "admin" ? "bg-neon-pink/15 text-neon-pink border border-neon-pink/20" : "bg-secondary/50 text-muted-foreground border border-border-subtle"
                         }`}>{u.role === "admin" ? "Administrador" : "Funcionário"}</span>
                       </td>
                       <td className="px-4 py-3 text-right space-x-2">
@@ -298,16 +301,16 @@ function Usuarios() {
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div>
-              <label className="text-xs text-muted-foreground">Nome</label>
-              <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+              <label htmlFor="new-nome" className="text-xs text-muted-foreground">Nome</label>
+              <Input id="new-nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">E-mail</label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <label htmlFor="new-email" className="text-xs text-muted-foreground">E-mail</label>
+              <Input id="new-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Senha (mín. 6)</label>
-              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              <label htmlFor="new-password" className="text-xs text-muted-foreground">Senha (mín. 6)</label>
+              <Input id="new-password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Setor</label>
@@ -342,7 +345,7 @@ function Usuarios() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!editingPhoto} onOpenChange={() => setEditingPhoto(null)}>
+      <Dialog open={!!editingPhoto} onOpenChange={() => { if (editingPreview) URL.revokeObjectURL(editingPreview); setEditingPhoto(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Editar foto do usuário</DialogTitle>
@@ -409,7 +412,7 @@ function AvatarThumb({ userId, fotoUrl, size = "md" }: { userId: string; fotoUrl
     <img
       src={signedUrl}
       alt="Avatar"
-      className={`${sizeClasses[size]} rounded-full object-cover border border-white/10`}
+      className={`${sizeClasses[size]} rounded-full object-cover border border-border-subtle`}
     />
   );
 }

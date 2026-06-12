@@ -63,9 +63,9 @@ function Historico() {
         grupos.map(([data, regs]) => (
           <section key={data} className="space-y-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{data}</h2>
-            <div className="card-neon divide-y divide-white/5 overflow-hidden">
+            <div className="card-neon divide-y divide-subtle overflow-hidden">
               {regs.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 p-3 hover:bg-white/[0.02] transition-colors">
+                <div key={r.id} className="flex items-center gap-3 p-3 hover:bg-hover-subtle transition-colors">
                   <img
                     src={signed.get(r.foto_url) ?? ""}
                     alt="foto"

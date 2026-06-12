@@ -228,7 +228,7 @@ function TodosRegistros() {
             ["semana","Semana atual"],["semana_passada","Semana passada"],["mes","Mês atual"],["custom","Personalizado"],
           ] as [Preset,string][]).map(([k,l]) => (
             <Button key={k} size="sm" variant={preset===k?"default":"outline"}
-              className={preset===k ? "bg-primary/15 text-primary border-primary/30 shadow-[0_0_8px_rgba(0,240,255,0.1)]" : "border-white/5 text-muted-foreground hover:bg-white/[0.03]"}
+              className={preset===k ? "bg-primary/15 text-primary border-primary/30 shadow-[0_0_8px_rgba(0,240,255,0.1)]" : "border-border-subtle text-muted-foreground hover:bg-hover-subtle"}
               onClick={() => aplicarPreset(k)}>{l}</Button>
           ))}
         </div>
@@ -282,11 +282,11 @@ function TodosRegistros() {
                   <th className="text-right px-4 py-3 no-print">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-subtle">
                 {filtrados.map((r) => (
                   <tr
                     key={r.id}
-                    className="hover:bg-white/[0.02] align-middle cursor-pointer transition-colors"
+                    className="hover:bg-hover-subtle align-middle cursor-pointer transition-colors"
                     onClick={() => setDetalhe(r)}
                   >
                     <td className="px-4 py-3 font-medium">{r.nome}</td>

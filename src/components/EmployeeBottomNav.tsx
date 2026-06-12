@@ -11,7 +11,7 @@ const items = [
 export function EmployeeBottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 glass-strong border-t border-white/5 no-print">
+    <nav className="fixed bottom-0 inset-x-0 z-40 glass-strong border-t border-border-subtle no-print">
       <ul className="grid grid-cols-3 max-w-md mx-auto">
         {items.map((it) => {
           const active = path === it.to;

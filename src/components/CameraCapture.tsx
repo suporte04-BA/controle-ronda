@@ -85,6 +85,7 @@ export function CameraCapture({ open, onCancel, onCapture, title }: Props) {
   };
 
   const refazer = () => {
+    if (preview) URL.revokeObjectURL(preview);
     setHorarioCapturaOriginal(null);
     setPreview(null);
     setPreviewBlob(null);
@@ -108,6 +109,7 @@ export function CameraCapture({ open, onCancel, onCapture, title }: Props) {
   };
 
   const fechar = () => {
+    if (preview) URL.revokeObjectURL(preview);
     stop();
     setPreview(null);
     setPreviewBlob(null);

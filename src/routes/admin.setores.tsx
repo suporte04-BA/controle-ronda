@@ -47,7 +47,7 @@ function Setores() {
 
       <form onSubmit={criar} className="flex gap-2">
         <Input placeholder="Nome do setor" value={novo} onChange={(e) => setNovo(e.target.value)}
-          className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20" />
+          className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20" />
         <Button type="submit" className="bg-primary text-primary-foreground hover:shadow-[0_0_16px_rgba(0,240,255,0.25)]"><Plus className="w-4 h-4 mr-1" /> Criar</Button>
       </form>
 
@@ -57,9 +57,9 @@ function Setores() {
         ) : items.length === 0 ? (
           <p className="py-10 text-center text-muted-foreground text-sm">Nenhum setor criado.</p>
         ) : (
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-subtle">
             {items.map((s) => (
-              <li key={s.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors">
+              <li key={s.id} className="flex items-center justify-between px-4 py-3 hover:bg-hover-subtle transition-colors">
                 <span className="font-medium text-foreground">{s.nome}</span>
                 <Button size="sm" variant="ghost" onClick={() => excluir(s.id)} className="hover:bg-destructive/10 hover:text-destructive">
                   <Trash2 className="w-4 h-4" />

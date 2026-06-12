@@ -77,7 +77,7 @@ export function AdminSidebar() {
       <div className="px-3 py-4 border-t border-sidebar-border">
         <div className="px-3 mb-2 flex items-center gap-3">
           {avatarUrl ? (
-            <img src={avatarUrl} alt="Avatar" className="w-9 h-9 rounded-full object-cover border border-white/10 flex-shrink-0" />
+            <img src={avatarUrl} alt="Avatar" className="w-9 h-9 rounded-full object-cover border border-border-subtle flex-shrink-0" />
           ) : (
             <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sidebar-foreground/60 flex-shrink-0">
               <Camera className="w-4 h-4" />

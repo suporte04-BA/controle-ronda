@@ -97,12 +97,12 @@ function LoginPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-muted-foreground text-xs uppercase tracking-wider">E-mail</Label>
                   <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="senha" className="text-muted-foreground text-xs uppercase tracking-wider">Senha</Label>
                   <Input id="senha" type="password" required value={senha} onChange={(e) => setSenha(e.target.value)}
-                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
                 <Button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all duration-200" disabled={busy}>
                   {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Entrar"}
@@ -115,17 +115,17 @@ function LoginPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="nome" className="text-muted-foreground text-xs uppercase tracking-wider">Nome completo</Label>
                   <Input id="nome" required value={nome} onChange={(e) => setNome(e.target.value)}
-                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="email2" className="text-muted-foreground text-xs uppercase tracking-wider">E-mail</Label>
                   <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="senha2" className="text-muted-foreground text-xs uppercase tracking-wider">Senha</Label>
                   <Input id="senha2" type="password" required minLength={6} value={senha} onChange={(e) => setSenha(e.target.value)}
-                    className="bg-secondary/50 border-white/5 focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
                 </div>
                 <Button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all duration-200" disabled={busy}>
                   {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar conta"}

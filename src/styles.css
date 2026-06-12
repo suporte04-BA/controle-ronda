@@ -42,6 +42,8 @@
   --color-neon-pink: var(--neon-pink);
   --color-neon-violet: var(--neon-violet);
   --color-neon-yellow: var(--neon-yellow);
+  --color-border-subtle: var(--border-subtle);
+  --color-hover-subtle: var(--hover-subtle);
 }
 
 :root {
@@ -82,6 +84,8 @@
   --neon-yellow: #CA8A04;
 
   --border: #CBD5E1;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --hover-subtle: rgba(0, 0, 0, 0.04);
   --input: #E2E8F0;
   --ring: #0284C7;
 
@@ -132,6 +136,8 @@
   --neon-yellow: #EEFF00;
 
   --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --hover-subtle: rgba(255, 255, 255, 0.03);
   --input: rgba(255, 255, 255, 0.1);
   --ring: #00F0FF;
 
@@ -147,6 +153,10 @@
 
 @layer base {
   * { border-color: var(--color-border); }
+
+  .divide-subtle > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--color-border-subtle);
+  }
 
   body {
     background-color: var(--color-background);

@@ -83,7 +83,6 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
     const idx = fotoUrl.indexOf(marker);
     const path = idx >= 0 ? fotoUrl.substring(idx + marker.length) : fotoUrl;
     if (!path) return null;
-    console.log("[photo] monthly fetching path:", path);
 
     const signUrl = `${supabaseUrl}/storage/v1/object/sign/fotos_ponto`;
     const signedRes = await fetch(signUrl, {
@@ -97,7 +96,7 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
       signal: AbortSignal.timeout(10000),
     });
     if (!signedRes.ok) {
-      console.error("[photo] monthly sign URL failed:", signedRes.status, "path:", path);
+      console.error("[photo] monthly sign failed:", signedRes.status);
       return null;
     }
     const signedData = await signedRes.json();
@@ -106,11 +105,10 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
 
     const imgRes = await fetch(signedUrl, { signal: AbortSignal.timeout(15000) });
     if (!imgRes.ok) {
-      console.error("[photo] monthly image download failed:", imgRes.status);
+      console.error("[photo] monthly download failed:", imgRes.status);
       return null;
     }
     const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
-    console.log("[photo] monthly success, bytes:", imgBytes.length);
     return toBase64(imgBytes);
   } catch (e) {
     console.error("[photo] monthly exception:", e);
@@ -535,34 +533,25 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
   const { data: sets } = await admin.from("setores").select("id,nome");
   const gestorSetores = (sets ?? []).filter((s: any) => s.nome?.toUpperCase().includes("GESTOR"));
   const gestorIds = new Set(gestorSetores.map((s: any) => s.id));
-  console.log("Setores GESTOR:", gestorSetores.map((s: any) => s.nome));
 
-  // Buscar profiles que são do setor GESTOR
   const { data: allProfiles } = await admin.from("profiles").select("id,nome,email,setor_id");
-  console.log("Total profiles:", allProfiles?.length ?? 0);
 
   if (allProfiles?.length) {
     for (const p of allProfiles) {
       const email = normalizeEmail(p.email);
       if (!email || !isCorporateEmail(email) || seen.has(email)) continue;
-      // Apenas setor GESTOR
       if (!p.setor_id || !gestorIds.has(p.setor_id)) continue;
       seen.add(email);
-      const setorNome = gestorSetores.find((s: any) => s.id === p.setor_id)?.nome ?? "—";
-      console.log(`Destinatário: ${p.nome} (${email}) - Setor: ${setorNome}`);
       recipients.push(email);
     }
   }
 
-  // Sempre incluir suporte04@baeletrica.com.br (admin)
   const suporte = normalizeEmail("suporte04@baeletrica.com.br");
   if (suporte && !seen.has(suporte)) {
     seen.add(suporte);
     recipients.push(suporte);
-    console.log("Fallback: suporte04@baeletrica.com.br");
   }
 
-  console.log("Total destinatários:", recipients.length);
   return recipients;
 }
 
@@ -571,7 +560,6 @@ async function sendResend(to: string[], subject: string, html: string, attachmen
   if (!resendKey) throw new Error("RESEND_API_KEY não configurada.");
 
   const payload = { from: SENDER, to, reply_to: REPLY_TO, subject, html, attachments };
-  console.log("Resend ->", JSON.stringify({ from: SENDER, to, subject }));
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -579,7 +567,6 @@ async function sendResend(to: string[], subject: string, html: string, attachmen
     body: JSON.stringify(payload),
   });
   const text = await res.text();
-  console.log("Resend response:", res.status, text);
 
   if (!res.ok) {
     let msg = text;
@@ -597,15 +584,11 @@ Deno.serve(async (req) => {
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    console.log("=== START MONTHLY REPORT ===", { url: SUPABASE_URL });
-
     const { fromUtc, toUtc, monthName, startDate, endDate } = getLastMonthRange();
     const periodo = `${startDate} a ${endDate} (America/Manaus)`;
 
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
-    console.log("Rows:", rows.length);
 
-    // Fetch photos for PDF evidence
     const photoResults = await Promise.allSettled(
       rows.map(async (r: any) => {
         const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
@@ -621,7 +604,6 @@ Deno.serve(async (req) => {
     for (const r of rows) {
       r._photoBase64 = photoMap.get(r.id) ?? null;
     }
-    console.log("Photos loaded:", Array.from(photoMap.values()).filter(Boolean).length, "of", rows.length);
 
     const recipients = await fetchRecipientEmails(admin);
     if (!recipients.length) {
@@ -638,7 +620,6 @@ Deno.serve(async (req) => {
       { filename: "Auditoria_Mensal_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
     ]);
 
-    console.log("=== OK MONTHLY ===", (result as any)?.id);
     return new Response(JSON.stringify({ ok: true, monthName, periodo, count: rows.length, stats, recipients, id: (result as any)?.id ?? null }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
 
