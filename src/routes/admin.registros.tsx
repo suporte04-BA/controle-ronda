@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { formatData, formatHora, TIPO_ACAO_LABEL, formatManaus } from "@/lib/timezone";
+import { formatData, formatHora, TIPO_ACAO_LABEL, formatManaus, nowManaus } from "@/lib/timezone";
 import { getSignedFotoUrl } from "@/lib/storage";
 import { sendTestReport } from "@/lib/report.functions";
 import { useAuth } from "@/lib/auth";
@@ -30,6 +30,7 @@ interface Row {
   nome: string;
   email: string;
   setor: string | null;
+  setor_id: string | null;
 }
 
 type Preset = "hoje" | "ontem" | "semana" | "semana_passada" | "mes" | "ultimos7" | "custom";
@@ -110,6 +111,7 @@ function TodosRegistros() {
   };
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
         supabase.from("registros_ponto")
@@ -119,6 +121,7 @@ function TodosRegistros() {
         supabase.from("profiles").select("id,nome,email,setor_id"),
         supabase.from("setores").select("id,nome"),
       ]);
+      if (cancelled) return;
       const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
       const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
       setSetores(sets ?? []);
@@ -129,11 +132,13 @@ function TodosRegistros() {
           nome: p?.nome ?? "—",
           email: p?.email ?? "",
           setor: p?.setor_id ? setMap.get(p.setor_id) ?? null : null,
+          setor_id: p?.setor_id ?? null,
         };
       });
       setRows(merged);
       setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, []);
 
   const aplicarPreset = (p: Preset) => {
@@ -149,7 +154,7 @@ function TodosRegistros() {
     const ate = dataAte ? endOfDay(fromInput(dataAte)).getTime() : null;
     return rows.filter((r) => {
       if (busca && !r.nome.toLowerCase().includes(busca.toLowerCase())) return false;
-      if (setorFiltro !== "all" && r.setor !== setorFiltro) return false;
+      if (setorFiltro !== "all" && r.setor_id !== setorFiltro) return false;
       const t = new Date(r.horario_acao).getTime();
       if (de !== null && t < de) return false;
       if (ate !== null && t > ate) return false;
@@ -173,8 +178,8 @@ function TodosRegistros() {
       Email: r.email,
       Setor: r.setor ?? "—",
       "Tipo de Ronda": TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao,
-      "Horário da Foto (Manaus)": `${formatData(r.horario_acao)} ${formatHora(r.horario_acao)}`,
-      "Horário de Envio (Manaus)": `${formatData(r.horario_foto)} ${formatHora(r.horario_foto)}`,
+      "Horário da Foto (Manaus)": `${formatData(r.horario_foto)} ${formatHora(r.horario_foto)}`,
+      "Horário de Envio (Manaus)": `${formatData(r.horario_acao)} ${formatHora(r.horario_acao)}`,
       "Caminho do Arquivo": r.foto_url,
     }));
     const ws = XLSX.utils.json_to_sheet(data);
@@ -249,7 +254,7 @@ function TodosRegistros() {
             <SelectTrigger className="w-[200px]"><SelectValue placeholder="Setor" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os setores</SelectItem>
-              {setores.map((s) => <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>)}
+              {setores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -262,7 +267,7 @@ function TodosRegistros() {
             <h2 className="text-xl font-bold">Folha Oficial de Controle de Ronda</h2>
             <p className="text-xs text-muted-foreground">BA Elétrica — Fuso America/Manaus</p>
             <p className="text-xs text-muted-foreground">
-              Período: {dataDe} a {dataAte} — {filtrados.length} registro(s) — emitido em {formatData(new Date())} {formatHora(new Date())}
+              Período: {dataDe} a {dataAte} — {filtrados.length} registro(s) — emitido em {formatData(nowManaus())} {formatHora(nowManaus())}
             </p>
           </div>
         </div>
@@ -311,7 +316,7 @@ function TodosRegistros() {
         )}
         <div className="hidden print:block print-footer px-6 py-4">
           <p>Documento gerado automaticamente — BA Elétrica — Sistema de Controle de Ronda</p>
-          <p>Fuso horário: America/Manaus (UTC-4) — Emitido em {formatManaus(new Date())}</p>
+          <p>Fuso horário: America/Manaus (UTC-4) — Emitido em {formatManaus(nowManaus().toISOString())}</p>
           <p className="font-semibold text-foreground mt-2">CONFIDENCIAL — Uso interno da BA Elétrica</p>
         </div>
       </div>
@@ -563,7 +568,7 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Relatorio_Ronda_${row.nome?.replace(/\s+/g, "_")}_${formatData(row.horario_acao).replace(/\//g, "-")}.pdf`;
+      a.download = `Relatorio_Ronda_${row.nome?.replace(/[\\/:*?"<>|\s]+/g, "_")}_${formatData(row.horario_acao).replace(/\//g, "-")}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("PDF baixado com sucesso!", { id });
@@ -641,7 +646,7 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
         )}
 
         <footer className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border mt-4 no-print">
-          <p className="text-xs text-muted-foreground">Gerado em {formatManaus(new Date())} · Fuso America/Manaus</p>
+          <p className="text-xs text-muted-foreground">Gerado em {formatManaus(nowManaus().toISOString())} · Fuso America/Manaus</p>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Fechar</Button>
             <Button onClick={gerarPdfIsolado}>

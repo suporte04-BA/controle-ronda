@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { formatData, formatHora, TIPO_ACAO_LABEL } from "@/lib/timezone";
+import { formatData, formatHora, TIPO_ACAO_LABEL, nowManaus } from "@/lib/timezone";
 import { useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/admin/")({
@@ -32,10 +32,12 @@ function AdminDashboard() {
   const [porSetor, setPorSetor] = useState<{ setor: string; rondas: number }[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      const hojeStr = formatData(new Date());
-      const inicio = new Date(); inicio.setHours(0, 0, 0, 0);
-      const fim = new Date(); fim.setHours(23, 59, 59, 999);
+      const hojeStr = formatData(nowManaus());
+      const nowM = nowManaus();
+      const inicio = new Date(Date.UTC(nowM.getUTCFullYear(), nowM.getUTCMonth(), nowM.getUTCDate(), 0, 0, 0));
+      const fim = new Date(Date.UTC(nowM.getUTCFullYear(), nowM.getUTCMonth(), nowM.getUTCDate(), 23, 59, 59));
 
       const [{ count: usuarios }, { data: regsHoje }, { data: regsAll }, { data: profs }, { data: sets }] = await Promise.all([
         supabase.from("profiles").select("*", { count: "exact", head: true }),
@@ -51,6 +53,8 @@ function AdminDashboard() {
         supabase.from("profiles").select("id,nome,setor_id"),
         supabase.from("setores").select("id,nome"),
       ]);
+
+      if (cancelled) return;
 
       const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
       const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
@@ -108,6 +112,7 @@ function AdminDashboard() {
         .sort((a, b) => b.rondas - a.rondas);
       setPorSetor(setoresArr);
     })();
+    return () => { cancelled = true; };
   }, []);
 
   const cards = [
@@ -127,7 +132,7 @@ function AdminDashboard() {
     <div className="p-8 space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard de Rondas</h1>
-        <p className="text-sm text-muted-foreground">Monitoramento em tempo real ({formatData(new Date())})</p>
+        <p className="text-sm text-muted-foreground">Monitoramento em tempo real ({formatData(nowManaus())})</p>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

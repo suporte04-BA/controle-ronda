@@ -174,9 +174,11 @@ function Usuarios() {
     try {
       const user = users.find(u => u.id === userId);
       if (user?.foto_url) {
-        await supabase.storage.from("avatars").remove([user.foto_url]);
+        const { error: storageErr } = await supabase.storage.from("avatars").remove([user.foto_url]);
+        if (storageErr) console.warn("Storage remove failed:", storageErr.message);
       }
-      await supabase.from("profiles").update({ foto_url: null }).eq("id", userId);
+      const { error: dbErr } = await supabase.from("profiles").update({ foto_url: null }).eq("id", userId);
+      if (dbErr) throw dbErr;
       toast.success("Foto removida!");
       setEditingPhoto(null);
       carregar();

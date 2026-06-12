@@ -7,7 +7,7 @@ import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://controle-ronda.suporte04.workers.dev",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -127,8 +127,8 @@ async function buildXlsx(rows: any[], monthName: string): Promise<Uint8Array> {
     "Email": r.email ?? "—",
     "Setor": r.setor ?? "—",
     "Tipo de Ronda": TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao,
-    "Horário da Foto (Manaus)": fmtManaus(r.horario_foto),
-    "Horário de Envio (Manaus)": fmtManaus(r.horario_acao),
+    "Horário da Foto (Manaus)": fmtManaus(r.horario_acao),
+    "Horário de Envio (Manaus)": fmtManaus(r.horario_foto),
     "Caminho do Arquivo": r.foto_url || "—",
   }));
   const ws = XLSX.utils.json_to_sheet(data);

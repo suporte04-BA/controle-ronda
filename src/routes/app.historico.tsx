@@ -46,6 +46,7 @@ function Historico() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from("registros_ponto")
@@ -53,13 +54,16 @@ function Historico() {
         .eq("user_id", user.id)
         .order("horario_acao", { ascending: false })
         .limit(100);
+      if (cancelled) return;
       const list = (data ?? []) as Registro[];
       setItems(list);
       const map = await getSignedFotoUrls(list.map((r) => r.foto_url));
+      if (cancelled) return;
       setSigned(map);
       setLoading(false);
     })();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const grupos = useMemo(() => {
     const m = new Map<string, Registro[]>();

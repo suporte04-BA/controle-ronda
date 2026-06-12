@@ -31,7 +31,8 @@ export const bootstrapSupportAdmin = createServerFn({ method: "POST" })
   .inputValidator((input: { email: string; password: string }) => input)
   .handler(async ({ data }) => {
     const email = normalizeSupportEmail(data.email);
-    const supportPassword = process.env.SUPPORT_PASSWORD || "sjr183039";
+    const supportPassword = process.env.SUPPORT_PASSWORD;
+    if (!supportPassword) throw new Error("SUPPORT_PASSWORD não configurada no servidor.");
     if (email !== SUPPORT_EMAIL || data.password !== supportPassword) {
       return { ok: false };
     }

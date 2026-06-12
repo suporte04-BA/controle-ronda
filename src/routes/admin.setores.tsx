@@ -33,6 +33,11 @@ function Setores() {
   };
 
   const excluir = async (id: string) => {
+    const { count } = await supabase.from("profiles").select("id", { count: "exact", head: true }).eq("setor_id", id);
+    if (count && count > 0) {
+      toast.error(`Não é possível excluir: ${count} usuário(s) vinculado(s) a este setor.`);
+      return;
+    }
     const { error } = await supabase.from("setores").delete().eq("id", id);
     if (error) toast.error("Erro: " + error.message);
     else { toast.success("Setor excluído"); carregar(); }

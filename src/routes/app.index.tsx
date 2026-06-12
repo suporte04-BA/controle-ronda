@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Camera, CheckCircle2, Clock, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,9 +31,9 @@ function BaterPonto() {
     return () => clearInterval(i);
   }, []);
 
-  const carregarHoje = async () => {
+  const carregarHoje = useCallback(async () => {
     if (!user) return;
-    const hojeStr = formatData(new Date());
+    const hojeStr = formatData(nowManaus());
     const { data } = await supabase
       .from("registros_ponto")
       .select("tipo_acao, horario_acao")
@@ -42,9 +42,9 @@ function BaterPonto() {
       .limit(1000);
     const filtrados = (data ?? []).filter((r) => formatData(r.horario_acao) === hojeStr);
     setAcoesHoje(filtrados.map((r) => r.tipo_acao));
-  };
+  }, [user]);
 
-  useEffect(() => { carregarHoje(); }, [user]);
+  useEffect(() => { carregarHoje(); }, [carregarHoje]);
 
   const proxima = useMemo(() => proximaAcao(acoesHoje), [acoesHoje]);
   const cicloAtual = useMemo(() => acoesDoCicloAtual(acoesHoje), [acoesHoje]);
@@ -75,7 +75,6 @@ function BaterPonto() {
     }
     toast.success(`${TIPO_ACAO_LABEL[proxima]} registrado com sucesso!`);
     setCamOpen(false);
-    if (proxima === "check_out_2") setAcoesHoje([]);
     await carregarHoje();
   };
 
@@ -94,8 +93,8 @@ function BaterPonto() {
 
       <div className="card-neon p-8 text-center glow-cyan animate-neon-pulse">
         <Clock className="w-6 h-6 mx-auto text-neon-cyan mb-2" />
-        <div className="text-5xl font-bold tabular-nums tracking-tight text-foreground text-glow-cyan">{formatHora(new Date())}</div>
-        <div className="text-sm text-muted-foreground mt-2">{formatData(new Date())}</div>
+        <div className="text-5xl font-bold tabular-nums tracking-tight text-foreground text-glow-cyan">{formatHora(now)}</div>
+        <div className="text-sm text-muted-foreground mt-2">{formatData(now)}</div>
       </div>
 
       <div className="space-y-3">
