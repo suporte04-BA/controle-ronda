@@ -1,1 +1,0 @@
-fix: XLSX e PDF colunas Foto/Envio corrigidas nos Edge Functions
