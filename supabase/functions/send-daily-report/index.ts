@@ -101,7 +101,7 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
         "Content-Type": "application/json",
         "apikey": serviceKey,
       },
-      body: JSON.stringify({ path, expiresIn: 3600 }),
+      body: JSON.stringify({ paths: [path], expiresIn: 3600 }),
       signal: AbortSignal.timeout(10000),
     });
     if (!signedRes.ok) {
@@ -109,10 +109,14 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
       return null;
     }
     const signedData = await signedRes.json();
-    const signedUrl = signedData.signedUrl;
-    if (!signedUrl) return null;
+    const item = Array.isArray(signedData) ? signedData[0] : signedData;
+    const signedPath = item?.signedURL ?? item?.signedUrl ?? item?.signed_url;
+    if (!signedPath) {
+      console.error("[photo] no signed URL in response:", JSON.stringify(signedData).slice(0, 200));
+      return null;
+    }
 
-    const fullUrl = signedUrl.startsWith("http") ? signedUrl : `${supabaseUrl}${signedUrl}`;
+    const fullUrl = signedPath.startsWith("http") ? signedPath : `${supabaseUrl}/storage/v1${signedPath}`;
     const imgRes = await fetch(fullUrl, { signal: AbortSignal.timeout(15000) });
     if (!imgRes.ok) {
       console.error("[photo] download failed:", imgRes.status);
