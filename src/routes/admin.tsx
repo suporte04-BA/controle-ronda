@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
@@ -29,7 +30,10 @@ function AdminLayout() {
   return (
     <div className="min-h-screen bg-background flex">
       <AdminSidebar />
-      <main className="flex-1 overflow-x-auto">
+      <main className="flex-1 overflow-x-auto relative">
+        <div className="fixed top-3 right-3 z-50 no-print lg:hidden">
+          <ThemeToggle size="sm" />
+        </div>
         <Outlet />
       </main>
     </div>

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — BA Elétrica" }] }),
@@ -70,6 +71,9 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
+      <div className="fixed top-3 right-3 z-50">
+        <ThemeToggle size="sm" />
+      </div>
       {/* Neon glow orbs */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-neon-cyan/5 blur-3xl animate-glow-breathe pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-neon-violet/5 blur-3xl animate-glow-breathe pointer-events-none" style={{ animationDelay: "1.5s" }} />

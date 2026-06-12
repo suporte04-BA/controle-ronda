@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { EmployeeBottomNav } from "@/components/EmployeeBottomNav";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/app")({
   component: EmployeeLayout,
@@ -28,6 +29,9 @@ function EmployeeLayout() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <div className="fixed top-3 right-3 z-50 no-print">
+        <ThemeToggle size="sm" />
+      </div>
       <div className="max-w-md mx-auto">
         <Outlet />
       </div>

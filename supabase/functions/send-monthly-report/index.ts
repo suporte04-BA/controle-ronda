@@ -103,7 +103,8 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
     const signedUrl = signedData.signedUrl;
     if (!signedUrl) return null;
 
-    const imgRes = await fetch(signedUrl, { signal: AbortSignal.timeout(15000) });
+    const fullUrl = signedUrl.startsWith("http") ? signedUrl : `${supabaseUrl}${signedUrl}`;
+    const imgRes = await fetch(fullUrl, { signal: AbortSignal.timeout(15000) });
     if (!imgRes.ok) {
       console.error("[photo] monthly download failed:", imgRes.status);
       return null;
