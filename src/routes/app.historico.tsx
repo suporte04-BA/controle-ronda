@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { formatData, formatHora, TIPO_ACAO_LABEL } from "@/lib/timezone";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImageOff } from "lucide-react";
 import { getSignedFotoUrls } from "@/lib/storage";
 
 export const Route = createFileRoute("/app/historico")({
@@ -16,6 +16,26 @@ interface Registro {
   horario_acao: string;
   horario_foto: string;
   foto_url: string;
+}
+
+function FotoThumbnail({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+  if (error || !src) {
+    return (
+      <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+        <ImageOff className="w-5 h-5 text-muted-foreground" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="w-12 h-12 rounded-lg object-cover bg-secondary flex-shrink-0"
+      loading="lazy"
+      onError={() => setError(true)}
+    />
+  );
 }
 
 function Historico() {
@@ -66,12 +86,7 @@ function Historico() {
             <div className="card-neon divide-y divide-subtle overflow-hidden">
               {regs.map((r) => (
                 <div key={r.id} className="flex items-center gap-3 p-3 hover:bg-hover-subtle transition-colors">
-                  <img
-                    src={signed.get(r.foto_url) ?? ""}
-                    alt="foto"
-                    className="w-12 h-12 rounded-lg object-cover bg-secondary flex-shrink-0"
-                    loading="lazy"
-                  />
+                  <FotoThumbnail src={signed.get(r.foto_url) ?? ""} alt="foto" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-foreground">{TIPO_ACAO_LABEL[r.tipo_acao]}</div>
                     <div className="text-xs text-muted-foreground">

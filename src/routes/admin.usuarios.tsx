@@ -294,7 +294,14 @@ function Usuarios() {
         )}
       </div>
 
-      <Dialog open={openNew} onOpenChange={setOpenNew}>
+      <Dialog open={openNew} onOpenChange={(open) => {
+        setOpenNew(open);
+        if (!open) {
+          setForm({ nome: "", email: "", password: "", setor_id: "none" });
+          setFormFile(null);
+          setFormPreview(null);
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Cadastrar novo usuário</DialogTitle>

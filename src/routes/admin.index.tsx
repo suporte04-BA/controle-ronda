@@ -73,7 +73,9 @@ function AdminDashboard() {
       setAbertas(abertasCount);
       setAgentes(usuarios ?? 0);
 
-      const last = filtrados[0];
+      // Último ponto: record with most recent horario_acao
+      const sorted = [...filtrados].sort((a, b) => new Date(b.horario_acao).getTime() - new Date(a.horario_acao).getTime());
+      const last = sorted[0];
       if (last) {
         const p: any = profMap.get(last.user_id);
         setUltimo({
