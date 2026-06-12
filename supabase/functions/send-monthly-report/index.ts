@@ -127,8 +127,8 @@ async function buildXlsx(rows: any[], monthName: string): Promise<Uint8Array> {
     "Email": r.email ?? "—",
     "Setor": r.setor ?? "—",
     "Tipo de Ronda": TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao,
-    "Horário da Foto (Manaus)": fmtManaus(r.horario_acao),
-    "Horário de Envio (Manaus)": fmtManaus(r.horario_foto),
+    "Horário da Foto (Manaus)": fmtManaus(r.horario_foto),
+    "Horário de Envio (Manaus)": fmtManaus(r.horario_acao),
     "Caminho do Arquivo": r.foto_url || "—",
   }));
   const ws = XLSX.utils.json_to_sheet(data);

@@ -72,8 +72,8 @@ async function buildXlsx(rows: any[]): Promise<Uint8Array> {
     "Email": r.email ?? "—",
     "Setor": r.setor ?? "—",
     "Tipo de Ronda": TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao,
-    "Horário da Foto (Manaus)": fmtManaus(r.horario_acao),
-    "Horário de Envio (Manaus)": fmtManaus(r.horario_foto),
+    "Horário da Foto (Manaus)": fmtManaus(r.horario_foto),
+    "Horário de Envio (Manaus)": fmtManaus(r.horario_acao),
     "Caminho do Arquivo": r.foto_url || "—",
   }));
   const ws = XLSX.utils.json_to_sheet(data);
@@ -429,7 +429,7 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
     draw(`Data: ${photoTime}`, labelX, y - 16, 7, false, grayText);
     draw(`Colaborador: ${r.nome ?? "—"}`, labelX, y - 26, 7, false, grayText);
     draw(`Setor: ${r.setor ?? "—"}`, labelX, y - 36, 7, false, grayText);
-    draw(`Horário envio: ${fmtManaus(r.horario_acao).split(" ")[1] ?? ""}`, labelX, y - 46, 7, false, grayText);
+    draw(`Horário envio: ${fmtManaus(r.horario_foto).split(" ")[1] ?? ""}`, labelX, y - 46, 7, false, grayText);
 
     y -= cardHeight + 10;
     evidenceCount++;
