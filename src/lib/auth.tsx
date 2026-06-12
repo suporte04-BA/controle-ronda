@@ -34,12 +34,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [baseRole, setBaseRole] = useState<AppRole | null>(null);
-  const [devViewRole, setDevViewRoleState] = useState<AppRole | null>(() => {
-    if (typeof window === "undefined") return null;
-    const stored = window.localStorage.getItem("devViewRole");
-    return stored === "admin" || stored === "user" ? stored : null;
-  });
+  const [devViewRole, setDevViewRoleState] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("devViewRole");
+    if (stored === "admin" || stored === "user") setDevViewRoleState(stored);
+  }, []);
 
   const loadProfileAndRole = async (userId: string) => {
     try { await syncAccess(); } catch (e) { console.warn("syncAccess falhou:", e); }
