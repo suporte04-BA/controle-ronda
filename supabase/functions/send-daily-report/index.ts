@@ -476,7 +476,7 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
       <tr><td style="font-size:16px;font-weight:bold;color:#0B1120;line-height:24px;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">Olá, Gestor.</td></tr>
       <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">O relatório diário consolidado do <strong>Controle de Ronda da BA Elétrica</strong> foi processado com sucesso pelo sistema de segurança.</td></tr>
-      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará o <strong>PDF gerencial</strong> (com gráficos e indicadores de conformidade) e a <strong>planilha Excel</strong> com a auditoria detalhada de todos os pontos de check-in. Ambos os arquivos refletem fielmente os dados extraídos do sistema.</td></tr>
+      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará o <strong>PDF gerencial</strong> (com gráficos e indicadores de conformidade) e a <strong>planilha Excel</strong> com a auditoria detalhada de todos os registros de rondas. Ambos os arquivos refletem fielmente os dados extraídos do sistema.</td></tr>
       <tr><td style="padding:0 0 24px 0">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0">
         <tr><td style="padding:16px 20px">

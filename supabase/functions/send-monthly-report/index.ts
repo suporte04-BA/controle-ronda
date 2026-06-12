@@ -144,7 +144,7 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
   const pageH = 842;
   const marginX = 36;
   const tableW = pageW - marginX * 2;
-  const colWidths = [105, 68, 110, 68, 85, 100];
+  const colWidths = [100, 65, 105, 65, 85, 103];
   const headers = ["COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HOR. FOTO", "HOR. ENVIO"];
   const rowH = 20;
   const headerH = 22;

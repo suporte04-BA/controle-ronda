@@ -11,6 +11,7 @@ interface Profile {
   nome: string;
   email: string;
   setor_id: string | null;
+  foto_url: string | null;
 }
 
 interface AuthCtx {
@@ -44,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { await syncAccess(); } catch (e) { console.warn("syncAccess falhou:", e); }
     for (let attempt = 0; attempt < 4; attempt++) {
       const [{ data: prof }, { data: roleRows }] = await Promise.all([
-        supabase.from("profiles").select("id,nome,email,setor_id").eq("id", userId).maybeSingle(),
+        supabase.from("profiles").select("id,nome,email,setor_id,foto_url").eq("id", userId).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId),
       ]);
       if (prof && roleRows && roleRows.length > 0) {
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
     }
     // Fallback final: ainda assim libera acesso como user
-    const { data: prof } = await supabase.from("profiles").select("id,nome,email,setor_id").eq("id", userId).maybeSingle();
+    const { data: prof } = await supabase.from("profiles").select("id,nome,email,setor_id,foto_url").eq("id", userId).maybeSingle();
     setProfile((prof as Profile) ?? null);
     setBaseRole("user");
   };

@@ -103,6 +103,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="pt-BR" className="dark notranslate" translate="no">
       <head>
         <meta name="google" content="notranslate" />
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.remove('dark'),document.documentElement.classList.add('light');else if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}` }} />
         <HeadContent />
       </head>
       <body>
