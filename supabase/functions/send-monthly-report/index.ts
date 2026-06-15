@@ -252,7 +252,7 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
     { label: "TOTAL", value: String(stats.total), color: brandRed },
     { label: "INÍCIOS", value: String(stats.checkIns), color: rgb(0.16, 0.63, 0.33) },
     { label: "MEIOS", value: String(stats.checkOuts1), color: rgb(0.20, 0.55, 0.85) },
-    { label: "FIMES", value: String(stats.checkOuts2), color: rgb(0.85, 0.55, 0.10) },
+    { label: "FINAIS", value: String(stats.checkOuts2), color: rgb(0.85, 0.55, 0.10) },
     { label: "COLABORADORES", value: String(stats.uniqueUsers), color: navyBlue },
     { label: "SETORES", value: String(stats.uniqueSetores), color: darkRed },
     { label: "CICLOS", value: String(stats.ciclos), color: rgb(0.45, 0.20, 0.65) },
@@ -534,6 +534,10 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
   const seen = new Set<string>();
   const recipients: string[] = [];
 
+  // Buscar IDs de admins
+  const { data: adminRoles } = await admin.from("user_roles").select("user_id").eq("role", "admin");
+  const adminIds = new Set((adminRoles ?? []).map((r: any) => r.user_id));
+
   // Buscar setor GESTOR
   const { data: sets } = await admin.from("setores").select("id,nome");
   const gestorSetores = (sets ?? []).filter((s: any) => s.nome?.toUpperCase().includes("GESTOR"));
@@ -545,6 +549,8 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
     for (const p of allProfiles) {
       const email = normalizeEmail(p.email);
       if (!email || !isCorporateEmail(email) || seen.has(email)) continue;
+      // Admin E setor GESTOR
+      if (!adminIds.has(p.id)) continue;
       if (!p.setor_id || !gestorIds.has(p.setor_id)) continue;
       seen.add(email);
       recipients.push(email);
