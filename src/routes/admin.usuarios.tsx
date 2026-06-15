@@ -72,6 +72,11 @@ function Usuarios() {
       return;
     }
     if (u.role === "admin") {
+      const adminCount = users.filter((x) => x.role === "admin").length;
+      if (adminCount <= 1) {
+        toast.error("Não é possível remover o último administrador.");
+        return;
+      }
       const { error } = await supabase.from("user_roles").delete().eq("user_id", u.id).eq("role", "admin");
       if (error) toast.error("Erro: " + error.message);
       else { toast.success("Admin removido"); carregar(); }
@@ -274,13 +279,11 @@ function Usuarios() {
                         <Button size="sm" variant="ghost" className="sm:hidden" onClick={() => openEditPhoto(u.id, u.foto_url)}>
                           <Camera className="w-4 h-4" />
                         </Button>
-                        {isSupport && (
-                          <Button size="sm" variant="outline" onClick={() => toggleAdmin(u)}>
-                            {u.role === "admin"
-                              ? (<><ShieldOff className="w-4 h-4 mr-1" /> Remover admin</>)
-                              : (<><Shield className="w-4 h-4 mr-1" /> Tornar admin</>)}
-                          </Button>
-                        )}
+                        <Button size="sm" variant="outline" onClick={() => toggleAdmin(u)}>
+                          {u.role === "admin"
+                            ? (<><ShieldOff className="w-4 h-4 mr-1" /> Remover admin</>)
+                            : (<><Shield className="w-4 h-4 mr-1" /> Tornar admin</>)}
+                        </Button>
                         {!isSupport && (
                           <Button size="sm" variant="destructive" onClick={() => remover(u)}>
                             <Trash2 className="w-4 h-4 mr-1" /> Excluir
