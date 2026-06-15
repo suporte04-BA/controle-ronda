@@ -275,7 +275,7 @@ function Usuarios() {
                           <Camera className="w-4 h-4" />
                         </Button>
                         {isSupport && (
-                          <Button size="sm" variant="outline" disabled onClick={() => toggleAdmin(u)}>
+                          <Button size="sm" variant="outline" onClick={() => toggleAdmin(u)}>
                             {u.role === "admin"
                               ? (<><ShieldOff className="w-4 h-4 mr-1" /> Remover admin</>)
                               : (<><Shield className="w-4 h-4 mr-1" /> Tornar admin</>)}
