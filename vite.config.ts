@@ -28,6 +28,10 @@ export default defineConfig({
   css: {
     transformer: "lightningcss",
   },
+  build: {
+    target: "es2022",
+    minify: "esbuild",
+  },
   server: {
     host: "::",
     port: 8080,

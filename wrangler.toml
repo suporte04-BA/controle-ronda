@@ -6,3 +6,13 @@ main = "@tanstack/react-start/server-entry"
 
 [observability]
 enabled = true
+
+# Variaveis de ambiente - NAO colocar secrets aqui!
+# Secrets devem ser configurados via: wrangler secret put <KEY>
+[vars]
+SUPABASE_PROJECT_ID = "rdmbayprbfqbjhfqcasp"
+SUPABASE_URL = "https://rdmbayprbfqbjhfqcasp.supabase.co"
+SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w"
+VITE_SUPABASE_PROJECT_ID = "rdmbayprbfqbjhfqcasp"
+VITE_SUPABASE_URL = "https://rdmbayprbfqbjhfqcasp.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w"

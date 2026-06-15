@@ -20,6 +20,12 @@ jobs:
       - run: npx vite build
 
       - name: Deploy to Cloudflare Workers
-        run: npx wrangler deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
+          secrets: |
+            SUPABASE_SERVICE_ROLE_KEY
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
