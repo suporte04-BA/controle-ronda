@@ -496,7 +496,6 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
         const r = ciclo[idx];
 
         const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33)
-          : r.tipo_acao === "check_out_1" ? rgb(0.20, 0.55, 0.85)
           : rgb(0.85, 0.55, 0.10);
 
         ensurePage(120, false);

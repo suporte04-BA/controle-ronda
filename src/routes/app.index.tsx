@@ -99,8 +99,8 @@ function BaterPonto() {
 
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Hoje</h2>
-        <div className="grid grid-cols-3 gap-2">
-          {(["check_in", "check_out_1", "check_out_2"] as const).map((t) => {
+        <div className="grid grid-cols-2 gap-2">
+          {(["check_in", "check_out_2"] as const).map((t) => {
             const doneCurrent = cicloAtual.includes(t);
             return (
               <div

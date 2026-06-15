@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, X, RotateCcw, Loader2, AlertTriangle, Upload } from "lucide-react";
+import { Camera, X, RotateCcw, Loader2, AlertTriangle } from "lucide-react";
 import { formatManaus } from "@/lib/timezone";
 
 interface Props {
@@ -13,7 +13,6 @@ interface Props {
 export function CameraCapture({ open, onCancel, onCapture, title }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -75,15 +74,6 @@ export function CameraCapture({ open, onCancel, onCapture, title }: Props) {
     stop();
   };
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPreviewBlob(file);
-    setPreview(URL.createObjectURL(file));
-    setHorarioCapturaOriginal(new Date().toISOString());
-    setError(null);
-  };
-
   const refazer = () => {
     if (preview) URL.revokeObjectURL(preview);
     setHorarioCapturaOriginal(null);
@@ -129,15 +119,6 @@ export function CameraCapture({ open, onCancel, onCapture, title }: Props) {
         </button>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleFile}
-      />
-
       <div className="flex-1 flex items-center justify-center px-4">
         {preview ? (
           <div className="space-y-3 text-center">
@@ -150,12 +131,9 @@ export function CameraCapture({ open, onCancel, onCapture, title }: Props) {
           <div className="max-w-md w-full bg-card text-card-foreground rounded-xl p-6 text-center space-y-4">
             <AlertTriangle className="w-12 h-12 mx-auto text-destructive" />
             <p className="text-sm">
-              Câmera nativa indisponível neste ambiente. Use o modo alternativo abaixo para enviar a foto da ronda.
+              Câmera não disponível neste dispositivo. Use um dispositivo com câmera para registrar rondas.
             </p>
-            <Button onClick={() => fileInputRef.current?.click()} className="w-full">
-              <Upload className="w-4 h-4 mr-2" /> Abrir câmera do dispositivo
-            </Button>
-            <Button onClick={fechar} variant="outline" className="w-full">Cancelar</Button>
+            <Button onClick={fechar} variant="outline" className="w-full">Fechar</Button>
           </div>
         ) : (
           <div className="relative w-full max-w-md aspect-square">

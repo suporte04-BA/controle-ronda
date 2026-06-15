@@ -20,7 +20,6 @@ const DASHBOARD_URL = "https://controle-ronda.suporte04.workers.dev";
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Início de Ronda",
-  check_out_1: "Meio de Ronda",
   check_out_2: "Fim de Ronda",
 };
 
@@ -117,6 +116,36 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
     return toBase64(imgBytes);
   } catch (e) {
     console.error("[photo] monthly exception:", e);
+    return null;
+  }
+}
+
+async function fetchAvatarAsBase64(avatarPath: string | null, supabaseUrl: string, serviceKey: string): Promise<string | null> {
+  try {
+    if (!avatarPath) return null;
+    const signUrl = `${supabaseUrl}/storage/v1/object/sign/avatars`;
+    const signedRes = await fetch(signUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        "apikey": serviceKey,
+      },
+      body: JSON.stringify({ paths: [avatarPath], expiresIn: 3600 }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!signedRes.ok) return null;
+    const signedData = await signedRes.json();
+    const item = Array.isArray(signedData) ? signedData[0] : signedData;
+    const signedPath = item?.signedURL ?? item?.signedUrl ?? item?.signed_url;
+    if (!signedPath) return null;
+    const fullUrl = signedPath.startsWith("http") ? signedPath : `${supabaseUrl}/storage/v1${signedPath}`;
+    const imgRes = await fetch(fullUrl, { signal: AbortSignal.timeout(15000) });
+    if (!imgRes.ok) return null;
+    const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
+    return toBase64(imgBytes);
+  } catch (e) {
+    console.error("[avatar] monthly exception:", e);
     return null;
   }
 }
@@ -251,13 +280,12 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
   const statCards = [
     { label: "TOTAL", value: String(stats.total), color: brandRed },
     { label: "INÍCIOS", value: String(stats.checkIns), color: rgb(0.16, 0.63, 0.33) },
-    { label: "MEIOS", value: String(stats.checkOuts1), color: rgb(0.20, 0.55, 0.85) },
     { label: "FINAIS", value: String(stats.checkOuts2), color: rgb(0.85, 0.55, 0.10) },
     { label: "COLABORADORES", value: String(stats.uniqueUsers), color: navyBlue },
     { label: "SETORES", value: String(stats.uniqueSetores), color: darkRed },
     { label: "CICLOS", value: String(stats.ciclos), color: rgb(0.45, 0.20, 0.65) },
   ];
-  const statCardW = (tableW - 18) / 7;
+  const statCardW = (tableW - 15) / 6;
   statCards.forEach((s, i) => {
     const sx = marginX + i * (statCardW + 3);
     page.drawRectangle({
@@ -309,7 +337,6 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
     }
 
     const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33)
-      : r.tipo_acao === "check_out_1" ? rgb(0.20, 0.55, 0.85)
       : rgb(0.85, 0.55, 0.10);
     page.drawRectangle({ x: tableX, y: y - 4, width: 2, height: rowH, color: accentColor });
 
@@ -349,6 +376,7 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
       ensurePage(thumbH + 50, false);
 
       const photoB64 = r._photoBase64;
+      const avatarB64 = r._avatarBase64;
       const photoLabel = TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao;
       const photoTime = fmtManaus(r.horario_foto);
 
@@ -358,7 +386,6 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
         borderColor: borderColor, borderWidth: 0.5, color: white,
       });
       const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33)
-        : r.tipo_acao === "check_out_1" ? rgb(0.20, 0.55, 0.85)
         : rgb(0.85, 0.55, 0.10);
       page.drawRectangle({ x: marginX, y: y - cardHeight + 8, width: 3, height: cardHeight, color: accentColor });
 
@@ -366,41 +393,65 @@ async function buildPdf(rows: any[], periodo: string, monthName: string, stats: 
       page.drawCircle({ x: marginX + 18, y: y - 2, size: 9, color: accentColor });
       draw(badgeNum, marginX + (badgeNum.length === 1 ? 15.5 : 12), y - 5, 8, true, white);
 
+      // Avatar (small, left side)
+      const avatarSize = 36;
+      const avatarX = marginX + 34;
+      if (avatarB64) {
+        try {
+          const avBytes = Uint8Array.from(atob(avatarB64), c => c.charCodeAt(0));
+          let avImg;
+          const isJpeg = avBytes[0] === 0xFF && avBytes[1] === 0xD8;
+          const isPng = avBytes[0] === 0x89 && avBytes[1] === 0x50;
+          if (isJpeg) { avImg = await pdf.embedJpg(avBytes); }
+          else if (isPng) { avImg = await pdf.embedPng(avBytes); }
+          else { try { avImg = await pdf.embedJpg(avBytes); } catch { avImg = await pdf.embedPng(avBytes); } }
+          const avScale = Math.min(avatarSize / avImg.width, avatarSize / avImg.height);
+          const avW = avImg.width * avScale;
+          const avH = avImg.height * avScale;
+          page.drawCircle({ x: avatarX + avatarSize / 2, y: y - 6, size: avatarSize / 2 + 1, color: borderColor });
+          page.drawImage(avImg, { x: avatarX + (avatarSize - avW) / 2, y: y - 6 - (avatarSize - avH) / 2 - avH, width: avW, height: avH });
+        } catch {
+          page.drawCircle({ x: avatarX + avatarSize / 2, y: y - 6, size: avatarSize / 2, color: lightGray });
+        }
+      } else {
+        page.drawCircle({ x: avatarX + avatarSize / 2, y: y - 6, size: avatarSize / 2, color: lightGray });
+      }
+
+      // Name below avatar
+      draw(String(r.nome ?? "—").slice(0, 18), avatarX, y - avatarSize - 10, 7, true, darkText);
+
+      // Photo (main, center)
+      const photoX = marginX + 80;
       try {
         const imgBytes = Uint8Array.from(atob(photoB64), c => c.charCodeAt(0));
         let img;
         const isJpeg = imgBytes[0] === 0xFF && imgBytes[1] === 0xD8;
         const isPng = imgBytes[0] === 0x89 && imgBytes[1] === 0x50 && imgBytes[2] === 0x4E && imgBytes[3] === 0x47;
-        if (isJpeg) {
-          img = await pdf.embedJpg(imgBytes);
-        } else if (isPng) {
-          img = await pdf.embedPng(imgBytes);
-        } else {
-          try { img = await pdf.embedJpg(imgBytes); } catch { img = await pdf.embedPng(imgBytes); }
-        }
+        if (isJpeg) { img = await pdf.embedJpg(imgBytes); }
+        else if (isPng) { img = await pdf.embedPng(imgBytes); }
+        else { try { img = await pdf.embedJpg(imgBytes); } catch { img = await pdf.embedPng(imgBytes); } }
         const scale = Math.min(thumbW / img.width, thumbH / img.height);
         const drawW = img.width * scale;
         const drawH = img.height * scale;
-        const offsetX = marginX + 34 + (thumbW - drawW) / 2;
+        const offsetX = photoX + (thumbW - drawW) / 2;
         const offsetY = y - thumbH + (thumbH - drawH) / 2;
         page.drawRectangle({
-          x: marginX + 32, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
+          x: photoX - 2, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
           borderColor: borderColor, borderWidth: 0.5,
         });
         page.drawImage(img, { x: offsetX, y: offsetY, width: drawW, height: drawH });
       } catch {
         page.drawRectangle({
-          x: marginX + 32, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
+          x: photoX - 2, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
           borderColor: borderColor, borderWidth: 0.5, color: lightGray,
         });
-        draw("Foto indisponível", marginX + 55, y - thumbH / 2, 7, false, grayText);
+        draw("Foto indisponível", photoX + 20, y - thumbH / 2, 7, false, grayText);
       }
 
-      const labelX = marginX + thumbW + 50;
+      const labelX = photoX + thumbW + 16;
       draw(photoLabel, labelX, y - 4, 9, true, darkText);
       draw(`Data: ${photoTime}`, labelX, y - 16, 7, false, grayText);
-      draw(`Colaborador: ${r.nome ?? "—"}`, labelX, y - 26, 7, false, grayText);
-      draw(`Setor: ${r.setor ?? "—"}`, labelX, y - 36, 7, false, grayText);
+      draw(`Setor: ${r.setor ?? "—"}`, labelX, y - 26, 7, false, grayText);
 
       y -= cardHeight + 10;
       evidenceCount++;
@@ -500,29 +551,27 @@ async function fetchRows(admin: any, fromIso: string, toIso: string) {
       .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url")
       .gte("horario_acao", fromIso).lte("horario_acao", toIso)
       .order("horario_acao", { ascending: true }),
-    admin.from("profiles").select("id,nome,email,setor_id"),
+    admin.from("profiles").select("id,nome,email,setor_id,foto_url"),
     admin.from("setores").select("id,nome"),
   ]);
   const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
   const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
   return (regs ?? []).map((r: any) => {
     const p: any = profMap.get(r.user_id);
-    return { ...r, nome: p?.nome ?? "—", email: p?.email ?? "", setor: p?.setor_id ? setMap.get(p.setor_id) ?? null : null };
+    return { ...r, nome: p?.nome ?? "—", email: p?.email ?? "", setor: p?.setor_id ? setMap.get(p.setor_id) ?? null : null, avatar_url: p?.foto_url ?? null };
   });
 }
 
 function calculateStats(rows: any[]) {
   const checkIns = rows.filter(r => r.tipo_acao === "check_in").length;
-  const checkOuts1 = rows.filter(r => r.tipo_acao === "check_out_1").length;
   const checkOuts2 = rows.filter(r => r.tipo_acao === "check_out_2").length;
   const uniqueUsers = new Set(rows.map(r => r.user_id)).size;
   const uniqueSetores = new Set(rows.filter(r => r.setor).map(r => r.setor)).size;
-  const ciclos = Math.min(checkIns, checkOuts1, checkOuts2);
+  const ciclos = Math.min(checkIns, checkOuts2);
   
   return {
     total: rows.length,
     checkIns,
-    checkOuts1,
     checkOuts2,
     uniqueUsers,
     uniqueSetores,
@@ -614,6 +663,29 @@ Deno.serve(async (req) => {
     }
     for (const r of rows) {
       r._photoBase64 = photoMap.get(r.id) ?? null;
+    }
+
+    // Fetch unique avatars
+    const uniqueAvatarPaths = new Map<string, string>();
+    for (const r of rows) {
+      if (r.avatar_url && !uniqueAvatarPaths.has(r.user_id)) {
+        uniqueAvatarPaths.set(r.user_id, r.avatar_url);
+      }
+    }
+    const avatarResults = await Promise.allSettled(
+      Array.from(uniqueAvatarPaths.entries()).map(async ([userId, path]) => {
+        const b64 = await fetchAvatarAsBase64(path, SUPABASE_URL, SERVICE_KEY);
+        return { userId, avatarBase64: b64 };
+      })
+    );
+    const avatarMap = new Map<string, string | null>();
+    for (const ar of avatarResults) {
+      if (ar.status === "fulfilled") {
+        avatarMap.set(ar.value.userId, ar.value.avatarBase64);
+      }
+    }
+    for (const r of rows) {
+      r._avatarBase64 = avatarMap.get(r.user_id) ?? null;
     }
 
     const recipients = await fetchRecipientEmails(admin);

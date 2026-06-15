@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { formatData, formatHora, TIPO_ACAO_LABEL } from "@/lib/timezone";
-import { Loader2, ImageOff } from "lucide-react";
+import { Loader2, ImageOff, User } from "lucide-react";
 import { getSignedFotoUrls } from "@/lib/storage";
 
 export const Route = createFileRoute("/app/historico")({
@@ -16,6 +16,8 @@ interface Registro {
   horario_acao: string;
   horario_foto: string;
   foto_url: string;
+  nome?: string;
+  avatar_url?: string | null;
 }
 
 function FotoThumbnail({ src, alt }: { src: string; alt: string }) {
@@ -38,10 +40,31 @@ function FotoThumbnail({ src, alt }: { src: string; alt: string }) {
   );
 }
 
+function AvatarThumb({ src, nome }: { src: string | null; nome: string }) {
+  const [error, setError] = useState(false);
+  if (!src || error) {
+    return (
+      <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center flex-shrink-0 border border-primary/20">
+        <User className="w-5 h-5" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={nome}
+      className="w-10 h-10 rounded-full object-cover bg-secondary flex-shrink-0 border border-border-subtle"
+      loading="lazy"
+      onError={() => setError(true)}
+    />
+  );
+}
+
 function Historico() {
   const { user } = useAuth();
   const [items, setItems] = useState<Registro[]>([]);
   const [signed, setSigned] = useState<Map<string, string>>(new Map());
+  const [avatarUrls, setAvatarUrls] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,16 +73,40 @@ function Historico() {
     (async () => {
       const { data } = await supabase
         .from("registros_ponto")
-        .select("id,tipo_acao,horario_acao,horario_foto,foto_url")
+        .select("id,tipo_acao,horario_acao,horario_foto,foto_url,user_id")
         .eq("user_id", user.id)
         .order("horario_acao", { ascending: false })
         .limit(100);
       if (cancelled) return;
+
       const list = (data ?? []) as Registro[];
-      setItems(list);
-      const map = await getSignedFotoUrls(list.map((r) => r.foto_url));
+
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("id,nome,foto_url")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const nome = prof?.nome ?? user.email ?? "";
+      const avatarPath = prof?.foto_url ?? null;
+
+      const listWithNome = list.map((r) => ({ ...r, nome }));
+
+      setItems(listWithNome);
+
+      const map = await getSignedFotoUrls(listWithNome.map((r) => r.foto_url));
       if (cancelled) return;
       setSigned(map);
+
+      if (avatarPath) {
+        const { data: urlData } = await supabase.storage
+          .from("avatars")
+          .createSignedUrl(avatarPath, 3600);
+        if (urlData?.signedUrl && !cancelled) {
+          setAvatarUrls(new Map([[user.id, urlData.signedUrl]]));
+        }
+      }
+
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -90,9 +137,10 @@ function Historico() {
             <div className="card-neon divide-y divide-subtle overflow-hidden">
               {regs.map((r) => (
                 <div key={r.id} className="flex items-center gap-3 p-3 hover:bg-hover-subtle transition-colors">
-                  <FotoThumbnail src={signed.get(r.foto_url) ?? ""} alt="foto" />
+                  <AvatarThumb src={avatarUrls.get(r.user_id ?? "") ?? null} nome={r.nome ?? ""} />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-foreground">{TIPO_ACAO_LABEL[r.tipo_acao]}</div>
+                    <div className="text-xs text-muted-foreground">{r.nome}</div>
                     <div className="text-xs text-muted-foreground">
                       Ação: {formatHora(r.horario_acao)} · Foto: {formatHora(r.horario_foto)}
                     </div>

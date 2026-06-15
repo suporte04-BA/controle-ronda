@@ -69,8 +69,8 @@ function AdminDashboard() {
       let finalizadasCount = 0;
       let abertasCount = 0;
       porUser.forEach((arr) => {
-        finalizadasCount += Math.floor(arr.length / 3);
-        if (arr.length % 3 !== 0) abertasCount++;
+        finalizadasCount += Math.floor(arr.length / 2);
+        if (arr.length % 2 !== 0) abertasCount++;
       });
 
       setFinalizadas(finalizadasCount);

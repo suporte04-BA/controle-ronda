@@ -25,20 +25,19 @@ export function isSameDayManaus(a: Date | string, b: Date | string): boolean {
 
 export const TIPO_ACAO_LABEL: Record<string, string> = {
   check_in: "Início de Ronda",
-  check_out_1: "Meio de Ronda",
   check_out_2: "Fim de Ronda",
 };
 
-export type TipoAcao = "check_in" | "check_out_1" | "check_out_2";
+export type TipoAcao = "check_in" | "check_out_2";
 
 export function proximaAcao(acoesHoje: string[]): TipoAcao | null {
-  const ciclo: TipoAcao[] = ["check_in", "check_out_1", "check_out_2"];
+  const ciclo: TipoAcao[] = ["check_in", "check_out_2"];
   const posicao = acoesHoje.length % ciclo.length;
   return ciclo[posicao];
 }
 
 export function acoesDoCicloAtual(acoesHoje: string[]): string[] {
-  const resto = acoesHoje.length % 3;
+  const resto = acoesHoje.length % 2;
   if (resto === 0) return [];
   return acoesHoje.slice(-resto);
 }
