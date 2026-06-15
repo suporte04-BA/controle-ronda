@@ -279,7 +279,12 @@ function Usuarios() {
                         <Button size="sm" variant="ghost" className="sm:hidden" onClick={() => openEditPhoto(u.id, u.foto_url)}>
                           <Camera className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => toggleAdmin(u)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isSupport && u.role === "admin"}
+                          onClick={() => toggleAdmin(u)}
+                        >
                           {u.role === "admin"
                             ? (<><ShieldOff className="w-4 h-4 mr-1" /> Remover admin</>)
                             : (<><Shield className="w-4 h-4 mr-1" /> Tornar admin</>)}
