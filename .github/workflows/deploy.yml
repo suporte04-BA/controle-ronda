@@ -18,6 +18,13 @@ jobs:
       - run: npm ci
 
       - run: npx vite build
+        env:
+          VITE_SUPABASE_PROJECT_ID: rdmbayprbfqbjhfqcasp
+          VITE_SUPABASE_URL: https://rdmbayprbfqbjhfqcasp.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w
+          SUPABASE_PROJECT_ID: rdmbayprbfqbjhfqcasp
+          SUPABASE_URL: https://rdmbayprbfqbjhfqcasp.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
