@@ -81,7 +81,9 @@ function BaterPonto() {
   return (
     <div className="px-4 py-6 space-y-6">
       <header className="space-y-1">
-        <img src="/logo.png" className="h-12 object-contain mb-4 drop-shadow-[0_0_16px_rgba(0,240,255,0.2)]" alt="BA Elétrica" />
+        <div className="logo-container mb-4">
+          <img src="/logo.png" className="h-12 object-contain" alt="BA Elétrica" />
+        </div>
         <p className="text-sm text-muted-foreground capitalize">
           {now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
         </p>

@@ -37,12 +37,11 @@ export function AdminSidebar() {
   return (
     <aside className="no-print w-60 lg:w-72 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col h-screen sticky top-0">
       <div className="px-5 pt-6 pb-4 border-b border-sidebar-border flex flex-col items-center gap-2 bg-transparent">
-        <div className="relative">
+        <div className="logo-container">
           <img
             src="/logo.png"
             alt="BA Elétrica"
-            className="h-20 lg:h-28 w-auto object-contain drop-shadow-[0_0_24px_rgba(0,240,255,0.25)]"
-            style={{ background: "transparent" }}
+            className="h-20 lg:h-28 w-auto object-contain"
           />
         </div>
         <div className="text-center">

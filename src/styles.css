@@ -198,6 +198,28 @@
     transition: box-shadow 0.3s ease;
   }
 
+  /* ═══ LOGO CONTAINER (white rounded square + neon) ═══ */
+  .logo-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    box-shadow:
+      0 0 10px rgba(0, 240, 255, 0.3),
+      0 0 20px rgba(0, 240, 255, 0.15),
+      0 0 40px rgba(0, 240, 255, 0.08);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .light .logo-container {
+    box-shadow:
+      0 0 10px rgba(2, 132, 199, 0.2),
+      0 0 20px rgba(2, 132, 199, 0.1),
+      0 0 40px rgba(2, 132, 199, 0.05);
+  }
+
   /* ═══ GLASSMORPHISM ═══ */
   .dark .glass {
     background: rgba(18, 18, 42, 0.7);
