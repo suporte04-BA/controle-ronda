@@ -44,14 +44,16 @@ function BaterPonto() {
     setAcoesHoje(filtrados.map((r) => r.tipo_acao));
   }, [user]);
 
-  useEffect(() => { carregarHoje(); }, [carregarHoje]);
+  useEffect(() => {
+    carregarHoje();
+  }, [carregarHoje]);
 
   const proxima = useMemo(() => proximaAcao(acoesHoje), [acoesHoje]);
   const cicloAtual = useMemo(() => acoesDoCicloAtual(acoesHoje), [acoesHoje]);
 
   const handleCapture = async (
     blob: Blob,
-    timestamps: { horarioCapturaOriginal: string; horarioConfirmacaoEnvio: string }
+    timestamps: { horarioCapturaOriginal: string; horarioConfirmacaoEnvio: string },
   ) => {
     if (!user || !proxima) return;
     const path = `${user.id}/${Date.now()}_${proxima}.jpg`;
@@ -95,12 +97,16 @@ function BaterPonto() {
 
       <div className="card-neon p-8 text-center glow-cyan animate-neon-pulse">
         <Clock className="w-6 h-6 mx-auto text-neon-cyan mb-2" />
-        <div className="text-5xl font-bold tabular-nums tracking-tight text-foreground text-glow-cyan">{formatHora(now)}</div>
+        <div className="text-5xl font-bold tabular-nums tracking-tight text-foreground text-glow-cyan">
+          {formatHora(now)}
+        </div>
         <div className="text-sm text-muted-foreground mt-2">{formatData(now)}</div>
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Hoje</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          Hoje
+        </h2>
         <div className="grid grid-cols-2 gap-2">
           {(["check_in", "check_out_2"] as const).map((t) => {
             const doneCurrent = cicloAtual.includes(t);
@@ -122,7 +128,11 @@ function BaterPonto() {
       </div>
 
       {proxima ? (
-        <Button onClick={() => setCamOpen(true)} size="lg" className="w-full h-16 text-base rounded-2xl bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_24px_rgba(0,240,255,0.35)] transition-all duration-200 animate-neon-pulse">
+        <Button
+          onClick={() => setCamOpen(true)}
+          size="lg"
+          className="w-full h-16 text-base rounded-2xl bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_24px_rgba(0,240,255,0.35)] transition-all duration-200 animate-neon-pulse"
+        >
           <Camera className="w-5 h-5 mr-2" />
           Registrar {TIPO_ACAO_LABEL[proxima]}
         </Button>
