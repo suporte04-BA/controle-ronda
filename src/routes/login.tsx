@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { resolveLoginEmail } from "@/lib/admin-users.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — BA Elétrica" }] }),
@@ -28,18 +30,32 @@ function LoginPage() {
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
   const [busy, setBusy] = useState(false);
+  const resolveEmailFn = useServerFn(resolveLoginEmail);
 
   const entrar = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const emailLimpo = email.trim().toLowerCase().replace(/,$/, "");
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: emailLimpo, password: senha });
+      const input = email.trim();
+      let loginEmail: string;
+
+      if (input.includes("@")) {
+        loginEmail = input.toLowerCase();
+      } else {
+        const result = await resolveEmailFn({ data: { nomeOuEmail: input } });
+        loginEmail = result.email;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: senha,
+      });
       if (error) toast.error("Falha no login", { description: error.message });
       else toast.success("Bem-vindo de volta!");
-    } catch (error) {
-      toast.error("Erro de conexão", {
-        description: "Não foi possível conectar ao backend agora. Verifique a internet e tente novamente.",
+    } catch (error: any) {
+      toast.error("Falha no login", {
+        description:
+          error?.message || "Não foi possível conectar. Verifique a internet e tente novamente.",
       });
     } finally {
       setBusy(false);
@@ -62,7 +78,8 @@ function LoginPage() {
       else toast.success("Cadastro realizado! Faça login para acessar.");
     } catch (error) {
       toast.error("Erro de conexão", {
-        description: "Não foi possível conectar ao backend agora. Verifique a internet e tente novamente.",
+        description:
+          "Não foi possível conectar ao backend agora. Verifique a internet e tente novamente.",
       });
     } finally {
       setBusy(false);
@@ -76,39 +93,81 @@ function LoginPage() {
       </div>
       {/* Neon glow orbs */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-neon-cyan/5 blur-3xl animate-glow-breathe pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-neon-violet/5 blur-3xl animate-glow-breathe pointer-events-none" style={{ animationDelay: "1.5s" }} />
+      <div
+        className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-neon-violet/5 blur-3xl animate-glow-breathe pointer-events-none"
+        style={{ animationDelay: "1.5s" }}
+      />
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="relative inline-block mb-4">
-            <img src="/logo.png" className="h-14 object-contain mx-auto drop-shadow-[0_0_20px_rgba(0,240,255,0.3)]" alt="BA Elétrica" />
+            <img
+              src="/logo.png"
+              className="h-14 object-contain mx-auto drop-shadow-[0_0_20px_rgba(0,240,255,0.3)]"
+              alt="BA Elétrica"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            BA Elétrica
-          </h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">BA Elétrica</h1>
           <p className="text-sm text-muted-foreground mt-1">Controle de Ronda</p>
         </div>
 
         <div className="glass-strong rounded-2xl p-6 glow-cyan">
           <Tabs defaultValue="entrar">
             <TabsList className="grid grid-cols-2 mb-5 w-full bg-secondary/50">
-              <TabsTrigger value="entrar" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-[0_0_10px_rgba(0,240,255,0.15)]">Entrar</TabsTrigger>
-              <TabsTrigger value="cadastrar" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-[0_0_10px_rgba(0,240,255,0.15)]">Cadastrar</TabsTrigger>
+              <TabsTrigger
+                value="entrar"
+                className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-[0_0_10px_rgba(0,240,255,0.15)]"
+              >
+                Entrar
+              </TabsTrigger>
+              <TabsTrigger
+                value="cadastrar"
+                className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-[0_0_10px_rgba(0,240,255,0.15)]"
+              >
+                Cadastrar
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="entrar">
               <form onSubmit={entrar} className="space-y-3.5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-muted-foreground text-xs uppercase tracking-wider">E-mail</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                  <Label
+                    htmlFor="email"
+                    className="text-muted-foreground text-xs uppercase tracking-wider"
+                  >
+                    Usuário (e-mail ou nome)
+                  </Label>
+                  <Input
+                    id="email"
+                    type="text"
+                    required
+                    placeholder="Digite seu e-mail ou nome"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all"
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="senha" className="text-muted-foreground text-xs uppercase tracking-wider">Senha</Label>
-                  <Input id="senha" type="password" required value={senha} onChange={(e) => setSenha(e.target.value)}
-                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                  <Label
+                    htmlFor="senha"
+                    className="text-muted-foreground text-xs uppercase tracking-wider"
+                  >
+                    Senha
+                  </Label>
+                  <Input
+                    id="senha"
+                    type="password"
+                    required
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all"
+                  />
                 </div>
-                <Button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all duration-200" disabled={busy}>
+                <Button
+                  type="submit"
+                  className="w-full h-11 bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all duration-200"
+                  disabled={busy}
+                >
                   {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Entrar"}
                 </Button>
               </form>
@@ -117,21 +176,58 @@ function LoginPage() {
             <TabsContent value="cadastrar">
               <form onSubmit={cadastrar} className="space-y-3.5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="nome" className="text-muted-foreground text-xs uppercase tracking-wider">Nome completo</Label>
-                  <Input id="nome" required value={nome} onChange={(e) => setNome(e.target.value)}
-                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                  <Label
+                    htmlFor="nome"
+                    className="text-muted-foreground text-xs uppercase tracking-wider"
+                  >
+                    Nome completo
+                  </Label>
+                  <Input
+                    id="nome"
+                    required
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all"
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="email2" className="text-muted-foreground text-xs uppercase tracking-wider">E-mail</Label>
-                  <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                  <Label
+                    htmlFor="email2"
+                    className="text-muted-foreground text-xs uppercase tracking-wider"
+                  >
+                    E-mail
+                  </Label>
+                  <Input
+                    id="email2"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all"
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="senha2" className="text-muted-foreground text-xs uppercase tracking-wider">Senha</Label>
-                  <Input id="senha2" type="password" required minLength={6} value={senha} onChange={(e) => setSenha(e.target.value)}
-                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all" />
+                  <Label
+                    htmlFor="senha2"
+                    className="text-muted-foreground text-xs uppercase tracking-wider"
+                  >
+                    Senha
+                  </Label>
+                  <Input
+                    id="senha2"
+                    type="password"
+                    required
+                    minLength={6}
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    className="bg-secondary/50 border-border-subtle focus:border-primary/40 focus:ring-primary/20 focus:shadow-[0_0_12px_rgba(0,240,255,0.1)] transition-all"
+                  />
                 </div>
-                <Button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all duration-200" disabled={busy}>
+                <Button
+                  type="submit"
+                  className="w-full h-11 bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all duration-200"
+                  disabled={busy}
+                >
                   {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar conta"}
                 </Button>
               </form>

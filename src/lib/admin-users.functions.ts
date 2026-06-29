@@ -3,6 +3,23 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
+export const resolveLoginEmail = createServerFn({ method: "POST" })
+  .validator((d: { nomeOuEmail: string }) => d)
+  .handler(async ({ data }) => {
+    const input = data.nomeOuEmail.trim();
+    if (input.includes("@")) return { email: input.toLowerCase() };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .ilike("nome", input)
+      .maybeSingle();
+
+    if (!prof?.email) throw new Error("Usuário não encontrado. Use o e-mail para entrar.");
+    return { email: prof.email.toLowerCase() };
+  });
+
 async function assertAdmin(ctx: { supabase: any; userId: string }) {
   const { data } = await ctx.supabase
     .from("user_roles")
