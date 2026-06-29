@@ -44,6 +44,104 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     return { id: uid };
   });
 
+export const adminBulkCreateUsers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    (d: {
+      setores: { nome: string }[];
+      usuarios: {
+        nome: string;
+        email: string;
+        password: string;
+        setor_nome: string;
+        role: "admin" | "user";
+      }[];
+    }) => d,
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const results: {
+      nome: string;
+      email: string;
+      password: string;
+      ok: boolean;
+      error?: string;
+    }[] = [];
+
+    // 1. Criar setores
+    const setorMap = new Map<string, string>();
+    for (const s of data.setores) {
+      const existing = await supabaseAdmin
+        .from("setores")
+        .select("id")
+        .eq("nome", s.nome)
+        .maybeSingle();
+      if (existing.data) {
+        setorMap.set(s.nome, existing.data.id);
+      } else {
+        const { data: created } = await supabaseAdmin
+          .from("setores")
+          .insert({ nome: s.nome })
+          .select("id")
+          .single();
+        if (created) setorMap.set(s.nome, created.id);
+      }
+    }
+
+    // 2. Criar usuarios
+    for (const u of data.usuarios) {
+      try {
+        const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+          email: u.email,
+          password: u.password,
+          email_confirm: true,
+          user_metadata: { nome: u.nome },
+        });
+        if (error || !created.user) {
+          results.push({
+            nome: u.nome,
+            email: u.email,
+            password: u.password,
+            ok: false,
+            error: error?.message || "Falha ao criar",
+          });
+          continue;
+        }
+
+        const uid = created.user.id;
+        const setorId = setorMap.get(u.setor_nome) ?? null;
+
+        // Upsert profile
+        await supabaseAdmin.from("profiles").upsert({
+          id: uid,
+          nome: u.nome,
+          email: u.email,
+          setor_id: setorId,
+        });
+
+        // Upsert role
+        await supabaseAdmin.from("user_roles").upsert({
+          user_id: uid,
+          role: u.role,
+        });
+
+        results.push({ nome: u.nome, email: u.email, password: u.password, ok: true });
+      } catch (e: any) {
+        results.push({
+          nome: u.nome,
+          email: u.email,
+          password: u.password,
+          ok: false,
+          error: e?.message || "Erro desconhecido",
+        });
+      }
+    }
+
+    return results;
+  });
+
 export const adminDeleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: { userId: string }) => d)
