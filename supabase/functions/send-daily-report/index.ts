@@ -774,6 +774,12 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
     recipients.push(suporte);
   }
 
+  const benjamin = normalizeEmail("benjaminmarcos215@gmail.com");
+  if (benjamin && !seen.has(benjamin)) {
+    seen.add(benjamin);
+    recipients.push(benjamin);
+  }
+
   return recipients;
 }
 
