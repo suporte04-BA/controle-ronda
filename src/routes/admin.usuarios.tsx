@@ -77,40 +77,71 @@ function Usuarios() {
   >(null);
   const bulkFn = useServerFn(adminBulkCreateUsers);
 
-  const randDigits = (n: number) =>
-    Array.from({ length: n }, () => Math.floor(Math.random() * 10)).join("");
-
   const BULK_USERS = [
-    { nome: "Kallahan Maverick", setor_nome: "CD - GUARDAS", role: "user" as const },
-    { nome: "Éder Christiano", setor_nome: "CD - GUARDAS", role: "user" as const },
-    { nome: "Rosicleia Cardoso", setor_nome: "CD - GUARDAS", role: "user" as const },
-    { nome: "Joel Brilhante", setor_nome: "CD - GUARDAS", role: "user" as const },
-    { nome: "Marcos Vinicius", setor_nome: "CD - GUARDAS", role: "user" as const },
-    { nome: "Walison Bastos", setor_nome: "CD - GUARDAS", role: "user" as const },
-    { nome: "José Augusto", setor_nome: "CD - GUARDAS", role: "user" as const },
+    {
+      nome: "Kallahan Maverick",
+      setor_nome: "CD - GUARDAS",
+      role: "user" as const,
+      password: "ba3847",
+    },
+    {
+      nome: "Éder Christiano",
+      setor_nome: "CD - GUARDAS",
+      role: "user" as const,
+      password: "ba7291",
+    },
+    {
+      nome: "Rosicleia Cardoso",
+      setor_nome: "CD - GUARDAS",
+      role: "user" as const,
+      password: "ba5163",
+    },
+    {
+      nome: "Joel Brilhante",
+      setor_nome: "CD - GUARDAS",
+      role: "user" as const,
+      password: "ba8420",
+    },
+    {
+      nome: "Marcos Vinicius",
+      setor_nome: "CD - GUARDAS",
+      role: "user" as const,
+      password: "ba6059",
+    },
+    {
+      nome: "Walison Bastos",
+      setor_nome: "CD - GUARDAS",
+      role: "user" as const,
+      password: "ba4712",
+    },
+    { nome: "José Augusto", setor_nome: "CD - GUARDAS", role: "user" as const, password: "ba9385" },
     {
       nome: "Edson Farias",
       email: "edsonfarias@baeletrica.com.br",
       setor_nome: "GESTOR DE OPERAÇÕES",
       role: "admin" as const,
+      password: "ba837291",
     },
     {
       nome: "Ricardo Gomes",
       email: "ricardogomes@baeletrica.com.br",
       setor_nome: "GESTOR DE OPERAÇÕES",
       role: "admin" as const,
+      password: "ba461083",
     },
     {
       nome: "Marcelo Fonseca",
       email: "marcelofonseca@baeletrica.com.br",
       setor_nome: "GESTOR DE OPERAÇÕES",
       role: "admin" as const,
+      password: "ba295746",
     },
     {
       nome: "Benjamin Marcos",
       email: "benjaminmarcos215@gmail.com",
       setor_nome: "GESTOR DE OPERAÇÕES",
       role: "admin" as const,
+      password: "ba613804",
     },
   ];
 
@@ -130,7 +161,7 @@ function Usuarios() {
       const usuarios = BULK_USERS.map((u) => ({
         ...u,
         email: u.email ?? gerarEmail(u.nome),
-        password: u.role === "admin" ? `ba${randDigits(6)}` : `ba${randDigits(4)}`,
+        password: u.password,
       }));
 
       const result = await bulkFn({
