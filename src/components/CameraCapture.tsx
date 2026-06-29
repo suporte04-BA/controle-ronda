@@ -6,7 +6,10 @@ import { formatManaus } from "@/lib/timezone";
 interface Props {
   open: boolean;
   onCancel: () => void;
-  onCapture: (blob: Blob, timestamps: { horarioCapturaOriginal: string; horarioConfirmacaoEnvio: string }) => Promise<void> | void;
+  onCapture: (
+    blob: Blob,
+    timestamps: { horarioCapturaOriginal: string; horarioConfirmacaoEnvio: string },
+  ) => Promise<void> | void;
   title?: string;
 }
 
@@ -68,7 +71,13 @@ export function CameraCapture({ open, onCancel, onCapture, title }: Props) {
     const sx = (video.videoWidth - size) / 2;
     const sy = (video.videoHeight - size) / 2;
     ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
-    canvas.toBlob((b) => { if (b) setPreviewBlob(b); }, "image/jpeg", 0.85);
+    canvas.toBlob(
+      (b) => {
+        if (b) setPreviewBlob(b);
+      },
+      "image/jpeg",
+      0.85,
+    );
     setPreview(canvas.toDataURL("image/jpeg", 0.85));
     setHorarioCapturaOriginal(new Date().toISOString());
     stop();
@@ -122,18 +131,27 @@ export function CameraCapture({ open, onCancel, onCapture, title }: Props) {
       <div className="flex-1 flex items-center justify-center px-4">
         {preview ? (
           <div className="space-y-3 text-center">
-            <img src={preview} alt="Pré-visualização" className="max-h-[60vh] rounded-2xl border-4 border-white/20" />
+            <img
+              src={preview}
+              alt="Pré-visualização"
+              className="max-h-[60vh] rounded-2xl border-4 border-white/20"
+            />
             {horarioCapturaOriginal && (
-              <p className="text-xs text-white/75">Capturada em {formatManaus(horarioCapturaOriginal)}</p>
+              <p className="text-xs text-white/75">
+                Capturada em {formatManaus(horarioCapturaOriginal)}
+              </p>
             )}
           </div>
         ) : error ? (
           <div className="max-w-md w-full bg-card text-card-foreground rounded-xl p-6 text-center space-y-4">
             <AlertTriangle className="w-12 h-12 mx-auto text-destructive" />
             <p className="text-sm">
-              Câmera não disponível neste dispositivo. Use um dispositivo com câmera para registrar rondas.
+              Câmera não disponível neste dispositivo. Use um dispositivo com câmera para registrar
+              rondas.
             </p>
-            <Button onClick={fechar} variant="outline" className="w-full">Fechar</Button>
+            <Button onClick={fechar} variant="outline" className="w-full">
+              Fechar
+            </Button>
           </div>
         ) : (
           <div className="relative w-full max-w-md aspect-square">
@@ -162,7 +180,9 @@ export function CameraCapture({ open, onCancel, onCapture, title }: Props) {
               </Button>
               <Button onClick={confirmar} size="lg" disabled={submitting}>
                 {submitting ? (
-                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> A enviar ronda de segurança...</>
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" /> A enviar ronda de segurança...
+                  </>
                 ) : (
                   "Confirmar e Enviar Ronda"
                 )}

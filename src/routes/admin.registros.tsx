@@ -6,7 +6,13 @@ import { Loader2, Search, Download, Printer, FileText, X, Send, ImageOff } from 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatData, formatHora, TIPO_ACAO_LABEL, formatManaus, nowManaus } from "@/lib/timezone";
@@ -35,19 +41,38 @@ interface Row {
 
 type Preset = "hoje" | "ontem" | "semana" | "semana_passada" | "mes" | "ultimos7" | "custom";
 
-function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
-function endOfDay(d: Date) { const x = new Date(d); x.setHours(23,59,59,999); return x; }
-function addDays(d: Date, n: number) { const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function endOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+function addDays(d: Date, n: number) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
 function toInput(d: Date) {
-  const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,"0"); const dd = String(d.getDate()).padStart(2,"0");
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
-function fromInput(s: string) { return new Date(s + "T00:00:00"); }
+function fromInput(s: string) {
+  return new Date(s + "T00:00:00");
+}
 
 function rangeFromPreset(p: Preset): { from: string; to: string } | null {
   const now = new Date();
   if (p === "hoje") return { from: toInput(now), to: toInput(now) };
-  if (p === "ontem") { const y = addDays(now, -1); return { from: toInput(y), to: toInput(y) }; }
+  if (p === "ontem") {
+    const y = addDays(now, -1);
+    return { from: toInput(y), to: toInput(y) };
+  }
   if (p === "ultimos7") return { from: toInput(addDays(now, -6)), to: toInput(now) };
   if (p === "semana" || p === "semana_passada") {
     const dow = now.getDay(); // 0 sun .. 6 sat
@@ -59,7 +84,7 @@ function rangeFromPreset(p: Preset): { from: string; to: string } | null {
   }
   if (p === "mes") {
     const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    const last = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return { from: toInput(first), to: toInput(last) };
   }
   return null;
@@ -87,11 +112,20 @@ function TodosRegistros() {
       if (!r?.ok) {
         const errMsg = r?.error ?? r?.message ?? "Erro desconhecido";
         if (errMsg.includes("RESEND_API_KEY não configurada")) {
-          toast.error("Chave RESEND_API_KEY não configurada. Configure via Supabase Dashboard > Edge Functions > Secrets.", { id, duration: 15000 });
+          toast.error(
+            "Chave RESEND_API_KEY não configurada. Configure via Supabase Dashboard > Edge Functions > Secrets.",
+            { id, duration: 15000 },
+          );
         } else if (errMsg.includes("Domínio não verificado")) {
-          toast.error("Domínio do remetente não verificado no Resend. Verifique baeletrica.com.br ou use onboarding@resend.dev.", { id, duration: 15000 });
+          toast.error(
+            "Domínio do remetente não verificado no Resend. Verifique baeletrica.com.br ou use onboarding@resend.dev.",
+            { id, duration: 15000 },
+          );
         } else if (errMsg.includes("Nenhum admin")) {
-          toast.error("Nenhum destinatário encontrado. Cadastre um admin no setor GESTOR.", { id, duration: 12000 });
+          toast.error("Nenhum destinatário encontrado. Cadastre um admin no setor GESTOR.", {
+            id,
+            duration: 12000,
+          });
         } else {
           toast.error(`Falha: ${errMsg}`, { id, duration: 12000 });
         }
@@ -101,7 +135,10 @@ function TodosRegistros() {
     } catch (e: any) {
       const errMsg = e?.message ?? "erro desconhecido";
       if (errMsg.includes("RESEND_API_KEY")) {
-        toast.error("Chave RESEND_API_KEY não configurada no Supabase. Veja os logs da Edge Function.", { id, duration: 15000 });
+        toast.error(
+          "Chave RESEND_API_KEY não configurada no Supabase. Veja os logs da Edge Function.",
+          { id, duration: 15000 },
+        );
       } else {
         toast.error(`Falha: ${errMsg}`, { id, duration: 12000 });
       }
@@ -114,7 +151,8 @@ function TodosRegistros() {
     let cancelled = false;
     (async () => {
       const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
-        supabase.from("registros_ponto")
+        supabase
+          .from("registros_ponto")
           .select("id,tipo_acao,horario_acao,horario_foto,foto_url,user_id")
           .order("horario_acao", { ascending: false })
           .limit(5000),
@@ -131,21 +169,26 @@ function TodosRegistros() {
           ...r,
           nome: p?.nome ?? "—",
           email: p?.email ?? "",
-          setor: p?.setor_id ? setMap.get(p.setor_id) ?? null : null,
+          setor: p?.setor_id ? (setMap.get(p.setor_id) ?? null) : null,
           setor_id: p?.setor_id ?? null,
         };
       });
       setRows(merged);
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const aplicarPreset = (p: Preset) => {
     setPreset(p);
     if (p !== "custom") {
       const r = rangeFromPreset(p);
-      if (r) { setDataDe(r.from); setDataAte(r.to); }
+      if (r) {
+        setDataDe(r.from);
+        setDataAte(r.to);
+      }
     }
   };
 
@@ -184,7 +227,13 @@ function TodosRegistros() {
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = [
-      { wch: 28 }, { wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 26 }, { wch: 26 }, { wch: 60 },
+      { wch: 28 },
+      { wch: 28 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 26 },
+      { wch: 26 },
+      { wch: 60 },
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Rondas");
@@ -211,12 +260,22 @@ function TodosRegistros() {
           <p className="text-sm text-muted-foreground">{filtrados.length} registro(s) no período</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {baseRole === "admin" && profile?.email?.toLowerCase() === "suporte04@baeletrica.com.br" && (
-            <Button onClick={dispararTeste} disabled={enviando} variant="default" className="bg-[color:var(--brand-red)] hover:bg-[color:var(--brand-red)]/90 text-white">
-              {enviando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-              Enviar Relatório de Teste
-            </Button>
-          )}
+          {baseRole === "admin" &&
+            profile?.email?.toLowerCase() === "suporte04@baeletrica.com.br" && (
+              <Button
+                onClick={dispararTeste}
+                disabled={enviando}
+                variant="default"
+                className="bg-[color:var(--brand-red)] hover:bg-[color:var(--brand-red)]/90 text-white"
+              >
+                {enviando ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Enviar Relatório de Teste
+              </Button>
+            )}
           <Button onClick={exportarExcel} disabled={!intervaloValido}>
             <Download className="w-4 h-4 mr-2" /> Exportar Excel
           </Button>
@@ -228,33 +287,75 @@ function TodosRegistros() {
 
       <div className="no-print card-neon p-4 space-y-3">
         <div className="flex flex-wrap gap-2">
-          {([
-            ["hoje","Hoje"],["ontem","Ontem"],["ultimos7","Últimos 7 dias"],
-            ["semana","Semana atual"],["semana_passada","Semana passada"],["mes","Mês atual"],["custom","Personalizado"],
-          ] as [Preset,string][]).map(([k,l]) => (
-            <Button key={k} size="sm" variant={preset===k?"default":"outline"}
-              className={preset===k ? "bg-primary/15 text-primary border-primary/30 shadow-[0_0_8px_rgba(0,240,255,0.1)]" : "border-border-subtle text-muted-foreground hover:bg-hover-subtle"}
-              onClick={() => aplicarPreset(k)}>{l}</Button>
+          {(
+            [
+              ["hoje", "Hoje"],
+              ["ontem", "Ontem"],
+              ["ultimos7", "Últimos 7 dias"],
+              ["semana", "Semana atual"],
+              ["semana_passada", "Semana passada"],
+              ["mes", "Mês atual"],
+              ["custom", "Personalizado"],
+            ] as [Preset, string][]
+          ).map(([k, l]) => (
+            <Button
+              key={k}
+              size="sm"
+              variant={preset === k ? "default" : "outline"}
+              className={
+                preset === k
+                  ? "bg-primary/15 text-primary border-primary/30 shadow-[0_0_8px_rgba(0,240,255,0.1)]"
+                  : "border-border-subtle text-muted-foreground hover:bg-hover-subtle"
+              }
+              onClick={() => aplicarPreset(k)}
+            >
+              {l}
+            </Button>
           ))}
         </div>
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground">De</label>
-            <Input type="date" value={dataDe} onChange={(e) => { setPreset("custom"); setDataDe(e.target.value); }} />
+            <Input
+              type="date"
+              value={dataDe}
+              onChange={(e) => {
+                setPreset("custom");
+                setDataDe(e.target.value);
+              }}
+            />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground">Até</label>
-            <Input type="date" value={dataAte} onChange={(e) => { setPreset("custom"); setDataAte(e.target.value); }} />
+            <Input
+              type="date"
+              value={dataAte}
+              onChange={(e) => {
+                setPreset("custom");
+                setDataAte(e.target.value);
+              }}
+            />
           </div>
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Buscar por nome..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9" />
+            <Input
+              placeholder="Buscar por nome..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="pl-9"
+            />
           </div>
           <Select value={setorFiltro} onValueChange={setSetorFiltro}>
-            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Setor" /></SelectTrigger>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Setor" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os setores</SelectItem>
-              {setores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+              {setores.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.nome}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -267,12 +368,15 @@ function TodosRegistros() {
             <h2 className="text-xl font-bold">Folha Oficial de Controle de Ronda</h2>
             <p className="text-xs text-muted-foreground">BA Elétrica — Fuso America/Manaus</p>
             <p className="text-xs text-muted-foreground">
-              Período: {dataDe} a {dataAte} — {filtrados.length} registro(s) — emitido em {formatData(nowManaus())} {formatHora(nowManaus())}
+              Período: {dataDe} a {dataAte} — {filtrados.length} registro(s) — emitido em{" "}
+              {formatData(nowManaus())} {formatHora(nowManaus())}
             </p>
           </div>
         </div>
         {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-neon-cyan" /></div>
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-6 h-6 animate-spin text-neon-cyan" />
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -301,14 +405,25 @@ function TodosRegistros() {
                     <td className="px-4 py-3 tabular-nums">{formatHora(r.horario_acao)}</td>
                     <td className="px-4 py-3 tabular-nums">{formatHora(r.horario_foto)}</td>
                     <td className="px-4 py-3 text-right no-print">
-                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setDetalhe(r); }}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDetalhe(r);
+                        }}
+                      >
                         <FileText className="w-4 h-4" />
                       </Button>
                     </td>
                   </tr>
                 ))}
                 {filtrados.length === 0 && (
-                  <tr><td colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum registro no período</td></tr>
+                  <tr>
+                    <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                      Nenhum registro no período
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -316,8 +431,13 @@ function TodosRegistros() {
         )}
         <div className="hidden print:block print-footer px-6 py-4">
           <p>Documento gerado automaticamente — BA Elétrica — Sistema de Controle de Ronda</p>
-          <p>Fuso horário: America/Manaus (UTC-4) — Emitido em {formatManaus(nowManaus().toISOString())}</p>
-          <p className="font-semibold text-foreground mt-2">CONFIDENCIAL — Uso interno da BA Elétrica</p>
+          <p>
+            Fuso horário: America/Manaus (UTC-4) — Emitido em{" "}
+            {formatManaus(nowManaus().toISOString())}
+          </p>
+          <p className="font-semibold text-foreground mt-2">
+            CONFIDENCIAL — Uso interno da BA Elétrica
+          </p>
         </div>
       </div>
 
@@ -326,14 +446,27 @@ function TodosRegistros() {
   );
 }
 
-function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () => void; todos: Row[] }) {
+function DetalheModal({
+  row,
+  onClose,
+  todos,
+}: {
+  row: Row | null;
+  onClose: () => void;
+  todos: Row[];
+}) {
   const [ciclo, setCiclo] = useState<Row[]>([]);
   const [signed, setSigned] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(false);
   const [photoErrors, setPhotoErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!row) { setCiclo([]); setSigned(new Map()); setPhotoErrors(new Set()); return; }
+    if (!row) {
+      setCiclo([]);
+      setSigned(new Map());
+      setPhotoErrors(new Set());
+      return;
+    }
     setLoading(true);
     setPhotoErrors(new Set());
     const userRows = todos
@@ -341,12 +474,22 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
       .slice()
       .sort((a, b) => new Date(a.horario_acao).getTime() - new Date(b.horario_acao).getTime());
     const idxClicked = userRows.findIndex((r) => r.id === row.id);
-    if (idxClicked < 0) { setCiclo([row]); setLoading(false); return; }
+    if (idxClicked < 0) {
+      setCiclo([row]);
+      setLoading(false);
+      return;
+    }
 
     let inicio = idxClicked;
     for (let i = idxClicked; i >= 0; i--) {
-      if (userRows[i].tipo_acao === "check_in") { inicio = i; break; }
-      if (i < idxClicked && userRows[i].tipo_acao === "check_out_2") { inicio = i + 1; break; }
+      if (userRows[i].tipo_acao === "check_in") {
+        inicio = i;
+        break;
+      }
+      if (i < idxClicked && userRows[i].tipo_acao === "check_out_2") {
+        inicio = i + 1;
+        break;
+      }
     }
     const cicloRows = userRows.slice(inicio, idxClicked + 1);
     setCiclo(cicloRows);
@@ -354,18 +497,20 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
     (async () => {
       const map = new Map<string, string>();
       const errors = new Set<string>();
-      await Promise.all(cicloRows.map(async (r) => {
-        try {
-          const u = await getSignedFotoUrl(r.foto_url, 3600);
-          if (u) {
-            map.set(r.id, u);
-          } else {
+      await Promise.all(
+        cicloRows.map(async (r) => {
+          try {
+            const u = await getSignedFotoUrl(r.foto_url, 3600);
+            if (u) {
+              map.set(r.id, u);
+            } else {
+              errors.add(r.id);
+            }
+          } catch {
             errors.add(r.id);
           }
-        } catch {
-          errors.add(r.id);
-        }
-      }));
+        }),
+      );
       setSigned(map);
       setPhotoErrors(errors);
       setLoading(false);
@@ -373,7 +518,7 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
   }, [row, todos]);
 
   const handlePhotoError = useCallback((id: string) => {
-    setPhotoErrors(prev => new Set(prev).add(id));
+    setPhotoErrors((prev) => new Set(prev).add(id));
   }, []);
 
   const gerarPdfIsolado = async () => {
@@ -392,8 +537,8 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
       const navyBlue = rgb(0.12, 0.17, 0.33);
       const darkText = rgb(0.07, 0.09, 0.15);
       const grayText = rgb(0.45, 0.48, 0.53);
-      const lineColor = rgb(0.83, 0.86, 0.90);
-      const borderColor = rgb(0.88, 0.90, 0.93);
+      const lineColor = rgb(0.83, 0.86, 0.9);
+      const borderColor = rgb(0.88, 0.9, 0.93);
       const lightGray = rgb(0.96, 0.97, 0.98);
       const white = rgb(1, 1, 1);
       const softRed = rgb(0.99, 0.93, 0.93);
@@ -402,7 +547,14 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
       let pageNum = 1;
       let y = pageH - 40;
 
-      const draw = (txt: string, xPos: number, yPos: number, size: number, bold = false, color = darkText) => {
+      const draw = (
+        txt: string,
+        xPos: number,
+        yPos: number,
+        size: number,
+        bold = false,
+        color = darkText,
+      ) => {
         page.drawText(txt, { x: xPos, y: yPos, size, font: bold ? fontB : font, color });
       };
       const lineH = (x1: number, x2: number, yPos: number, thickness = 0.5, color = lineColor) => {
@@ -461,8 +613,13 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
       const cardH = 100;
       const tableW = pageW - marginX * 2;
       page.drawRectangle({
-        x: marginX, y: y - cardH, width: tableW, height: cardH,
-        borderColor: borderColor, borderWidth: 0.8, color: lightGray,
+        x: marginX,
+        y: y - cardH,
+        width: tableW,
+        height: cardH,
+        borderColor: borderColor,
+        borderWidth: 0.8,
+        color: lightGray,
       });
       page.drawRectangle({ x: marginX, y: y - cardH, width: 4, height: cardH, color: brandRed });
 
@@ -495,18 +652,29 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
       for (let idx = 0; idx < ciclo.length; idx++) {
         const r = ciclo[idx];
 
-        const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33)
-          : rgb(0.85, 0.55, 0.10);
+        const accentColor =
+          r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33) : rgb(0.85, 0.55, 0.1);
 
         ensurePage(120, false);
 
         // Step card
         const stepCardH = 88;
         page.drawRectangle({
-          x: marginX + 20, y: y - stepCardH + 8, width: tableW - 20, height: stepCardH,
-          borderColor: borderColor, borderWidth: 0.5, color: white,
+          x: marginX + 20,
+          y: y - stepCardH + 8,
+          width: tableW - 20,
+          height: stepCardH,
+          borderColor: borderColor,
+          borderWidth: 0.5,
+          color: white,
         });
-        page.drawRectangle({ x: marginX + 20, y: y - stepCardH + 8, width: 3, height: stepCardH, color: accentColor });
+        page.drawRectangle({
+          x: marginX + 20,
+          y: y - stepCardH + 8,
+          width: 3,
+          height: stepCardH,
+          color: accentColor,
+        });
 
         // Step number circle
         page.drawCircle({ x: marginX + 14, y: y - 2, size: 10, color: accentColor });
@@ -514,8 +682,22 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
 
         draw(TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao, marginX + 34, y - 4, 10, true, darkText);
         y -= 16;
-        draw(`Horário da captura: ${formatManaus(r.horario_acao)}`, marginX + 34, y, 8, false, grayText);
-        draw(`Horário de envio: ${formatManaus(r.horario_foto)}`, marginX + 300, y, 8, false, grayText);
+        draw(
+          `Horário da captura: ${formatManaus(r.horario_acao)}`,
+          marginX + 34,
+          y,
+          8,
+          false,
+          grayText,
+        );
+        draw(
+          `Horário de envio: ${formatManaus(r.horario_foto)}`,
+          marginX + 300,
+          y,
+          8,
+          false,
+          grayText,
+        );
         y -= 16;
 
         // Photo
@@ -526,15 +708,23 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
             if (imgRes.ok) {
               const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
               let img;
-              try { img = await pdf.embedJpg(imgBytes); } catch { img = await pdf.embedPng(imgBytes); }
+              try {
+                img = await pdf.embedJpg(imgBytes);
+              } catch {
+                img = await pdf.embedPng(imgBytes);
+              }
               const maxW = tableW - 50;
               const maxH = 160;
               const scale = Math.min(maxW / img.width, maxH / img.height, 1);
               const drawW = img.width * scale;
               const drawH = img.height * scale;
               page.drawRectangle({
-                x: marginX + 32, y: y - drawH - 2, width: drawW + 4, height: drawH + 4,
-                borderColor: borderColor, borderWidth: 0.5,
+                x: marginX + 32,
+                y: y - drawH - 2,
+                width: drawW + 4,
+                height: drawH + 4,
+                borderColor: borderColor,
+                borderWidth: 0.5,
               });
               page.drawImage(img, { x: marginX + 34, y: y - drawH, width: drawW, height: drawH });
               y -= drawH + 14;
@@ -545,8 +735,13 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
           }
         } else {
           page.drawRectangle({
-            x: marginX + 34, y: y - 80, width: 220, height: 80,
-            borderColor: borderColor, borderWidth: 0.5, color: lightGray,
+            x: marginX + 34,
+            y: y - 80,
+            width: 220,
+            height: 80,
+            borderColor: borderColor,
+            borderWidth: 0.5,
+            color: lightGray,
           });
           draw("Foto indisponível", marginX + 90, y - 38, 8, false, grayText);
           y -= 92;
@@ -555,7 +750,12 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
         y -= 12;
         if (idx < ciclo.length - 1) {
           // Vertical connector line
-          page.drawLine({ start: { x: marginX + 14, y: y + 6 }, end: { x: marginX + 14, y: y - 6 }, thickness: 1.5, color: accentColor });
+          page.drawLine({
+            start: { x: marginX + 14, y: y + 6 },
+            end: { x: marginX + 14, y: y - 6 },
+            thickness: 1.5,
+            color: accentColor,
+          });
           y -= 8;
         }
       }
@@ -597,21 +797,37 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
         </header>
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-3 py-4 text-sm">
-          <div><div className="text-xs text-muted-foreground">Funcionário</div><div className="font-semibold">{row.nome}</div></div>
-          <div><div className="text-xs text-muted-foreground">E-mail</div><div className="font-medium break-all">{row.email || "—"}</div></div>
-          <div><div className="text-xs text-muted-foreground">Setor</div><div className="font-medium">{row.setor ?? "—"}</div></div>
-          <div className="md:col-span-3"><div className="text-xs text-muted-foreground">Data do ciclo</div><div className="font-medium">{formatData(row.horario_acao)}</div></div>
+          <div>
+            <div className="text-xs text-muted-foreground">Funcionário</div>
+            <div className="font-semibold">{row.nome}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">E-mail</div>
+            <div className="font-medium break-all">{row.email || "—"}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Setor</div>
+            <div className="font-medium">{row.setor ?? "—"}</div>
+          </div>
+          <div className="md:col-span-3">
+            <div className="text-xs text-muted-foreground">Data do ciclo</div>
+            <div className="font-medium">{formatData(row.horario_acao)}</div>
+          </div>
         </section>
 
         {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
         ) : (
           <ol className="relative border-l-2 border-primary/30 ml-3 space-y-6 py-2">
             {ciclo.map((r, idx) => (
               <li key={r.id} className="pl-6 relative">
                 <span className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-primary border-4 border-background" />
                 <div className="flex flex-wrap items-baseline gap-3">
-                  <h3 className="font-semibold">{idx + 1}. {TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao}</h3>
+                  <h3 className="font-semibold">
+                    {idx + 1}. {TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao}
+                  </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mt-2">
                   <div>
@@ -645,9 +861,13 @@ function DetalheModal({ row, onClose, todos }: { row: Row | null; onClose: () =>
         )}
 
         <footer className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border mt-4 no-print">
-          <p className="text-xs text-muted-foreground">Gerado em {formatManaus(nowManaus().toISOString())} · Fuso America/Manaus</p>
+          <p className="text-xs text-muted-foreground">
+            Gerado em {formatManaus(nowManaus().toISOString())} · Fuso America/Manaus
+          </p>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Fechar</Button>
+            <Button variant="outline" onClick={onClose}>
+              Fechar
+            </Button>
             <Button onClick={gerarPdfIsolado}>
               <Download className="w-4 h-4 mr-2" /> Baixar PDF
             </Button>

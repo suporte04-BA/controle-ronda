@@ -19,10 +19,9 @@ async function ensureAccessForUser(userId: string, email: string, nome?: string 
     nome: nome || safeEmail,
   });
 
-  await supabaseAdmin.from("user_roles").upsert(
-    { user_id: userId, role },
-    { onConflict: "user_id,role" }
-  );
+  await supabaseAdmin
+    .from("user_roles")
+    .upsert({ user_id: userId, role }, { onConflict: "user_id,role" });
 
   return { role };
 }
@@ -69,8 +68,9 @@ export const syncCurrentUserAccess = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const claims = context.claims as Record<string, unknown>;
     const email = String(claims.email ?? "");
-    const nome = typeof claims.user_metadata === "object" && claims.user_metadata !== null
-      ? (claims.user_metadata as Record<string, unknown>).nome as string | undefined
-      : undefined;
+    const nome =
+      typeof claims.user_metadata === "object" && claims.user_metadata !== null
+        ? ((claims.user_metadata as Record<string, unknown>).nome as string | undefined)
+        : undefined;
     return ensureAccessForUser(context.userId, email, nome);
   });

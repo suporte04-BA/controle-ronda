@@ -43,10 +43,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadProfileAndRole = async (userId: string) => {
-    try { await syncAccess(); } catch (e) { console.warn("syncAccess falhou:", e); }
+    try {
+      await syncAccess();
+    } catch (e) {
+      console.warn("syncAccess falhou:", e);
+    }
     for (let attempt = 0; attempt < 4; attempt++) {
       const [{ data: prof }, { data: roleRows }] = await Promise.all([
-        supabase.from("profiles").select("id,nome,email,setor_id,foto_url").eq("id", userId).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("id,nome,email,setor_id,foto_url")
+          .eq("id", userId)
+          .maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId),
       ]);
       if (prof && roleRows && roleRows.length > 0) {
@@ -58,7 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
     }
     // Fallback final: ainda assim libera acesso como user
-    const { data: prof } = await supabase.from("profiles").select("id,nome,email,setor_id,foto_url").eq("id", userId).maybeSingle();
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("id,nome,email,setor_id,foto_url")
+      .eq("id", userId)
+      .maybeSingle();
     setProfile((prof as Profile) ?? null);
     setBaseRole("user");
   };
@@ -71,7 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       if (s?.user) {
         setTimeout(() => loadProfileAndRole(s.user.id), 0);
@@ -100,8 +114,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         baseRole,
         devViewRole,
         loading,
-        signOut: async () => { setDevViewRole(null); await supabase.auth.signOut(); },
-        refreshProfile: async () => { if (session?.user) await loadProfileAndRole(session.user.id); },
+        signOut: async () => {
+          setDevViewRole(null);
+          await supabase.auth.signOut();
+        },
+        refreshProfile: async () => {
+          if (session?.user) await loadProfileAndRole(session.user.id);
+        },
         setDevViewRole,
       }}
     >

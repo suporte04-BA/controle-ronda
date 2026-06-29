@@ -20,7 +20,7 @@ export function ThemeToggle({ className, size = "md" }: ThemeToggleProps) {
         isDark
           ? "text-neon-cyan border-neon-cyan/20 bg-neon-cyan/5 hover:bg-neon-cyan/10 hover:border-neon-cyan/40"
           : "text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40",
-        className
+        className,
       )}
       title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
     >

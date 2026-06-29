@@ -24,8 +24,12 @@ const TIPO_LABEL: Record<string, string> = {
   check_out_2: "Fim de Ronda",
 };
 
-function toManaus(d: Date) { return new Date(d.getTime() + MANAUS_OFFSET_MS); }
-function pad(n: number) { return String(n).padStart(2, "0"); }
+function toManaus(d: Date) {
+  return new Date(d.getTime() + MANAUS_OFFSET_MS);
+}
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
 function fmtManaus(iso: string, withSec = true) {
   const d = toManaus(new Date(iso));
   return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}${withSec ? ":" + pad(d.getUTCSeconds()) : ""}`;
@@ -46,12 +50,17 @@ function isCorporateEmail(email: string) {
 function rangeFor(modo: "teste" | "diario") {
   const now = new Date();
   const m = toManaus(now);
-  const startTodayManaus = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth(), m.getUTCDate(), 0, 0, 0));
+  const startTodayManaus = new Date(
+    Date.UTC(m.getUTCFullYear(), m.getUTCMonth(), m.getUTCDate(), 0, 0, 0),
+  );
   const startYdayManaus = new Date(startTodayManaus.getTime() - 86400000);
   const endTodayManaus = new Date(startTodayManaus.getTime() + 86400000 - 1);
   const toUtc = (d: Date) => new Date(d.getTime() - MANAUS_OFFSET_MS);
   if (modo === "diario") {
-    return { fromUtc: toUtc(startYdayManaus), toUtc: toUtc(new Date(startTodayManaus.getTime() - 1)) };
+    return {
+      fromUtc: toUtc(startYdayManaus),
+      toUtc: toUtc(new Date(startTodayManaus.getTime() - 1)),
+    };
   }
   return { fromUtc: toUtc(startYdayManaus), toUtc: toUtc(endTodayManaus) };
 }
@@ -67,23 +76,35 @@ function toBase64(u8: Uint8Array): string {
 
 async function buildXlsx(rows: any[]): Promise<Uint8Array> {
   const data = rows.map((r) => ({
-    "Colaborador": r.nome,
-    "Email": r.email ?? "—",
-    "Setor": r.setor ?? "—",
+    Colaborador: r.nome,
+    Email: r.email ?? "—",
+    Setor: r.setor ?? "—",
     "Tipo de Ronda": TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao,
     "Horário da Foto (Manaus)": fmtManaus(r.horario_foto),
     "Horário de Envio (Manaus)": fmtManaus(r.horario_acao),
     "Caminho do Arquivo": r.foto_url || "—",
   }));
   const ws = XLSX.utils.json_to_sheet(data);
-  ws["!cols"] = [{ wch: 28 }, { wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 26 }, { wch: 26 }, { wch: 60 }];
+  ws["!cols"] = [
+    { wch: 28 },
+    { wch: 28 },
+    { wch: 22 },
+    { wch: 22 },
+    { wch: 26 },
+    { wch: 26 },
+    { wch: 60 },
+  ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Rondas");
   const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
   return new Uint8Array(out as ArrayBuffer);
 }
 
-async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceKey: string): Promise<string | null> {
+async function fetchPhotoAsBase64(
+  fotoUrl: string,
+  supabaseUrl: string,
+  serviceKey: string,
+): Promise<string | null> {
   try {
     if (!fotoUrl) return null;
 
@@ -96,9 +117,9 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
     const signedRes = await fetch(signUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${serviceKey}`,
+        Authorization: `Bearer ${serviceKey}`,
         "Content-Type": "application/json",
-        "apikey": serviceKey,
+        apikey: serviceKey,
       },
       body: JSON.stringify({ paths: [path], expiresIn: 3600 }),
       signal: AbortSignal.timeout(10000),
@@ -115,7 +136,9 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
       return null;
     }
 
-    const fullUrl = signedPath.startsWith("http") ? signedPath : `${supabaseUrl}/storage/v1${signedPath}`;
+    const fullUrl = signedPath.startsWith("http")
+      ? signedPath
+      : `${supabaseUrl}/storage/v1${signedPath}`;
     const imgRes = await fetch(fullUrl, { signal: AbortSignal.timeout(15000) });
     if (!imgRes.ok) {
       console.error("[photo] download failed:", imgRes.status);
@@ -129,7 +152,12 @@ async function fetchPhotoAsBase64(fotoUrl: string, supabaseUrl: string, serviceK
   }
 }
 
-async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, serviceKey: string): Promise<Uint8Array> {
+async function buildPdf(
+  rows: any[],
+  periodo: string,
+  supabaseUrl: string,
+  serviceKey: string,
+): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -143,13 +171,13 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
 
   // Professional color palette
   const brandRed = rgb(0.83, 0.15, 0.12);
-  const darkRed = rgb(0.65, 0.10, 0.09);
+  const darkRed = rgb(0.65, 0.1, 0.09);
   const navyBlue = rgb(0.12, 0.17, 0.33);
   const darkText = rgb(0.07, 0.09, 0.15);
   const grayText = rgb(0.45, 0.48, 0.53);
   const lightGray = rgb(0.96, 0.97, 0.98);
-  const lineColor = rgb(0.83, 0.86, 0.90);
-  const borderColor = rgb(0.88, 0.90, 0.93);
+  const lineColor = rgb(0.83, 0.86, 0.9);
+  const borderColor = rgb(0.88, 0.9, 0.93);
   const white = rgb(1, 1, 1);
   const softRed = rgb(0.99, 0.93, 0.93);
 
@@ -157,7 +185,14 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
   let pageNum = 1;
   let y = pageH - 36;
 
-  const draw = (txt: string, xPos: number, yPos: number, size: number, bold = false, color = darkText) => {
+  const draw = (
+    txt: string,
+    xPos: number,
+    yPos: number,
+    size: number,
+    bold = false,
+    color = darkText,
+  ) => {
     page.drawText(txt, { x: xPos, y: yPos, size, font: bold ? fontB : font, color });
   };
   const lineH = (x1: number, x2: number, yPos: number, thickness = 0.5, color = lineColor) => {
@@ -200,7 +235,9 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
       const logoH = (logoImg.height / logoImg.width) * logoW;
       page.drawImage(logoImg, { x: marginX, y: y - logoH + 5, width: logoW, height: logoH });
     }
-  } catch (_) { /* logo opcional */ }
+  } catch (_) {
+    /* logo opcional */
+  }
 
   // Company name + title block
   const titleX = marginX + logoW + 16;
@@ -222,8 +259,13 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
   const cardW = tableW;
   const cardH = 80;
   page.drawRectangle({
-    x: cardX, y: y - cardH, width: cardW, height: cardH,
-    borderColor: borderColor, borderWidth: 0.8, color: lightGray,
+    x: cardX,
+    y: y - cardH,
+    width: cardW,
+    height: cardH,
+    borderColor: borderColor,
+    borderWidth: 0.8,
+    color: lightGray,
   });
   // Red left accent on card
   page.drawRectangle({ x: cardX, y: y - cardH, width: 4, height: cardH, color: brandRed });
@@ -242,17 +284,17 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
   y -= cardH + 24;
 
   // ── Summary stats ──
-  const checkIns = rows.filter(r => r.tipo_acao === "check_in").length;
-  const checkOuts2 = rows.filter(r => r.tipo_acao === "check_out_2").length;
-  const uniqueUsers = new Set(rows.map(r => r.user_id)).size;
-  const uniqueSetores = new Set(rows.filter(r => r.setor).map(r => r.setor)).size;
+  const checkIns = rows.filter((r) => r.tipo_acao === "check_in").length;
+  const checkOuts2 = rows.filter((r) => r.tipo_acao === "check_out_2").length;
+  const uniqueUsers = new Set(rows.map((r) => r.user_id)).size;
+  const uniqueSetores = new Set(rows.filter((r) => r.setor).map((r) => r.setor)).size;
 
   draw("RESUMO OPERACIONAL", marginX, y, 10, true, brandRed);
   y -= 16;
 
   const statCards = [
     { label: "INÍCIOS", value: String(checkIns), color: rgb(0.16, 0.63, 0.33) },
-    { label: "FINAIS", value: String(checkOuts2), color: rgb(0.85, 0.55, 0.10) },
+    { label: "FINAIS", value: String(checkOuts2), color: rgb(0.85, 0.55, 0.1) },
     { label: "COLABORADORES", value: String(uniqueUsers), color: brandRed },
     { label: "SETORES", value: String(uniqueSetores), color: navyBlue },
   ];
@@ -260,19 +302,32 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
   statCards.forEach((s, i) => {
     const sx = marginX + i * (statCardW + 3);
     page.drawRectangle({
-      x: sx, y: y - 48, width: statCardW, height: 48,
-      borderColor: borderColor, borderWidth: 0.5, color: white,
+      x: sx,
+      y: y - 48,
+      width: statCardW,
+      height: 48,
+      borderColor: borderColor,
+      borderWidth: 0.5,
+      color: white,
     });
     // Top color bar
     page.drawRectangle({ x: sx, y: y, width: statCardW, height: 3, color: s.color });
-    draw(s.value, sx + statCardW / 2 - (s.value.length * 4), y - 22, 14, true, s.color);
+    draw(s.value, sx + statCardW / 2 - s.value.length * 4, y - 22, 14, true, s.color);
     draw(s.label, sx + 4, y - 40, 5.5, true, grayText);
   });
   y -= 64;
 
   // ── Table ──
   const colWidths = [30, 100, 65, 100, 62, 80, 80];
-  const colHeaders = ["#", "COLABORADOR", "SETOR", "TIPO DE RONDA", "DATA", "HOR. FOTO", "HOR. ENVIO"];
+  const colHeaders = [
+    "#",
+    "COLABORADOR",
+    "SETOR",
+    "TIPO DE RONDA",
+    "DATA",
+    "HOR. FOTO",
+    "HOR. ENVIO",
+  ];
   const tableX = marginX;
 
   // Table header
@@ -315,9 +370,21 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
 
     // Row left accent for check-ins
     if (r.tipo_acao === "check_in") {
-      page.drawRectangle({ x: tableX, y: y - 4, width: 2, height: rowH, color: rgb(0.16, 0.63, 0.33) });
+      page.drawRectangle({
+        x: tableX,
+        y: y - 4,
+        width: 2,
+        height: rowH,
+        color: rgb(0.16, 0.63, 0.33),
+      });
     } else if (r.tipo_acao === "check_out_2") {
-      page.drawRectangle({ x: tableX, y: y - 4, width: 2, height: rowH, color: rgb(0.85, 0.55, 0.10) });
+      page.drawRectangle({
+        x: tableX,
+        y: y - 4,
+        width: 2,
+        height: rowH,
+        color: rgb(0.85, 0.55, 0.1),
+      });
     }
 
     x = tableX;
@@ -362,13 +429,23 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
     // Evidence card
     const cardHeight = thumbH + 24;
     page.drawRectangle({
-      x: marginX, y: y - cardHeight + 8, width: tableW, height: cardHeight,
-      borderColor: borderColor, borderWidth: 0.5, color: white,
+      x: marginX,
+      y: y - cardHeight + 8,
+      width: tableW,
+      height: cardHeight,
+      borderColor: borderColor,
+      borderWidth: 0.5,
+      color: white,
     });
     // Left accent by type
-    const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33)
-      : rgb(0.85, 0.55, 0.10);
-    page.drawRectangle({ x: marginX, y: y - cardHeight + 8, width: 3, height: cardHeight, color: accentColor });
+    const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33) : rgb(0.85, 0.55, 0.1);
+    page.drawRectangle({
+      x: marginX,
+      y: y - cardHeight + 8,
+      width: 3,
+      height: cardHeight,
+      color: accentColor,
+    });
 
     // Number badge
     const badgeNum = String(evidenceCount + 1);
@@ -380,23 +457,51 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
     const avatarX = marginX + 34;
     if (avatarB64) {
       try {
-        const avBytes = Uint8Array.from(atob(avatarB64), c => c.charCodeAt(0));
+        const avBytes = Uint8Array.from(atob(avatarB64), (c) => c.charCodeAt(0));
         let avImg;
-        const isJpeg = avBytes[0] === 0xFF && avBytes[1] === 0xD8;
+        const isJpeg = avBytes[0] === 0xff && avBytes[1] === 0xd8;
         const isPng = avBytes[0] === 0x89 && avBytes[1] === 0x50;
-        if (isJpeg) { avImg = await pdf.embedJpg(avBytes); }
-        else if (isPng) { avImg = await pdf.embedPng(avBytes); }
-        else { try { avImg = await pdf.embedJpg(avBytes); } catch { avImg = await pdf.embedPng(avBytes); } }
+        if (isJpeg) {
+          avImg = await pdf.embedJpg(avBytes);
+        } else if (isPng) {
+          avImg = await pdf.embedPng(avBytes);
+        } else {
+          try {
+            avImg = await pdf.embedJpg(avBytes);
+          } catch {
+            avImg = await pdf.embedPng(avBytes);
+          }
+        }
         const avScale = Math.min(avatarSize / avImg.width, avatarSize / avImg.height);
         const avW = avImg.width * avScale;
         const avH = avImg.height * avScale;
-        page.drawCircle({ x: avatarX + avatarSize / 2, y: y - 6, size: avatarSize / 2 + 1, color: borderColor });
-        page.drawImage(avImg, { x: avatarX + (avatarSize - avW) / 2, y: y - 6 - (avatarSize - avH) / 2 - avH, width: avW, height: avH });
+        page.drawCircle({
+          x: avatarX + avatarSize / 2,
+          y: y - 6,
+          size: avatarSize / 2 + 1,
+          color: borderColor,
+        });
+        page.drawImage(avImg, {
+          x: avatarX + (avatarSize - avW) / 2,
+          y: y - 6 - (avatarSize - avH) / 2 - avH,
+          width: avW,
+          height: avH,
+        });
       } catch {
-        page.drawCircle({ x: avatarX + avatarSize / 2, y: y - 6, size: avatarSize / 2, color: lightGray });
+        page.drawCircle({
+          x: avatarX + avatarSize / 2,
+          y: y - 6,
+          size: avatarSize / 2,
+          color: lightGray,
+        });
       }
     } else {
-      page.drawCircle({ x: avatarX + avatarSize / 2, y: y - 6, size: avatarSize / 2, color: lightGray });
+      page.drawCircle({
+        x: avatarX + avatarSize / 2,
+        y: y - 6,
+        size: avatarSize / 2,
+        color: lightGray,
+      });
     }
 
     // Name below avatar
@@ -406,35 +511,61 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
     const photoX = marginX + 80;
     if (photoB64) {
       try {
-        const imgBytes = Uint8Array.from(atob(photoB64), c => c.charCodeAt(0));
+        const imgBytes = Uint8Array.from(atob(photoB64), (c) => c.charCodeAt(0));
         let img;
-        const isJpeg = imgBytes[0] === 0xFF && imgBytes[1] === 0xD8;
-        const isPng = imgBytes[0] === 0x89 && imgBytes[1] === 0x50 && imgBytes[2] === 0x4E && imgBytes[3] === 0x47;
-        if (isJpeg) { img = await pdf.embedJpg(imgBytes); }
-        else if (isPng) { img = await pdf.embedPng(imgBytes); }
-        else { try { img = await pdf.embedJpg(imgBytes); } catch { img = await pdf.embedPng(imgBytes); } }
+        const isJpeg = imgBytes[0] === 0xff && imgBytes[1] === 0xd8;
+        const isPng =
+          imgBytes[0] === 0x89 &&
+          imgBytes[1] === 0x50 &&
+          imgBytes[2] === 0x4e &&
+          imgBytes[3] === 0x47;
+        if (isJpeg) {
+          img = await pdf.embedJpg(imgBytes);
+        } else if (isPng) {
+          img = await pdf.embedPng(imgBytes);
+        } else {
+          try {
+            img = await pdf.embedJpg(imgBytes);
+          } catch {
+            img = await pdf.embedPng(imgBytes);
+          }
+        }
         const scale = Math.min(thumbW / img.width, thumbH / img.height);
         const drawW = img.width * scale;
         const drawH = img.height * scale;
         const offsetX = photoX + (thumbW - drawW) / 2;
         const offsetY = y - thumbH + (thumbH - drawH) / 2;
         page.drawRectangle({
-          x: photoX - 2, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
-          borderColor: borderColor, borderWidth: 0.5,
+          x: photoX - 2,
+          y: y - thumbH - 2,
+          width: thumbW + 4,
+          height: thumbH + 4,
+          borderColor: borderColor,
+          borderWidth: 0.5,
         });
         page.drawImage(img, { x: offsetX, y: offsetY, width: drawW, height: drawH });
       } catch (e) {
         console.error("[pdf] failed to embed photo:", e);
         page.drawRectangle({
-          x: photoX - 2, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
-          borderColor: borderColor, borderWidth: 0.5, color: lightGray,
+          x: photoX - 2,
+          y: y - thumbH - 2,
+          width: thumbW + 4,
+          height: thumbH + 4,
+          borderColor: borderColor,
+          borderWidth: 0.5,
+          color: lightGray,
         });
         draw("Foto indisponível", photoX + 20, y - thumbH / 2, 7, false, grayText);
       }
     } else {
       page.drawRectangle({
-        x: photoX - 2, y: y - thumbH - 2, width: thumbW + 4, height: thumbH + 4,
-        borderColor: borderColor, borderWidth: 0.5, color: lightGray,
+        x: photoX - 2,
+        y: y - thumbH - 2,
+        width: thumbW + 4,
+        height: thumbH + 4,
+        borderColor: borderColor,
+        borderWidth: 0.5,
+        color: lightGray,
       });
       draw("Foto indisponível", photoX + 20, y - thumbH / 2, 7, false, grayText);
     }
@@ -444,7 +575,14 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
     draw(photoLabel, labelX, y - 4, 9, true, darkText);
     draw(`Data: ${photoTime}`, labelX, y - 16, 7, false, grayText);
     draw(`Setor: ${r.setor ?? "—"}`, labelX, y - 26, 7, false, grayText);
-    draw(`Horário envio: ${fmtManaus(r.horario_foto).split(" ")[1] ?? ""}`, labelX, y - 36, 7, false, grayText);
+    draw(
+      `Horário envio: ${fmtManaus(r.horario_foto).split(" ")[1] ?? ""}`,
+      labelX,
+      y - 36,
+      7,
+      false,
+      grayText,
+    );
 
     y -= cardHeight + 10;
     evidenceCount++;
@@ -460,7 +598,12 @@ async function buildPdf(rows: any[], periodo: string, supabaseUrl: string, servi
   return pdf.save();
 }
 
-function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, agentes: number): string {
+function buildEmailHtml(
+  periodo: string,
+  totalEventos: number,
+  ciclos: number,
+  agentes: number,
+): string {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -539,9 +682,11 @@ function buildEmailHtml(periodo: string, totalEventos: number, ciclos: number, a
 
 async function fetchRows(admin: any, fromIso: string, toIso: string) {
   const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
-    admin.from("registros_ponto")
+    admin
+      .from("registros_ponto")
       .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url")
-      .gte("horario_acao", fromIso).lte("horario_acao", toIso)
+      .gte("horario_acao", fromIso)
+      .lte("horario_acao", toIso)
       .order("horario_acao", { ascending: true }),
     admin.from("profiles").select("id,nome,email,setor_id,foto_url"),
     admin.from("setores").select("id,nome"),
@@ -550,20 +695,30 @@ async function fetchRows(admin: any, fromIso: string, toIso: string) {
   const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
   return (regs ?? []).map((r: any) => {
     const p: any = profMap.get(r.user_id);
-    return { ...r, nome: p?.nome ?? "—", email: p?.email ?? "", setor: p?.setor_id ? setMap.get(p.setor_id) ?? null : null, avatar_url: p?.foto_url ?? null };
+    return {
+      ...r,
+      nome: p?.nome ?? "—",
+      email: p?.email ?? "",
+      setor: p?.setor_id ? (setMap.get(p.setor_id) ?? null) : null,
+      avatar_url: p?.foto_url ?? null,
+    };
   });
 }
 
-async function fetchAvatarAsBase64(avatarPath: string | null, supabaseUrl: string, serviceKey: string): Promise<string | null> {
+async function fetchAvatarAsBase64(
+  avatarPath: string | null,
+  supabaseUrl: string,
+  serviceKey: string,
+): Promise<string | null> {
   try {
     if (!avatarPath) return null;
     const signUrl = `${supabaseUrl}/storage/v1/object/sign/avatars`;
     const signedRes = await fetch(signUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${serviceKey}`,
+        Authorization: `Bearer ${serviceKey}`,
         "Content-Type": "application/json",
-        "apikey": serviceKey,
+        apikey: serviceKey,
       },
       body: JSON.stringify({ paths: [avatarPath], expiresIn: 3600 }),
       signal: AbortSignal.timeout(10000),
@@ -573,7 +728,9 @@ async function fetchAvatarAsBase64(avatarPath: string | null, supabaseUrl: strin
     const item = Array.isArray(signedData) ? signedData[0] : signedData;
     const signedPath = item?.signedURL ?? item?.signedUrl ?? item?.signed_url;
     if (!signedPath) return null;
-    const fullUrl = signedPath.startsWith("http") ? signedPath : `${supabaseUrl}/storage/v1${signedPath}`;
+    const fullUrl = signedPath.startsWith("http")
+      ? signedPath
+      : `${supabaseUrl}/storage/v1${signedPath}`;
     const imgRes = await fetch(fullUrl, { signal: AbortSignal.timeout(15000) });
     if (!imgRes.ok) return null;
     const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
@@ -620,7 +777,12 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
   return recipients;
 }
 
-async function sendResend(to: string[], subject: string, html: string, attachments: { filename: string; content: string }[]) {
+async function sendResend(
+  to: string[],
+  subject: string,
+  html: string,
+  attachments: { filename: string; content: string }[],
+) {
   const resendKey = Deno.env.get("RESEND_API_KEY") || RESEND_API_KEY_FALLBACK;
   if (!resendKey) throw new Error("RESEND_API_KEY não configurada.");
 
@@ -635,10 +797,16 @@ async function sendResend(to: string[], subject: string, html: string, attachmen
 
   if (!res.ok) {
     let msg = text;
-    try { msg = JSON.parse(text).message ?? text; } catch {}
+    try {
+      msg = JSON.parse(text).message ?? text;
+    } catch {}
     throw new Error(`Resend ${res.status}: ${msg}`);
   }
-  try { return JSON.parse(text); } catch { return { raw: text }; }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
 }
 
 Deno.serve(async (req) => {
@@ -661,7 +829,7 @@ Deno.serve(async (req) => {
       rows.map(async (r: any) => {
         const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
         return { id: r.id, photoBase64: b64 };
-      })
+      }),
     );
     const photoMap = new Map<string, string | null>();
     for (const pr of photoResults) {
@@ -685,7 +853,7 @@ Deno.serve(async (req) => {
       Array.from(uniqueAvatarPaths.entries()).map(async ([userId, path]) => {
         const b64 = await fetchAvatarAsBase64(path, SUPABASE_URL, SERVICE_KEY);
         return { userId, avatarBase64: b64 };
-      })
+      }),
     );
     const avatarMap = new Map<string, string | null>();
     for (const ar of avatarResults) {
@@ -699,26 +867,51 @@ Deno.serve(async (req) => {
 
     const recipients = await fetchRecipientEmails(admin);
     if (!recipients.length) {
-      return new Response(JSON.stringify({ ok: false, message: "Nenhum destinatário.", recipients: [], count: rows.length }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          message: "Nenhum destinatário.",
+          recipients: [],
+          count: rows.length,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
     }
 
-    const [xlsxBytes, pdfBytes] = await Promise.all([buildXlsx(rows), buildPdf(rows, periodo, SUPABASE_URL, SERVICE_KEY)]);
+    const [xlsxBytes, pdfBytes] = await Promise.all([
+      buildXlsx(rows),
+      buildPdf(rows, periodo, SUPABASE_URL, SERVICE_KEY),
+    ]);
     const ciclos = rows.filter((r: any) => r.tipo_acao === "check_out_2").length;
     const ag = new Set(rows.map((r: any) => r.user_id)).size;
     const html = buildEmailHtml(periodo, rows.length, ciclos, ag);
 
-    const result = await sendResend(recipients, `BA Elétrica — Controle de Ronda (${periodo})`, html, [
-      { filename: "Relatorio_Ronda_BA_Eletrica.pdf", content: toBase64(pdfBytes) },
-      { filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
-    ]);
+    const result = await sendResend(
+      recipients,
+      `BA Elétrica — Controle de Ronda (${periodo})`,
+      html,
+      [
+        { filename: "Relatorio_Ronda_BA_Eletrica.pdf", content: toBase64(pdfBytes) },
+        { filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
+      ],
+    );
 
-    return new Response(JSON.stringify({ ok: true, modo, periodo, count: rows.length, recipients, id: (result as any)?.id ?? null }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
-
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        modo,
+        periodo,
+        count: rows.length,
+        recipients,
+        id: (result as any)?.id ?? null,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+    );
   } catch (e: any) {
     console.error("ERROR:", e?.message);
-    return new Response(JSON.stringify({ ok: false, error: String(e?.message ?? e) }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 });
+    return new Response(JSON.stringify({ ok: false, error: String(e?.message ?? e) }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });

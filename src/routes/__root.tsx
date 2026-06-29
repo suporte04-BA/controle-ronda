@@ -47,15 +47,16 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 bg-background">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Algo deu errado
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Algo deu errado</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Tente novamente ou volte para o início.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:shadow-[0_0_20px_rgba(0,240,255,0.3)]"
           >
             Tentar novamente
@@ -78,15 +79,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
       { title: "BA Elétrica — Controle de Ronda" },
-      { name: "description", content: "Controle de Ronda da BA com validação por foto e fuso de Manaus." },
+      {
+        name: "description",
+        content: "Controle de Ronda da BA com validação por foto e fuso de Manaus.",
+      },
       { name: "theme-color", content: "#080810" },
       { name: "google", content: "notranslate" },
       { property: "og:title", content: "BA Elétrica — Controle de Ronda" },
       { name: "twitter:title", content: "BA Elétrica — Controle de Ronda" },
-      { property: "og:description", content: "Controle de Ronda da BA com validação por foto e fuso de Manaus." },
-      { name: "twitter:description", content: "Controle de Ronda da BA com validação por foto e fuso de Manaus." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6ec2b9e8-3b87-41c1-8123-75037c22be18/id-preview-93ee428a--c6bcde7e-10ca-4c90-8944-f38aa264c7bd.lovable.app-1780488343783.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6ec2b9e8-3b87-41c1-8123-75037c22be18/id-preview-93ee428a--c6bcde7e-10ca-4c90-8944-f38aa264c7bd.lovable.app-1780488343783.png" },
+      {
+        property: "og:description",
+        content: "Controle de Ronda da BA com validação por foto e fuso de Manaus.",
+      },
+      {
+        name: "twitter:description",
+        content: "Controle de Ronda da BA com validação por foto e fuso de Manaus.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6ec2b9e8-3b87-41c1-8123-75037c22be18/id-preview-93ee428a--c6bcde7e-10ca-4c90-8944-f38aa264c7bd.lovable.app-1780488343783.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6ec2b9e8-3b87-41c1-8123-75037c22be18/id-preview-93ee428a--c6bcde7e-10ca-4c90-8944-f38aa264c7bd.lovable.app-1780488343783.png",
+      },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
@@ -103,7 +121,11 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="pt-BR" className="dark notranslate" translate="no" suppressHydrationWarning>
       <head suppressHydrationWarning>
         <meta name="google" content="notranslate" />
-        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.remove('dark'),document.documentElement.classList.add('light');else if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}` }} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.remove('dark'),document.documentElement.classList.add('light');else if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}`,
+          }}
+        />
         <HeadContent />
       </head>
       <body>

@@ -28,12 +28,19 @@ export function EmployeeBottomNav() {
                   "flex flex-col items-center justify-center py-3 gap-1 text-xs transition-all duration-200",
                   active
                     ? "text-neon-cyan shadow-[0_-4px_12px_rgba(0,240,255,0.1)]"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon className={cn("w-5 h-5 transition-transform duration-200", active && "scale-110 drop-shadow-[0_0_6px_rgba(0,240,255,0.4)]")} />
+                <Icon
+                  className={cn(
+                    "w-5 h-5 transition-transform duration-200",
+                    active && "scale-110 drop-shadow-[0_0_6px_rgba(0,240,255,0.4)]",
+                  )}
+                />
                 <span className="font-medium">{it.label}</span>
-                {active && <div className="w-1 h-1 rounded-full bg-neon-cyan shadow-[0_0_4px_rgba(0,240,255,0.6)]" />}
+                {active && (
+                  <div className="w-1 h-1 rounded-full bg-neon-cyan shadow-[0_0_4px_rgba(0,240,255,0.6)]" />
+                )}
               </Link>
             </li>
           );
@@ -43,14 +50,10 @@ export function EmployeeBottomNav() {
             onClick={toggle}
             className={cn(
               "flex flex-col items-center justify-center py-3 gap-1 text-xs transition-all duration-200 w-full",
-              "text-muted-foreground hover:text-foreground"
+              "text-muted-foreground hover:text-foreground",
             )}
           >
-            {isDark ? (
-              <Sun className="w-5 h-5" />
-            ) : (
-              <Moon className="w-5 h-5" />
-            )}
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             <span className="font-medium">{isDark ? "Claro" : "Escuro"}</span>
           </button>
         </li>

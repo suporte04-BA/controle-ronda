@@ -109,7 +109,9 @@ function Historico() {
 
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const grupos = useMemo(() => {
@@ -127,19 +129,28 @@ function Historico() {
       <h1 className="text-xl font-bold text-foreground tracking-tight">Meu Histórico</h1>
 
       {loading ? (
-        <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-neon-cyan" /></div>
+        <div className="flex justify-center py-10">
+          <Loader2 className="w-6 h-6 animate-spin text-neon-cyan" />
+        </div>
       ) : grupos.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-10">Nenhum registro ainda.</p>
       ) : (
         grupos.map(([data, regs]) => (
           <section key={data} className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{data}</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {data}
+            </h2>
             <div className="card-neon divide-y divide-subtle overflow-hidden">
               {regs.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 p-3 hover:bg-hover-subtle transition-colors">
+                <div
+                  key={r.id}
+                  className="flex items-center gap-3 p-3 hover:bg-hover-subtle transition-colors"
+                >
                   <AvatarThumb src={avatarUrls.get(r.user_id ?? "") ?? null} nome={r.nome ?? ""} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-foreground">{TIPO_ACAO_LABEL[r.tipo_acao]}</div>
+                    <div className="font-medium text-sm text-foreground">
+                      {TIPO_ACAO_LABEL[r.tipo_acao]}
+                    </div>
                     <div className="text-xs text-muted-foreground">{r.nome}</div>
                     <div className="text-xs text-muted-foreground">
                       Ação: {formatHora(r.horario_acao)} · Foto: {formatHora(r.horario_foto)}

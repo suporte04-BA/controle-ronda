@@ -15,14 +15,14 @@ export const Route = createFileRoute("/app/perfil")({
 const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 function Perfil() {
-  const { profile, role, baseRole, devViewRole, setDevViewRole, signOut, refreshProfile } = useAuth();
+  const { profile, role, baseRole, devViewRole, setDevViewRole, signOut, refreshProfile } =
+    useAuth();
   const [setor, setSetor] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const canToggleView =
-    baseRole === "admin" || profile?.email?.toLowerCase() === SUPPORT_EMAIL;
+  const canToggleView = baseRole === "admin" || profile?.email?.toLowerCase() === SUPPORT_EMAIL;
   const currentView = devViewRole ?? role;
 
   const alternarVisao = () => {
@@ -31,13 +31,19 @@ function Perfil() {
 
   useEffect(() => {
     if (!profile?.setor_id) return;
-    supabase.from("setores").select("nome").eq("id", profile.setor_id).maybeSingle()
+    supabase
+      .from("setores")
+      .select("nome")
+      .eq("id", profile.setor_id)
+      .maybeSingle()
       .then(({ data }) => setSetor(data?.nome ?? null));
   }, [profile?.setor_id]);
 
   useEffect(() => {
     if (profile?.foto_url) {
-      supabase.storage.from("avatars").createSignedUrl(profile.foto_url, 3600)
+      supabase.storage
+        .from("avatars")
+        .createSignedUrl(profile.foto_url, 3600)
         .then(({ data }) => setAvatarUrl(data?.signedUrl ?? null));
     } else {
       setAvatarUrl(null);
@@ -118,20 +124,32 @@ function Perfil() {
           <div className="font-semibold text-lg text-foreground">{profile?.nome}</div>
           <div className="text-sm text-muted-foreground">{profile?.email}</div>
           {setor && <div className="text-xs text-muted-foreground mt-1">Setor: {setor}</div>}
-          <div className="text-xs text-muted-foreground mt-1">Perfil: {role === "admin" ? "Administrador" : "Vigilante"}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Perfil: {role === "admin" ? "Administrador" : "Vigilante"}
+          </div>
         </div>
       </div>
 
       <ThemeToggle className="w-full" />
 
       {canToggleView && (
-        <Button onClick={alternarVisao} variant="ghost" className="w-full text-xs text-muted-foreground hover:bg-hover-subtle">
+        <Button
+          onClick={alternarVisao}
+          variant="ghost"
+          className="w-full text-xs text-muted-foreground hover:bg-hover-subtle"
+        >
           <Shield className="w-4 h-4 mr-2" />
-          {currentView === "admin" ? "Alternar para Visão Vigilante" : "Alternar para Visão Administrador"}
+          {currentView === "admin"
+            ? "Alternar para Visão Vigilante"
+            : "Alternar para Visão Administrador"}
         </Button>
       )}
 
-      <Button onClick={signOut} variant="outline" className="w-full border-border-subtle hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20">
+      <Button
+        onClick={signOut}
+        variant="outline"
+        className="w-full border-border-subtle hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+      >
         <LogOut className="w-4 h-4 mr-2" /> Sair
       </Button>
     </div>
