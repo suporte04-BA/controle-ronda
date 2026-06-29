@@ -101,11 +101,9 @@ function LoginPage() {
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="relative inline-block mb-4">
-            <img
-              src="/logo.png"
-              className="h-14 object-contain mx-auto drop-shadow-[0_0_20px_rgba(0,240,255,0.3)]"
-              alt="BA Elétrica"
-            />
+            <div className="logo-container">
+              <img src="/logo.png" className="h-14 object-contain" alt="BA Elétrica" />
+            </div>
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">BA Elétrica</h1>
           <p className="text-sm text-muted-foreground mt-1">Controle de Ronda</p>

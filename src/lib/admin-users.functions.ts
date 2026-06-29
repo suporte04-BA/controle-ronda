@@ -10,14 +10,21 @@ export const resolveLoginEmail = createServerFn({ method: "POST" })
     if (input.includes("@")) return { email: input.toLowerCase() };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: prof } = await supabaseAdmin
-      .from("profiles")
-      .select("email")
-      .ilike("nome", input)
-      .maybeSingle();
 
-    if (!prof?.email) throw new Error("Usuário não encontrado. Use o e-mail para entrar.");
-    return { email: prof.email.toLowerCase() };
+    const normalize = (s: string) =>
+      s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+
+    const inputNorm = normalize(input);
+
+    const { data: profs } = await supabaseAdmin.from("profiles").select("email, nome");
+
+    const match = (profs ?? []).find((p: any) => normalize(p.nome) === inputNorm);
+    if (!match?.email) throw new Error("Usuário não encontrado. Use o e-mail para entrar.");
+    return { email: match.email.toLowerCase() };
   });
 
 async function assertAdmin(ctx: { supabase: any; userId: string }) {
