@@ -31,7 +31,21 @@ function AdminLayout() {
     <div className="min-h-screen bg-background flex">
       <AdminSidebar />
       <main className="flex-1 overflow-x-auto relative">
-        <div className="fixed top-3 right-3 z-50 no-print lg:hidden">
+        <header className="sticky top-0 z-30 no-print glass-strong border-b border-border-subtle lg:hidden">
+          <div className="flex items-center justify-between px-4 py-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="logo-container !p-1 !rounded-lg">
+                <img src="/logo.png" alt="BA Elétrica" className="h-8 w-auto object-contain" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-foreground leading-tight">BA Elétrica</div>
+                <div className="text-[10px] text-muted-foreground leading-tight">Controle de Ronda</div>
+              </div>
+            </div>
+            <ThemeToggle size="sm" />
+          </div>
+        </header>
+        <div className="fixed top-3 right-3 z-50 no-print hidden lg:block">
           <ThemeToggle size="sm" />
         </div>
         <Outlet />

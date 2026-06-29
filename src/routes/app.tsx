@@ -29,9 +29,20 @@ function EmployeeLayout() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="fixed top-3 right-3 z-50 no-print">
-        <ThemeToggle size="sm" />
-      </div>
+      <header className="sticky top-0 z-40 no-print glass-strong border-b border-border-subtle">
+        <div className="max-w-md mx-auto flex items-center justify-between px-4 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="logo-container !p-1 !rounded-lg">
+              <img src="/logo.png" alt="BA Elétrica" className="h-8 w-auto object-contain" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-foreground leading-tight">BA Elétrica</div>
+              <div className="text-[10px] text-muted-foreground leading-tight">Controle de Ronda</div>
+            </div>
+          </div>
+          <ThemeToggle size="sm" />
+        </div>
+      </header>
       <div className="max-w-md mx-auto">
         <Outlet />
       </div>
