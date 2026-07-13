@@ -759,7 +759,7 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
   if (allProfiles?.length) {
     for (const p of allProfiles) {
       const email = normalizeEmail(p.email);
-      if (!email || !isCorporateEmail(email) || seen.has(email)) continue;
+      if (!email || seen.has(email)) continue;
       // Admin E setor GESTOR
       if (!adminIds.has(p.id)) continue;
       if (!p.setor_id || !gestorIds.has(p.setor_id)) continue;
