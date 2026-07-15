@@ -253,7 +253,7 @@ function TodosRegistros() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-8 space-y-6">
       <header className="no-print flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Controle de Ronda</h1>

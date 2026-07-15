@@ -14,6 +14,7 @@ import {
   Users,
   Copy,
   Check,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   adminCreateUser,
   adminDeleteUser,
+  adminUpdateUser,
   adminBulkCreateUsers,
 } from "@/lib/admin-users.functions";
 
@@ -76,6 +78,62 @@ function Usuarios() {
     { nome: string; email: string; password: string; ok: boolean; error?: string }[] | null
   >(null);
   const bulkFn = useServerFn(adminBulkCreateUsers);
+  const updateFn = useServerFn(adminUpdateUser);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editBusy, setEditBusy] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({
+    nome: "",
+    email: "",
+    password: "",
+    setor_id: "none",
+    isAdmin: false,
+  });
+
+  const abrirEdicao = (u: User) => {
+    setEditUser(u);
+    setEditForm({
+      nome: u.nome,
+      email: u.email,
+      password: "",
+      setor_id: u.setor_id ?? "none",
+      isAdmin: u.role === "admin",
+    });
+    setOpenEdit(true);
+  };
+
+  const salvarEdicao = async () => {
+    if (!editUser) return;
+    if (!editForm.nome?.trim()) {
+      toast.error("Informe o nome.");
+      return;
+    }
+    if (editForm.password && editForm.password.length < 6) {
+      toast.error("Senha deve ter ao menos 6 caracteres.");
+      return;
+    }
+    setEditBusy(true);
+    try {
+      await updateFn({
+        data: {
+          userId: editUser.id,
+          nome: editForm.nome,
+          email: editForm.email || undefined,
+          password: editForm.password || undefined,
+          setor_id: editForm.setor_id === "none" ? null : editForm.setor_id,
+          isAdmin: editForm.isAdmin,
+        },
+      });
+      toast.success("Usuário atualizado com sucesso.");
+      setOpenEdit(false);
+      setEditUser(null);
+      carregar();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao atualizar usuário.");
+    } finally {
+      setEditBusy(false);
+    }
+  };
 
   const BULK_USERS = [
     {
@@ -271,16 +329,16 @@ function Usuarios() {
   };
 
   const criar = async () => {
-    if (!form.email || !form.password) {
-      toast.error("E-mail e senha obrigatórios");
+    if (!form.nome?.trim() || !form.password) {
+      toast.error("Nome e senha (mín. 6) obrigatórios");
       return;
     }
     setBusy(true);
     try {
       await createFn({
         data: {
-          nome: form.nome || form.email,
-          email: form.email,
+          nome: form.nome,
+          email: form.email || undefined,
           password: form.password,
           setor_id: form.setor_id === "none" ? null : form.setor_id,
         },
@@ -486,6 +544,15 @@ function Usuarios() {
                           onClick={() => openEditPhoto(u.id, u.foto_url)}
                         >
                           <Camera className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={isSupport}
+                          onClick={() => abrirEdicao(u)}
+                          title="Editar usuário"
+                        >
+                          <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"
@@ -790,6 +857,91 @@ function Usuarios() {
                 {bulkBusy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Criar todos
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={openEdit}
+        onOpenChange={(open) => {
+          setOpenEdit(open);
+          if (!open) setEditUser(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar usuário</DialogTitle>
+          </DialogHeader>
+          {editUser && (
+            <div className="space-y-3 py-2">
+              <div>
+                <label htmlFor="edit-nome" className="text-xs text-muted-foreground">
+                  Nome
+                </label>
+                <Input
+                  id="edit-nome"
+                  value={editForm.nome}
+                  onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor="edit-email" className="text-xs text-muted-foreground">
+                  E-mail (opcional — se vazio, mantém o atual)
+                </label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor="edit-password" className="text-xs text-muted-foreground">
+                  Nova senha (opcional, mín. 6)
+                </label>
+                <Input
+                  id="edit-password"
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Setor</label>
+                <Select
+                  value={editForm.setor_id}
+                  onValueChange={(v) => setEditForm({ ...editForm, setor_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Sem setor —</SelectItem>
+                    {setores.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={editForm.isAdmin}
+                  onChange={(e) => setEditForm({ ...editForm, isAdmin: e.target.checked })}
+                />
+                Administrador
+              </label>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenEdit(false)} disabled={editBusy}>
+              Cancelar
+            </Button>
+            <Button onClick={salvarEdicao} disabled={editBusy}>
+              {editBusy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Salvar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

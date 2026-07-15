@@ -53,6 +53,7 @@ export type Database = {
           horario_acao: string;
           horario_foto: string;
           id: string;
+          observacoes: string | null;
           tipo_acao: Database["public"]["Enums"]["tipo_acao_ponto"];
           user_id: string;
         };
@@ -62,6 +63,7 @@ export type Database = {
           horario_acao: string;
           horario_foto?: string;
           id?: string;
+          observacoes?: string | null;
           tipo_acao: Database["public"]["Enums"]["tipo_acao_ponto"];
           user_id: string;
         };
@@ -71,6 +73,7 @@ export type Database = {
           horario_acao?: string;
           horario_foto?: string;
           id?: string;
+          observacoes?: string | null;
           tipo_acao?: Database["public"]["Enums"]["tipo_acao_ponto"];
           user_id?: string;
         };
@@ -127,7 +130,18 @@ export type Database = {
     };
     Enums: {
       app_role: "admin" | "user";
-      tipo_acao_ponto: "check_in" | "check_out_1" | "check_out_2";
+      tipo_acao_ponto:
+        | "check_in"
+        | "meio1"
+        | "meio2"
+        | "meio3"
+        | "meio4"
+        | "meio5"
+        | "meio6"
+        | "meio7"
+        | "meio8"
+        | "check_out_1"
+        | "check_out_2";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -254,7 +268,19 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      tipo_acao_ponto: ["check_in", "check_out_1", "check_out_2"],
+      tipo_acao_ponto: [
+        "check_in",
+        "meio1",
+        "meio2",
+        "meio3",
+        "meio4",
+        "meio5",
+        "meio6",
+        "meio7",
+        "meio8",
+        "check_out_1",
+        "check_out_2",
+      ],
     },
   },
 } as const;
