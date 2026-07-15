@@ -59,17 +59,22 @@ function isCorporateEmail(email: string) {
   return CORPORATE_DOMAINS.includes(domain);
 }
 
-function rangeFor(modo: "teste" | "diario") {
+function rangeFor(modo: "teste" | "diario", periodo?: string) {
   const now = new Date();
   const m = toManaus(now);
   const startTodayManaus = new Date(
     Date.UTC(m.getUTCFullYear(), m.getUTCMonth(), m.getUTCDate(), 0, 0, 0),
   );
   const startYdayManaus = new Date(startTodayManaus.getTime() - 86400000);
-  // Janela da ronda: 07:00 (America/Manaus) de ontem até 07:00 de hoje.
-  // Captura a ronda da manhã e a noturna (23:00–05:00).
-  const startManaus = new Date(startYdayManaus.getTime() + 7 * 3600 * 1000);
-  const endManaus = new Date(startTodayManaus.getTime() + 7 * 3600 * 1000 - 1);
+  let startManaus: Date;
+  let endManaus: Date;
+  if (periodo === "hoje_ontem") {
+    startManaus = startYdayManaus;
+    endManaus = new Date(startTodayManaus.getTime() + 86400000 - 1);
+  } else {
+    startManaus = new Date(startYdayManaus.getTime() + 7 * 3600 * 1000);
+    endManaus = new Date(startTodayManaus.getTime() + 7 * 3600 * 1000 - 1);
+  }
   const toUtc = (d: Date) => new Date(d.getTime() - MANAUS_OFFSET_MS);
   return {
     fromUtc: toUtc(startManaus),
@@ -462,9 +467,9 @@ async function buildPdf(
   const cols = 2;
   const gap = 14;
   const pw = (tableW - gap) / cols;
-  const photoH = 170;
-  const captionH = 36;
-  const ph = photoH + captionH;
+  const photoH = 190;
+  const captionBarH = 34;
+  const ph = photoH + captionBarH;
 
   for (let ri = 0; ri < rondas.length; ri++) {
     const ronda = rondas[ri];
@@ -487,69 +492,77 @@ async function buildPdf(
     );
     y -= 42;
 
-    // Grade de fotos: início + meio1..8 + fim (em ordem)
+    // Grade de fotos: início + meio1..8 + fim (em ordem cronológica)
     for (let i = 0; i < passos.length; i += cols) {
       ensurePage(ph + 14);
       for (let c = 0; c < cols; c++) {
         const p = passos[i + c];
         if (!p) continue;
         const px = marginX + c * (pw + gap);
-        page.drawRectangle({
-          x: px,
-          y: y - ph,
-          width: pw,
-          height: ph,
-          borderColor: borderColor,
-          borderWidth: 0.8,
-          color: white,
-        });
-        const accent = p.tipo === "check_in" ? rgb(0.16, 0.63, 0.33)
-          : p.tipo === "check_out_2" ? rgb(0.85, 0.55, 0.1)
-          : brandRed;
-        page.drawRectangle({ x: px, y: y - ph, width: pw, height: 4, color: accent });
 
+        // Card background
+        page.drawRectangle({
+          x: px, y: y - ph, width: pw, height: ph,
+          borderColor: borderColor, borderWidth: 0.8, color: white,
+        });
+
+        // Photo fills top portion of card
         const img = await embedImage((p as any)._photoBase64);
         if (img) {
-          const scale = Math.min((pw - 16) / img.width, photoH / img.height);
+          const scale = Math.min((pw - 8) / img.width, (photoH - 4) / img.height);
           const dw = img.width * scale;
           const dh = img.height * scale;
           page.drawImage(img, {
             x: px + (pw - dw) / 2,
-            y: y - 6 - photoH + (photoH - dh) / 2,
-            width: dw,
-            height: dh,
+            y: y - captionBarH - (photoH - dh) / 2 - dh,
+            width: dw, height: dh,
           });
         } else {
-          draw("Foto indisponível", px + pw / 2 - 36, y - 6 - photoH / 2, 7.5, false, grayText);
+          page.drawRectangle({
+            x: px + 4, y: y - captionBarH - photoH + 4,
+            width: pw - 8, height: photoH - 8, color: lightGray,
+          });
+          draw("Foto indisponível", px + pw / 2 - 36, y - captionBarH - photoH / 2, 7.5, false, grayText);
         }
 
-        const capY = y - 6 - photoH - 4;
-        draw(`${TIPO_LABEL[p.tipo] ?? p.tipo}`, px + 8, capY, 8, true, darkText);
-        draw(`Enviado: ${fmtManaus(p.horario_foto).split(" ")[1] ?? "—"}`, px + 8, capY - 11, 6.5, false, grayText);
-        draw(`Registro: ${fmtManaus(p.horario_acao).split(" ")[1] ?? "—"}`, px + 8, capY - 21, 6.5, false, grayText);
+        // Caption bar at bottom (dark overlay on top of photo)
+        const accent = p.tipo === "check_in" ? rgb(0.16, 0.63, 0.33)
+          : p.tipo === "check_out_2" ? rgb(0.85, 0.55, 0.1)
+          : brandRed;
+        page.drawRectangle({ x: px, y: y - ph, width: pw, height: captionBarH, color: navyBlue });
+        page.drawRectangle({ x: px, y: y - ph + captionBarH, width: pw, height: 2, color: accent });
+
+        // Caption text (on the overlay, not under the image)
+        const capBaseY = y - ph + captionBarH;
+        draw(`${TIPO_LABEL[p.tipo] ?? p.tipo}`, px + 8, capBaseY - 11, 7.5, true, white);
+        draw(`Enviado: ${fmtManaus(p.horario_foto).split(" ")[1] ?? "—"}`, px + 8, capBaseY - 22, 6, false, rgb(0.8, 0.85, 0.95));
+        draw(`Registro: ${fmtManaus(p.horario_acao).split(" ")[1] ?? "—"}`, px + pw / 2 + 4, capBaseY - 22, 6, false, rgb(0.8, 0.85, 0.95));
       }
       y -= ph + 14;
     }
 
-    // Observação da ronda
+    // Observação da ronda (bloco profissional com borda lateral)
     if (ronda.observacoes && ronda.observacoes.trim()) {
-      ensurePage(60);
-      draw("OBSERVAÇÃO DA RONDA", marginX, y, 9, true, brandRed);
-      y -= 14;
-      const obsLines = wrapText(ronda.observacoes, tableW - 20, 8.5);
+      const obsLines = wrapText(ronda.observacoes, tableW - 28, 8.5);
+      const obsBlockH = obsLines.length * 13 + 30;
+      ensurePage(obsBlockH + 10);
+
       page.drawRectangle({
-        x: marginX,
-        y: y - obsLines.length * 13 - 16,
-        width: tableW,
-        height: obsLines.length * 13 + 16,
-        borderColor: brandRed,
-        borderWidth: 1,
-        color: softRed,
+        x: marginX, y: y - obsBlockH, width: tableW, height: obsBlockH,
+        borderColor: brandRed, borderWidth: 0.8, color: softRed,
       });
+      page.drawRectangle({
+        x: marginX, y: y - obsBlockH, width: 4, height: obsBlockH, color: brandRed,
+      });
+
+      draw("OBSERVAÇÃO", marginX + 12, y - 12, 8, true, brandRed);
+      draw(`${ronda.nome ?? "—"} — ${fmtManaus(ronda.fim, false)}`, marginX + 90, y - 12, 7, false, grayText);
+      y -= 22;
+
       obsLines.forEach((ln, li) => {
-        draw(ln, marginX + 10, y - 12 - li * 13, 8.5, false, darkText);
+        draw(ln, marginX + 12, y - li * 13, 8, false, darkText);
       });
-      y -= obsLines.length * 13 + 24;
+      y -= obsLines.length * 13 + 12;
     }
 
     if (ri < rondas.length - 1) {
@@ -624,7 +637,8 @@ function buildEmailHtml(
           <tr><td style="font-size:13px;color:#0B1120;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Anexos do E-mail</td></tr>
           <tr><td style="font-size:12px;color:#64748B;padding:6px 0 0 0;font-family:Arial,Helvetica,sans-serif">
             Relatorio_Ronda_BA_Eletrica.pdf — Folha oficial com horários e fotos de cada registro<br>
-            Auditoria_Dados_Brutos.xlsx — Dados detalhados de cada registro
+            Auditoria_Dados_Brutos.xlsx — Dados detalhados de cada registro<br>
+            Fotos das rondas — Arquivos fotográficos de cada etapa (início, meio e fim)
           </td></tr>
           </table>
         </td></tr>
@@ -862,12 +876,13 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const modo: "teste" | "diario" = body?.modo === "diario" ? "diario" : "teste";
+    const periodoParam = body?.periodo as string | undefined;
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    const { fromUtc, toUtc } = rangeFor(modo);
+    const { fromUtc, toUtc } = rangeFor(modo, periodoParam);
     const periodo = `${fmtManaus(fromUtc.toISOString(), false)} a ${fmtManaus(toUtc.toISOString(), false)} (America/Manaus)`;
 
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
@@ -941,14 +956,28 @@ Deno.serve(async (req) => {
     const ag = new Set(rows.map((r: any) => r.user_id)).size;
     const html = buildEmailHtml(periodo, rows.length, ciclos, ag);
 
+    // Preparar anexos: PDF + XLSX + fotos das rondas
+    const attachments: { filename: string; content: string }[] = [
+      { filename: "Relatorio_Ronda_BA_Eletrica.pdf", content: toBase64(pdfBytes) },
+      { filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
+    ];
+    for (const r of rows) {
+      if (r._photoBase64) {
+        const tipo = (TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao).replace(/\s+/g, "_");
+        const nome = (r.nome ?? "colaborador").replace(/[\/\\:*?"<>|\s]+/g, "_");
+        const data = fmtManaus(r.horario_acao).replace(/[\/ :]/g, "-");
+        attachments.push({
+          filename: `Foto_${nome}_${tipo}_${data}.jpg`,
+          content: r._photoBase64,
+        });
+      }
+    }
+
     const result = await sendResend(
       recipients,
       `BA Elétrica — Controle de Ronda (${periodo})`,
       html,
-      [
-        { filename: "Relatorio_Ronda_BA_Eletrica.pdf", content: toBase64(pdfBytes) },
-        { filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
-      ],
+      attachments,
     );
 
     return new Response(

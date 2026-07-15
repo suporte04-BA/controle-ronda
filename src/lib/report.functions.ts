@@ -31,7 +31,7 @@ export async function sendTestReport() {
   const response = await fetch(REPORT_FUNCTION_URL, {
     method: "POST",
     headers,
-    body: JSON.stringify({ modo: "teste" }),
+    body: JSON.stringify({ modo: "teste", periodo: "hoje_ontem" }),
   });
 
   const text = await response.text();
