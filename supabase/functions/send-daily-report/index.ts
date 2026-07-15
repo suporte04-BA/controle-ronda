@@ -416,201 +416,7 @@ async function buildPdf(
   // Page 1 footer
   drawPageFooter(pageNum);
 
-  // ═══ PAGE 2+: PHOTO EVIDENCE ═══
-  page = pdf.addPage([pageW, pageH]);
-  pageNum++;
-  page.drawRectangle({ x: 0, y: pageH - 10, width: pageW, height: 10, color: brandRed });
-  y = pageH - 36;
-
-  draw("EVIDÊNCIA FOTOGRÁFICA", marginX, y, 14, true, brandRed);
-  y -= 14;
-  draw(`Período: ${periodo} — ${rows.length} registro(s)`, marginX, y, 8, false, grayText);
-  y -= 8;
-  lineH(marginX, pageW - marginX, y, 1.5, brandRed);
-  y -= 16;
-
-  const thumbW = 90;
-  const thumbH = 68;
-  let evidenceCount = 0;
-
-  for (const r of rows) {
-    ensurePage(thumbH + 50, false);
-
-    const photoB64 = r._photoBase64;
-    const avatarB64 = r._avatarBase64;
-    const photoLabel = `${TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao}`;
-    const photoTime = fmtManaus(r.horario_foto);
-
-    // Evidence card
-    const cardHeight = thumbH + 24;
-    page.drawRectangle({
-      x: marginX,
-      y: y - cardHeight + 8,
-      width: tableW,
-      height: cardHeight,
-      borderColor: borderColor,
-      borderWidth: 0.5,
-      color: white,
-    });
-    // Left accent by type
-    const accentColor = r.tipo_acao === "check_in" ? rgb(0.16, 0.63, 0.33) : rgb(0.85, 0.55, 0.1);
-    page.drawRectangle({
-      x: marginX,
-      y: y - cardHeight + 8,
-      width: 3,
-      height: cardHeight,
-      color: accentColor,
-    });
-
-    // Number badge
-    const badgeNum = String(evidenceCount + 1);
-    page.drawCircle({ x: marginX + 18, y: y - 2, size: 9, color: accentColor });
-    draw(badgeNum, marginX + (badgeNum.length === 1 ? 15.5 : 12), y - 5, 8, true, white);
-
-    // Avatar (small, left side)
-    const avatarSize = 36;
-    const avatarX = marginX + 34;
-    if (avatarB64) {
-      try {
-        const avBytes = Uint8Array.from(atob(avatarB64), (c) => c.charCodeAt(0));
-        let avImg;
-        const isJpeg = avBytes[0] === 0xff && avBytes[1] === 0xd8;
-        const isPng = avBytes[0] === 0x89 && avBytes[1] === 0x50;
-        if (isJpeg) {
-          avImg = await pdf.embedJpg(avBytes);
-        } else if (isPng) {
-          avImg = await pdf.embedPng(avBytes);
-        } else {
-          try {
-            avImg = await pdf.embedJpg(avBytes);
-          } catch {
-            avImg = await pdf.embedPng(avBytes);
-          }
-        }
-        const avScale = Math.min(avatarSize / avImg.width, avatarSize / avImg.height);
-        const avW = avImg.width * avScale;
-        const avH = avImg.height * avScale;
-        page.drawCircle({
-          x: avatarX + avatarSize / 2,
-          y: y - 6,
-          size: avatarSize / 2 + 1,
-          color: borderColor,
-        });
-        page.drawImage(avImg, {
-          x: avatarX + (avatarSize - avW) / 2,
-          y: y - 6 - (avatarSize - avH) / 2 - avH,
-          width: avW,
-          height: avH,
-        });
-      } catch {
-        page.drawCircle({
-          x: avatarX + avatarSize / 2,
-          y: y - 6,
-          size: avatarSize / 2,
-          color: lightGray,
-        });
-      }
-    } else {
-      page.drawCircle({
-        x: avatarX + avatarSize / 2,
-        y: y - 6,
-        size: avatarSize / 2,
-        color: lightGray,
-      });
-    }
-
-    // Name below avatar
-    draw(String(r.nome ?? "—").slice(0, 18), avatarX, y - avatarSize - 10, 7, true, darkText);
-
-    // Photo (main, center)
-    const photoX = marginX + 80;
-    if (photoB64) {
-      try {
-        const imgBytes = Uint8Array.from(atob(photoB64), (c) => c.charCodeAt(0));
-        let img;
-        const isJpeg = imgBytes[0] === 0xff && imgBytes[1] === 0xd8;
-        const isPng =
-          imgBytes[0] === 0x89 &&
-          imgBytes[1] === 0x50 &&
-          imgBytes[2] === 0x4e &&
-          imgBytes[3] === 0x47;
-        if (isJpeg) {
-          img = await pdf.embedJpg(imgBytes);
-        } else if (isPng) {
-          img = await pdf.embedPng(imgBytes);
-        } else {
-          try {
-            img = await pdf.embedJpg(imgBytes);
-          } catch {
-            img = await pdf.embedPng(imgBytes);
-          }
-        }
-        const scale = Math.min(thumbW / img.width, thumbH / img.height);
-        const drawW = img.width * scale;
-        const drawH = img.height * scale;
-        const offsetX = photoX + (thumbW - drawW) / 2;
-        const offsetY = y - thumbH + (thumbH - drawH) / 2;
-        page.drawRectangle({
-          x: photoX - 2,
-          y: y - thumbH - 2,
-          width: thumbW + 4,
-          height: thumbH + 4,
-          borderColor: borderColor,
-          borderWidth: 0.5,
-        });
-        page.drawImage(img, { x: offsetX, y: offsetY, width: drawW, height: drawH });
-      } catch (e) {
-        console.error("[pdf] failed to embed photo:", e);
-        page.drawRectangle({
-          x: photoX - 2,
-          y: y - thumbH - 2,
-          width: thumbW + 4,
-          height: thumbH + 4,
-          borderColor: borderColor,
-          borderWidth: 0.5,
-          color: lightGray,
-        });
-        draw("Foto indisponível", photoX + 20, y - thumbH / 2, 7, false, grayText);
-      }
-    } else {
-      page.drawRectangle({
-        x: photoX - 2,
-        y: y - thumbH - 2,
-        width: thumbW + 4,
-        height: thumbH + 4,
-        borderColor: borderColor,
-        borderWidth: 0.5,
-        color: lightGray,
-      });
-      draw("Foto indisponível", photoX + 20, y - thumbH / 2, 7, false, grayText);
-    }
-
-    // Labels next to photo
-    const labelX = photoX + thumbW + 16;
-    draw(photoLabel, labelX, y - 4, 9, true, darkText);
-    draw(`Data: ${photoTime}`, labelX, y - 16, 7, false, grayText);
-    draw(`Setor: ${r.setor ?? "—"}`, labelX, y - 26, 7, false, grayText);
-    draw(
-      `Horário envio: ${fmtManaus(r.horario_foto).split(" ")[1] ?? ""}`,
-      labelX,
-      y - 36,
-      7,
-      false,
-      grayText,
-    );
-
-    y -= cardHeight + 10;
-    evidenceCount++;
-
-    if (evidenceCount < rows.length) {
-      lineH(marginX, pageW - marginX, y, 0.3, borderColor);
-      y -= 8;
-    }
-  }
-
-  drawPageFooter(pageNum);
-
-  // ═══ DETALHAMENTO DAS RONDAS ═══
+  // ═══ DETALHAMENTO DAS RONDAS (fotos da ronda em ordem cronológica) ═══
   const embedImage = async (b64: string | null | undefined) => {
     if (!b64) return null;
     try {
@@ -648,15 +454,17 @@ async function buildPdf(
   y = pageH - 36;
   draw("DETALHAMENTO DAS RONDAS", marginX, y, 14, true, brandRed);
   y -= 14;
-  draw(`Relatório completo por ronda — ${rondas.length} ronda(s) no período`, marginX, y, 8, false, grayText);
+  draw(`Registro fotográfico completo por ronda — ${rondas.length} ronda(s) no período de ${periodo}`, marginX, y, 8, false, grayText);
   y -= 8;
   lineH(marginX, pageW - marginX, y, 1.5, brandRed);
-  y -= 18;
+  y -= 20;
 
   const cols = 2;
-  const gap = 12;
+  const gap = 14;
   const pw = (tableW - gap) / cols;
-  const ph = 165;
+  const photoH = 170;
+  const captionH = 36;
+  const ph = photoH + captionH;
 
   for (let ri = 0; ri < rondas.length; ri++) {
     const ronda = rondas[ri];
@@ -665,107 +473,89 @@ async function buildPdf(
     );
     if (passos.length === 0) continue;
 
-    ensurePage(150);
-    // Ronda header
-    page.drawRectangle({
-      x: marginX,
-      y: y - 26,
-      width: tableW,
-      height: 26,
-      color: navyBlue,
-    });
-    draw(`RONDA ${ri + 1} — ${ronda.nome ?? "—"}`, marginX + 8, y - 17, 9, true, white);
+    // Cabeçalho da ronda
+    ensurePage(64);
+    page.drawRectangle({ x: marginX, y: y - 30, width: tableW, height: 30, color: navyBlue });
+    draw(`RONDA ${ri + 1} — ${ronda.nome ?? "—"}`, marginX + 10, y - 19, 10, true, white);
     draw(
-      `${ronda.setor ?? "—"}  •  ${fmtManaus(ronda.inicio, false)} ${fmtManaus(ronda.inicio).split(" ")[1]}`,
-      marginX + 8,
+      `${ronda.setor ?? "—"}  •  ${fmtManaus(ronda.inicio, false)} ${fmtManaus(ronda.inicio).split(" ")[1] ?? ""}`,
+      marginX + 10,
       y - 9,
-      7,
+      7.5,
       false,
-      rgb(0.8, 0.85, 0.95),
+      rgb(0.82, 0.86, 0.95),
     );
-    y -= 34;
+    y -= 42;
 
-    // Timeline textual (formato de auditoria)
-    for (const p of passos) {
-      ensurePage(16);
-      const dataHora = fmtManaus(p.horario_acao, false);
-      const horaAcao = fmtManaus(p.horario_acao).split(" ")[1] ?? "";
-      const horaFoto = fmtManaus(p.horario_foto).split(" ")[1] ?? "";
-      const label = TIPO_LABEL[p.tipo] ?? p.tipo;
-      draw(
-        `Suporte BA Elétrica  DEPARTAMENTO  ${label}  ${dataHora} ${horaAcao} ${horaFoto}`,
-        marginX + 4,
-        y,
-        7.5,
-        false,
-        darkText,
-      );
-      y -= 13;
-    }
-    y -= 4;
-
-    // Grade de fotos (maiores)
+    // Grade de fotos: início + meio1..8 + fim (em ordem)
     for (let i = 0; i < passos.length; i += cols) {
-      ensurePage(ph + 28);
+      ensurePage(ph + 14);
       for (let c = 0; c < cols; c++) {
         const p = passos[i + c];
         if (!p) continue;
         const px = marginX + c * (pw + gap);
-        const img = await embedImage((p as any)._photoBase64);
         page.drawRectangle({
-          x: px - 2,
-          y: y - ph - 2,
-          width: pw + 4,
-          height: ph + 4,
+          x: px,
+          y: y - ph,
+          width: pw,
+          height: ph,
           borderColor: borderColor,
-          borderWidth: 0.6,
-          color: lightGray,
+          borderWidth: 0.8,
+          color: white,
         });
+        const accent = p.tipo === "check_in" ? rgb(0.16, 0.63, 0.33)
+          : p.tipo === "check_out_2" ? rgb(0.85, 0.55, 0.1)
+          : brandRed;
+        page.drawRectangle({ x: px, y: y - ph, width: pw, height: 4, color: accent });
+
+        const img = await embedImage((p as any)._photoBase64);
         if (img) {
-          const scale = Math.min(pw / img.width, ph / img.height);
+          const scale = Math.min((pw - 16) / img.width, photoH / img.height);
           const dw = img.width * scale;
           const dh = img.height * scale;
           page.drawImage(img, {
             x: px + (pw - dw) / 2,
-            y: y - ph + (ph - dh) / 2,
+            y: y - 6 - photoH + (photoH - dh) / 2,
             width: dw,
             height: dh,
           });
         } else {
-          draw("Foto indisponível", px + pw / 2 - 36, y - ph / 2, 7, false, grayText);
+          draw("Foto indisponível", px + pw / 2 - 36, y - 6 - photoH / 2, 7.5, false, grayText);
         }
-        draw(`${TIPO_LABEL[p.tipo] ?? p.tipo}`, px + 2, y - ph - 14, 7.5, true, darkText);
-        draw(`Enviado: ${fmtManaus(p.horario_foto).split(" ")[1] ?? ""}`, px + 2, y - ph - 24, 6.5, false, grayText);
+
+        const capY = y - 6 - photoH - 4;
+        draw(`${TIPO_LABEL[p.tipo] ?? p.tipo}`, px + 8, capY, 8, true, darkText);
+        draw(`Enviado: ${fmtManaus(p.horario_foto).split(" ")[1] ?? "—"}`, px + 8, capY - 11, 6.5, false, grayText);
+        draw(`Registro: ${fmtManaus(p.horario_acao).split(" ")[1] ?? "—"}`, px + 8, capY - 21, 6.5, false, grayText);
       }
-      y -= ph + 30;
+      y -= ph + 14;
     }
 
-    // Observação
+    // Observação da ronda
     if (ronda.observacoes && ronda.observacoes.trim()) {
-      ensurePage(50);
-      draw("OBSERVAÇÃO DE " + (ronda.nome ?? "—").toUpperCase(), marginX, y, 8, true, brandRed);
+      ensurePage(60);
+      draw("OBSERVAÇÃO DA RONDA", marginX, y, 9, true, brandRed);
       y -= 14;
-      const obsLines = wrapText(ronda.observacoes, tableW - 16, 8.5);
+      const obsLines = wrapText(ronda.observacoes, tableW - 20, 8.5);
       page.drawRectangle({
         x: marginX,
-        y: y - obsLines.length * 13 - 12,
+        y: y - obsLines.length * 13 - 16,
         width: tableW,
-        height: obsLines.length * 13 + 12,
+        height: obsLines.length * 13 + 16,
         borderColor: brandRed,
-        borderWidth: 0.8,
+        borderWidth: 1,
         color: softRed,
       });
       obsLines.forEach((ln, li) => {
-        draw(ln, marginX + 8, y - 12 - li * 13, 8.5, false, darkText);
+        draw(ln, marginX + 10, y - 12 - li * 13, 8.5, false, darkText);
       });
-      y -= obsLines.length * 13 + 20;
+      y -= obsLines.length * 13 + 24;
     }
 
-    // Separador entre rondas
     if (ri < rondas.length - 1) {
       ensurePage(20);
       lineH(marginX, pageW - marginX, y, 1, lineColor);
-      y -= 16;
+      y -= 18;
     }
   }
 

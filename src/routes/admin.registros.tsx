@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import * as XLSX from "xlsx";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { Loader2, Search, Download, Printer, FileText, X, Send, ImageOff } from "lucide-react";
@@ -103,8 +103,11 @@ function TodosRegistros() {
   const [dataAte, setDataAte] = useState<string>(initial.to);
   const [setores, setSetores] = useState<{ id: string; nome: string }[]>([]);
   const [detalhe, setDetalhe] = useState<Row | null>(null);
+  const enviandoRef = useRef(false);
 
   const dispararTeste = async () => {
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
     setEnviando(true);
     const id = toast.loading("Enviando relatório de teste...");
     try {
@@ -144,6 +147,7 @@ function TodosRegistros() {
       }
     } finally {
       setEnviando(false);
+      enviandoRef.current = false;
     }
   };
 
