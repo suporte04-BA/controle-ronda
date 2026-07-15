@@ -1,0 +1,4 @@
+project_id = "rdmbayprbfqbjhfqcasp"
+
+[functions.send-daily-report]
+verify_jwt = false

@@ -1,0 +1,132 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { useServerFn } from "@tanstack/react-start";
+import { bootstrapSupportAdmin } from "@/lib/access.functions";
+
+export const Route = createFileRoute("/login")({
+  head: () => ({ meta: [{ title: "Entrar — BA Elétrica" }] }),
+  component: LoginPage,
+});
+
+function LoginPage() {
+  const { session, role, loading } = useAuth();
+  const navigate = useNavigate();
+  const bootstrapAdmin = useServerFn(bootstrapSupportAdmin);
+
+  useEffect(() => {
+    if (loading) return;
+    if (session) navigate({ to: role === "admin" ? "/admin" : "/app", replace: true });
+  }, [session, role, loading, navigate]);
+
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [nome, setNome] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const entrar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const emailLimpo = email.trim().toLowerCase().replace(/,$/, "");
+    const emailLogin = emailLimpo === "suporte04@baeletrica.com.br" ? "suporte04@baeletrica.com" : emailLimpo;
+    try {
+      await bootstrapAdmin({ data: { email: emailLogin, password: senha } });
+      const { error } = await supabase.auth.signInWithPassword({ email: emailLogin, password: senha });
+      if (error) toast.error("Falha no login", { description: error.message });
+      else toast.success("Bem-vindo de volta!");
+    } catch (error) {
+      toast.error("Erro de conexão", {
+        description: "Não foi possível conectar ao backend agora. Verifique a internet e tente novamente.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cadastrar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase().replace(/,$/, ""),
+        password: senha,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: { nome },
+        },
+      });
+      if (error) toast.error("Falha no cadastro", { description: error.message });
+      else toast.success("Cadastro realizado! Verifique seu e-mail para confirmar o acesso.");
+    } catch (error) {
+      toast.error("Erro de conexão", {
+        description: "Não foi possível conectar ao backend agora. Verifique a internet e tente novamente.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-primary/10 p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <img src="/logo.png" className="h-12 object-contain mx-auto mb-3" alt="BA Elétrica" />
+          <h1 className="text-2xl font-bold text-primary">BA Elétrica - Controle de Ronda</h1>
+          <p className="text-sm text-muted-foreground">Acesso seguro para vigilantes e administração</p>
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <Tabs defaultValue="entrar">
+            <TabsList className="grid grid-cols-2 mb-4 w-full">
+              <TabsTrigger value="entrar">Entrar</TabsTrigger>
+              <TabsTrigger value="cadastrar">Cadastrar</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="entrar">
+              <form onSubmit={entrar} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="senha">Senha</Label>
+                  <Input id="senha" type="password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full" disabled={busy}>
+                  {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Entrar"}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="cadastrar">
+              <form onSubmit={cadastrar} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="nome">Nome completo</Label>
+                  <Input id="nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email2">E-mail</Label>
+                  <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="senha2">Senha</Label>
+                  <Input id="senha2" type="password" required minLength={6} value={senha} onChange={(e) => setSenha(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full" disabled={busy}>
+                  {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar conta"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+}
