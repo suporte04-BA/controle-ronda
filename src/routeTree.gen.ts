@@ -20,6 +20,7 @@ import { Route as AppHistoricoRouteImport } from './routes/app.historico'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
 import { Route as AdminRegistrosRouteImport } from './routes/admin.registros'
+import { Route as AdminObservacoesRouteImport } from './routes/admin.observacoes'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -76,12 +77,18 @@ const AdminRegistrosRoute = AdminRegistrosRouteImport.update({
   path: '/registros',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminObservacoesRoute = AdminObservacoesRouteImport.update({
+  id: '/observacoes',
+  path: '/observacoes',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/observacoes': typeof AdminObservacoesRoute
   '/admin/registros': typeof AdminRegistrosRoute
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/admin/observacoes': typeof AdminObservacoesRoute
   '/admin/registros': typeof AdminRegistrosRoute
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/observacoes': typeof AdminObservacoesRoute
   '/admin/registros': typeof AdminRegistrosRoute
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/login'
+    | '/admin/observacoes'
     | '/admin/registros'
     | '/admin/setores'
     | '/admin/usuarios'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/admin/observacoes'
     | '/admin/registros'
     | '/admin/setores'
     | '/admin/usuarios'
@@ -146,6 +157,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/login'
+    | '/admin/observacoes'
     | '/admin/registros'
     | '/admin/setores'
     | '/admin/usuarios'
@@ -241,10 +253,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRegistrosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/observacoes': {
+      id: '/admin/observacoes'
+      path: '/observacoes'
+      fullPath: '/admin/observacoes'
+      preLoaderRoute: typeof AdminObservacoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminObservacoesRoute: typeof AdminObservacoesRoute
   AdminRegistrosRoute: typeof AdminRegistrosRoute
   AdminSetoresRoute: typeof AdminSetoresRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
@@ -252,6 +272,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminObservacoesRoute: AdminObservacoesRoute,
   AdminRegistrosRoute: AdminRegistrosRoute,
   AdminSetoresRoute: AdminSetoresRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,

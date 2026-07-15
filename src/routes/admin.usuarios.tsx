@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Shield, ShieldOff, Trash2, UserPlus, Lock, Users, ClipboardPaste } from "lucide-react";
+import { Loader2, Shield, ShieldOff, Trash2, UserPlus, Lock, Users, ClipboardPaste, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { adminCreateUser, adminBulkCreateUsers, adminDeleteUser } from "@/lib/admin-users.functions";
+import { adminCreateUser, adminBulkCreateUsers, adminUpdateUser, adminDeleteUser } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: Usuarios,
@@ -27,6 +27,7 @@ interface User {
 function Usuarios() {
   const createFn = useServerFn(adminCreateUser);
   const bulkCreateFn = useServerFn(adminBulkCreateUsers);
+  const updateFn = useServerFn(adminUpdateUser);
   const deleteFn = useServerFn(adminDeleteUser);
   const [users, setUsers] = useState<User[]>([]);
   const [setores, setSetores] = useState<{ id: string; nome: string }[]>([]);
@@ -40,6 +41,11 @@ function Usuarios() {
   const [bulkIsAdmin, setBulkIsAdmin] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkResults, setBulkResults] = useState<{ email: string; ok: boolean; error?: string }[] | null>(null);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editBusy, setEditBusy] = useState(false);
+  const [editForm, setEditForm] = useState<{ id: string; nome: string; email: string; password: string; setor_id: string; isAdmin: boolean }>({
+    id: "", nome: "", email: "", password: "", setor_id: "none", isAdmin: false,
+  });
 
   const carregar = async () => {
     setLoading(true);
@@ -97,13 +103,13 @@ function Usuarios() {
   };
 
   const criar = async () => {
-    if (!form.email || !form.password) { toast.error("E-mail e senha obrigatórios"); return; }
+    if (!form.nome?.trim() || !form.password) { toast.error("Nome e senha (mín. 6) obrigatórios"); return; }
     setBusy(true);
     try {
       await createFn({
         data: {
-          nome: form.nome || form.email,
-          email: form.email,
+          nome: form.nome,
+          email: form.email.trim() || undefined,
           password: form.password,
           setor_id: form.setor_id === "none" ? null : form.setor_id,
           isAdmin: form.isAdmin,
@@ -117,6 +123,42 @@ function Usuarios() {
       toast.error(e?.message ?? "Falha ao criar usuário");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const abrirEdicao = (u: User) => {
+    setEditForm({
+      id: u.id,
+      nome: u.nome,
+      email: u.email,
+      password: "",
+      setor_id: u.setor_id ?? "none",
+      isAdmin: u.role === "admin",
+    });
+    setOpenEdit(true);
+  };
+
+  const salvarEdicao = async () => {
+    if (!editForm.nome?.trim()) { toast.error("Nome obrigatório"); return; }
+    setEditBusy(true);
+    try {
+      await updateFn({
+        data: {
+          userId: editForm.id,
+          nome: editForm.nome.trim(),
+          email: editForm.email.trim() || undefined,
+          password: editForm.password || undefined,
+          setor_id: editForm.setor_id === "none" ? null : editForm.setor_id,
+          isAdmin: editForm.isAdmin,
+        },
+      });
+      toast.success("Usuário atualizado com sucesso.");
+      setOpenEdit(false);
+      carregar();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao atualizar usuário");
+    } finally {
+      setEditBusy(false);
     }
   };
 
@@ -160,7 +202,7 @@ function Usuarios() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-8 space-y-6">
       <header className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Usuários</h1>
@@ -216,6 +258,9 @@ function Usuarios() {
                       }`}>{u.role === "admin" ? "Administrador" : "Funcionário"}</span>
                     </td>
                     <td className="px-4 py-3 text-right space-x-2">
+                      <Button size="sm" variant="ghost" disabled={isSupport} onClick={() => abrirEdicao(u)}>
+                        <Pencil className="w-4 h-4 mr-1" /> Editar
+                      </Button>
                       <Button size="sm" variant="outline" disabled={isSupport} onClick={() => toggleAdmin(u)}>
                         {u.role === "admin"
                           ? (<><ShieldOff className="w-4 h-4 mr-1" /> Remover admin</>)
@@ -246,7 +291,7 @@ function Usuarios() {
               <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">E-mail</label>
+              <label className="text-xs text-muted-foreground">E-mail (opcional — se vazio, é gerado automaticamente)</label>
               <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
             <div>
@@ -273,6 +318,49 @@ function Usuarios() {
             <Button variant="outline" onClick={() => setOpenNew(false)} disabled={busy}>Cancelar</Button>
             <Button onClick={criar} disabled={busy}>
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Criar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <label className="text-xs text-muted-foreground">Nome</label>
+              <Input value={editForm.nome} onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">E-mail (opcional — se vazio, usa o atual)</label>
+              <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Nova senha (opcional, mín. 6)</label>
+              <Input type="text" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Setor</label>
+              <Select value={editForm.setor_id} onValueChange={(v) => setEditForm({ ...editForm, setor_id: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Sem setor —</SelectItem>
+                  {setores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={editForm.isAdmin} onChange={(e) => setEditForm({ ...editForm, isAdmin: e.target.checked })} />
+              Conceder acesso de administrador
+            </label>
+            <p className="text-xs text-muted-foreground">Deixe a senha em branco para manter a atual.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenEdit(false)} disabled={editBusy}>Cancelar</Button>
+            <Button onClick={salvarEdicao} disabled={editBusy}>
+              {editBusy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Salvar
             </Button>
           </DialogFooter>
         </DialogContent>

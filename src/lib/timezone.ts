@@ -23,22 +23,72 @@ export function isSameDayManaus(a: Date | string, b: Date | string): boolean {
   return formatData(a) === formatData(b);
 }
 
+// Ordem completa de uma ronda: Início + 8 fotos do meio + Fim
+export const CICLO_RONDA: TipoAcao[] = [
+  "check_in",
+  "meio1",
+  "meio2",
+  "meio3",
+  "meio4",
+  "meio5",
+  "meio6",
+  "meio7",
+  "meio8",
+  "check_out_2",
+];
+
 export const TIPO_ACAO_LABEL: Record<string, string> = {
-  check_in: "Check-in da Ronda",
+  check_in: "Início de Ronda",
+  meio1: "Meio 1 da Ronda",
+  meio2: "Meio 2 da Ronda",
+  meio3: "Meio 3 da Ronda",
+  meio4: "Meio 4 da Ronda",
+  meio5: "Meio 5 da Ronda",
+  meio6: "Meio 6 da Ronda",
+  meio7: "Meio 7 da Ronda",
+  meio8: "Meio 8 da Ronda",
   check_out_1: "Check-out 1 da Ronda",
-  check_out_2: "Check-out 2 da Ronda",
+  check_out_2: "Fim de Ronda",
 };
 
-export type TipoAcao = "check_in" | "check_out_1" | "check_out_2";
+export const TIPO_ACAO_ORDEM: Record<string, number> = {
+  check_in: 0,
+  meio1: 1,
+  meio2: 2,
+  meio3: 3,
+  meio4: 4,
+  meio5: 5,
+  meio6: 6,
+  meio7: 7,
+  meio8: 8,
+  check_out_2: 9,
+  check_out_1: 10,
+};
+
+export type TipoAcao =
+  | "check_in"
+  | "meio1"
+  | "meio2"
+  | "meio3"
+  | "meio4"
+  | "meio5"
+  | "meio6"
+  | "meio7"
+  | "check_out_1"
+  | "check_out_2";
 
 export function proximaAcao(acoesHoje: string[]): TipoAcao | null {
-  const ciclo: TipoAcao[] = ["check_in", "check_out_1", "check_out_2"];
-  const posicao = acoesHoje.length % ciclo.length;
-  return ciclo[posicao];
+  const posicao = acoesHoje.length % CICLO_RONDA.length;
+  return CICLO_RONDA[posicao];
 }
 
 export function acoesDoCicloAtual(acoesHoje: string[]): string[] {
-  const resto = acoesHoje.length % 3;
+  const resto = acoesHoje.length % CICLO_RONDA.length;
   if (resto === 0) return [];
   return acoesHoje.slice(-resto);
+}
+
+// Uma ronda é concluída quando há um registro do tipo Fim (check_out_2)
+export function contarCiclosConcluidos(tipos: string[]): number {
+  return tipos.filter((t) => t === "check_out_2").length;
 }

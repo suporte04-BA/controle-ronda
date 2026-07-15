@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, ShieldCheck, Users, Building2, LogOut, UserRoundCog } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Users, Building2, LogOut, UserRoundCog, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 
@@ -7,6 +7,7 @@ const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/registros", label: "Controle de Ronda", icon: ShieldCheck },
   { to: "/admin/usuarios", label: "Usuários", icon: Users },
+  { to: "/admin/observacoes", label: "Observações", icon: FileText },
   { to: "/admin/setores", label: "Setores", icon: Building2 },
 ];
 

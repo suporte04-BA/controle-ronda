@@ -21,8 +21,20 @@ const RESEND_API_KEY_FALLBACK = Deno.env.get("RESEND_API_KEY") || "";
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Início de Ronda",
+  meio1: "meio1 de Ronda",
+  meio2: "meio2 de Ronda",
+  meio3: "meio3 de Ronda",
+  meio4: "meio4 de Ronda",
+  meio5: "meio5 de Ronda",
+  meio6: "meio6 de Ronda",
+  meio7: "meio7 de Ronda",
+  meio8: "meio8 de Ronda",
   check_out_2: "Fim de Ronda",
 };
+
+const CICLO_ORDEM: string[] = [
+  "check_in", "meio1", "meio2", "meio3", "meio4", "meio5", "meio6", "meio7", "meio8", "check_out_2",
+];
 
 function toManaus(d: Date) {
   return new Date(d.getTime() + MANAUS_OFFSET_MS);
@@ -54,15 +66,15 @@ function rangeFor(modo: "teste" | "diario") {
     Date.UTC(m.getUTCFullYear(), m.getUTCMonth(), m.getUTCDate(), 0, 0, 0),
   );
   const startYdayManaus = new Date(startTodayManaus.getTime() - 86400000);
-  const endTodayManaus = new Date(startTodayManaus.getTime() + 86400000 - 1);
+  // Janela da ronda: 07:00 (America/Manaus) de ontem até 07:00 de hoje.
+  // Captura a ronda da manhã e a noturna (23:00–05:00).
+  const startManaus = new Date(startYdayManaus.getTime() + 7 * 3600 * 1000);
+  const endManaus = new Date(startTodayManaus.getTime() + 7 * 3600 * 1000 - 1);
   const toUtc = (d: Date) => new Date(d.getTime() - MANAUS_OFFSET_MS);
-  if (modo === "diario") {
-    return {
-      fromUtc: toUtc(startYdayManaus),
-      toUtc: toUtc(new Date(startTodayManaus.getTime() - 1)),
-    };
-  }
-  return { fromUtc: toUtc(startYdayManaus), toUtc: toUtc(endTodayManaus) };
+  return {
+    fromUtc: toUtc(startManaus),
+    toUtc: toUtc(endManaus),
+  };
 }
 
 function toBase64(u8: Uint8Array): string {
@@ -82,6 +94,7 @@ async function buildXlsx(rows: any[]): Promise<Uint8Array> {
     "Tipo de Ronda": TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao,
     "Horário da Foto (Manaus)": fmtManaus(r.horario_foto),
     "Horário de Envio (Manaus)": fmtManaus(r.horario_acao),
+    Observação: r.observacoes ?? "",
     "Caminho do Arquivo": r.foto_url || "—",
   }));
   const ws = XLSX.utils.json_to_sheet(data);
@@ -92,6 +105,7 @@ async function buildXlsx(rows: any[]): Promise<Uint8Array> {
     { wch: 22 },
     { wch: 26 },
     { wch: 26 },
+    { wch: 50 },
     { wch: 60 },
   ];
   const wb = XLSX.utils.book_new();
@@ -154,6 +168,7 @@ async function fetchPhotoAsBase64(
 
 async function buildPdf(
   rows: any[],
+  rondas: any[],
   periodo: string,
   supabaseUrl: string,
   serviceKey: string,
@@ -595,6 +610,153 @@ async function buildPdf(
 
   drawPageFooter(pageNum);
 
+  // ═══ DETALHAMENTO DAS RONDAS ═══
+  const embedImage = async (b64: string | null | undefined) => {
+    if (!b64) return null;
+    try {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
+      const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+      if (isJpeg) return await pdf.embedJpg(bytes);
+      if (isPng) return await pdf.embedPng(bytes);
+      try { return await pdf.embedJpg(bytes); } catch { return await pdf.embedPng(bytes); }
+    } catch {
+      return null;
+    }
+  };
+
+  const wrapText = (text: string, maxWidth: number, size: number): string[] => {
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let line = "";
+    for (const w of words) {
+      const test = line ? `${line} ${w}` : w;
+      if (font.widthOfTextAtSize(test, size) > maxWidth && line) {
+        lines.push(line);
+        line = w;
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  };
+
+  page = pdf.addPage([pageW, pageH]);
+  pageNum++;
+  page.drawRectangle({ x: 0, y: pageH - 10, width: pageW, height: 10, color: brandRed });
+  y = pageH - 36;
+  draw("DETALHAMENTO DAS RONDAS", marginX, y, 14, true, brandRed);
+  y -= 14;
+  draw(`Relatório completo por ronda — ${rondas.length} ronda(s) no período`, marginX, y, 8, false, grayText);
+  y -= 8;
+  lineH(marginX, pageW - marginX, y, 1.5, brandRed);
+  y -= 18;
+
+  const cols = 2;
+  const gap = 12;
+  const pw = (tableW - gap) / cols;
+  const ph = 165;
+
+  for (let ri = 0; ri < rondas.length; ri++) {
+    const ronda = rondas[ri];
+    const passos = [...(ronda.passos ?? [])].sort(
+      (a: any, b: any) => CICLO_ORDEM.indexOf(a.tipo) - CICLO_ORDEM.indexOf(b.tipo),
+    );
+    if (passos.length === 0) continue;
+
+    ensurePage(150);
+    // Ronda header
+    page.drawRectangle({
+      x: marginX,
+      y: y - 26,
+      width: tableW,
+      height: 26,
+      color: navyBlue,
+    });
+    draw(`RONDA ${ri + 1} — ${ronda.nome ?? "—"}`, marginX + 8, y - 17, 9, true, white);
+    draw(`${ronda.setor ?? "—"}  •  ${fmtManaus(ronda.inicio, false)} ${fmtManaus(ronda.inicio).split(" ")[1]}`, marginX + 8, y - 9, 7, false, rgb(0.8, 0.85, 0.95));
+    y -= 34;
+
+    // Timeline textual (formato de auditoria)
+    for (const p of passos) {
+      ensurePage(16);
+      const dataHora = fmtManaus(p.horario_acao, false);
+      const horaAcao = fmtManaus(p.horario_acao).split(" ")[1] ?? "";
+      const horaFoto = fmtManaus(p.horario_foto).split(" ")[1] ?? "";
+      const label = TIPO_LABEL[p.tipo] ?? p.tipo;
+      draw(`Suporte BA Elétrica  DEPARTAMENTO  ${label}  ${dataHora} ${horaAcao} ${horaFoto}`, marginX + 4, y, 7.5, false, darkText);
+      y -= 13;
+    }
+    y -= 4;
+
+    // Grade de fotos (maiores)
+    for (let i = 0; i < passos.length; i += cols) {
+      ensurePage(ph + 28);
+      for (let c = 0; c < cols; c++) {
+        const p = passos[i + c];
+        if (!p) continue;
+        const px = marginX + c * (pw + gap);
+        const img = await embedImage((p as any)._photoBase64);
+        page.drawRectangle({
+          x: px - 2,
+          y: y - ph - 2,
+          width: pw + 4,
+          height: ph + 4,
+          borderColor: borderColor,
+          borderWidth: 0.6,
+          color: lightGray,
+        });
+        if (img) {
+          const scale = Math.min(pw / img.width, ph / img.height);
+          const dw = img.width * scale;
+          const dh = img.height * scale;
+          page.drawImage(img, {
+            x: px + (pw - dw) / 2,
+            y: y - ph + (ph - dh) / 2,
+            width: dw,
+            height: dh,
+          });
+        } else {
+          draw("Foto indisponível", px + pw / 2 - 36, y - ph / 2, 7, false, grayText);
+        }
+        draw(`${TIPO_LABEL[p.tipo] ?? p.tipo}`, px + 2, y - ph - 14, 7.5, true, darkText);
+        draw(`Enviado: ${fmtManaus(p.horario_foto).split(" ")[1] ?? ""}`, px + 2, y - ph - 24, 6.5, false, grayText);
+      }
+      y -= ph + 30;
+    }
+
+    // Observação
+    if (ronda.observacoes && ronda.observacoes.trim()) {
+      ensurePage(50);
+      draw("OBSERVAÇÃO DE " + (ronda.nome ?? "—").toUpperCase(), marginX, y, 8, true, brandRed);
+      y -= 14;
+      const obsLines = wrapText(ronda.observacoes, tableW - 16, 8.5);
+      page.drawRectangle({
+        x: marginX,
+        y: y - obsLines.length * 13 - 12,
+        width: tableW,
+        height: obsLines.length * 13 + 12,
+        borderColor: brandRed,
+        borderWidth: 0.8,
+        color: softRed,
+      });
+      obsLines.forEach((ln, li) => {
+        draw(ln, marginX + 8, y - 12 - li * 13, 8.5, false, darkText);
+      });
+      y -= obsLines.length * 13 + 20;
+    }
+
+    // Separador entre rondas
+    if (ri < rondas.length - 1) {
+      ensurePage(20);
+      lineH(marginX, pageW - marginX, y, 1, lineColor);
+      y -= 16;
+    }
+  }
+
+  drawPageFooter(pageNum);
+
   return pdf.save();
 }
 
@@ -684,7 +846,7 @@ async function fetchRows(admin: any, fromIso: string, toIso: string) {
   const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
     admin
       .from("registros_ponto")
-      .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url")
+      .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
       .gte("horario_acao", fromIso)
       .lte("horario_acao", toIso)
       .order("horario_acao", { ascending: true }),
@@ -703,6 +865,81 @@ async function fetchRows(admin: any, fromIso: string, toIso: string) {
       avatar_url: p?.foto_url ?? null,
     };
   });
+}
+
+interface RondaPasso {
+  id: string;
+  tipo: string;
+  horario_acao: string;
+  horario_foto: string;
+  foto_url: string;
+}
+
+interface Ronda {
+  id: string;
+  user_id: string;
+  nome: string;
+  setor: string;
+  inicio: string;
+  fim: string;
+  passos: RondaPasso[];
+  observacoes: string | null;
+}
+
+// Agrupa os registros planos em rondas (ciclo: check_in ... check_out_2).
+function reconstructRondas(rows: any[]): Ronda[] {
+  const porUser = new Map<string, any[]>();
+  for (const r of rows) {
+    if (!porUser.has(r.user_id)) porUser.set(r.user_id, []);
+    porUser.get(r.user_id)!.push(r);
+  }
+
+  const rondas: Ronda[] = [];
+  porUser.forEach((lista, userId) => {
+    const primeiro = lista[0] ?? {};
+    const nome = primeiro.nome ?? "—";
+    const setor = primeiro.setor ?? "—";
+
+    let ciclo: any[] = [];
+    const flush = () => {
+      if (ciclo.length === 0) return;
+      const checkIn = ciclo[0];
+      const checkOut = ciclo[ciclo.length - 1];
+      rondas.push({
+        id: checkOut.id,
+        user_id: userId,
+        nome,
+        setor,
+        inicio: checkIn.horario_acao,
+        fim: checkOut.horario_acao,
+        passos: ciclo.map((c) => ({
+          id: c.id,
+          tipo: c.tipo_acao,
+          horario_acao: c.horario_acao,
+          horario_foto: c.horario_foto,
+          foto_url: c.foto_url,
+        })),
+        observacoes: checkOut.observacoes ?? null,
+      });
+      ciclo = [];
+    };
+
+    for (const r of lista) {
+      if (r.tipo_acao === "check_in") {
+        flush();
+        ciclo = [r];
+      } else if (r.tipo_acao === "check_out_2") {
+        ciclo.push(r);
+        flush();
+      } else {
+        ciclo.push(r);
+      }
+    }
+    flush();
+  });
+
+  rondas.sort((a, b) => new Date(b.inicio).getTime() - new Date(a.inicio).getTime());
+  return rondas;
 }
 
 async function fetchAvatarAsBase64(
@@ -848,6 +1085,14 @@ Deno.serve(async (req) => {
       r._photoBase64 = photoMap.get(r.id) ?? null;
     }
 
+    // Reconstruir rondas e anexar foto de cada passo
+    const rondas = reconstructRondas(rows);
+    for (const ronda of rondas) {
+      for (const passo of ronda.passos) {
+        (passo as any)._photoBase64 = photoMap.get(passo.id) ?? null;
+      }
+    }
+
     // Fetch unique avatars
     const uniqueAvatarPaths = new Map<string, string>();
     for (const r of rows) {
@@ -886,7 +1131,7 @@ Deno.serve(async (req) => {
 
     const [xlsxBytes, pdfBytes] = await Promise.all([
       buildXlsx(rows),
-      buildPdf(rows, periodo, SUPABASE_URL, SERVICE_KEY),
+      buildPdf(rows, rondas, periodo, SUPABASE_URL, SERVICE_KEY),
     ]);
     const ciclos = rows.filter((r: any) => r.tipo_acao === "check_out_2").length;
     const ag = new Set(rows.map((r: any) => r.user_id)).size;
