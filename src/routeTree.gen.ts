@@ -19,8 +19,10 @@ import { Route as AppPerfilRouteImport } from './routes/app.perfil'
 import { Route as AppHistoricoRouteImport } from './routes/app.historico'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
+import { Route as AdminRelatorioRondaRouteImport } from './routes/admin.relatorio-ronda'
 import { Route as AdminRegistrosRouteImport } from './routes/admin.registros'
 import { Route as AdminObservacoesRouteImport } from './routes/admin.observacoes'
+import { Route as AdminRelatorioRondaIdRouteImport } from './routes/admin.relatorio-ronda.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -72,6 +74,11 @@ const AdminSetoresRoute = AdminSetoresRouteImport.update({
   path: '/setores',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRelatorioRondaRoute = AdminRelatorioRondaRouteImport.update({
+  id: '/relatorio-ronda',
+  path: '/relatorio-ronda',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRegistrosRoute = AdminRegistrosRouteImport.update({
   id: '/registros',
   path: '/registros',
@@ -82,6 +89,11 @@ const AdminObservacoesRoute = AdminObservacoesRouteImport.update({
   path: '/observacoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRelatorioRondaIdRoute = AdminRelatorioRondaIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminRelatorioRondaRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -90,24 +102,28 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin/observacoes': typeof AdminObservacoesRoute
   '/admin/registros': typeof AdminRegistrosRoute
+  '/admin/relatorio-ronda': typeof AdminRelatorioRondaRouteWithChildren
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/historico': typeof AppHistoricoRoute
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/relatorio-ronda/$id': typeof AdminRelatorioRondaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/admin/observacoes': typeof AdminObservacoesRoute
   '/admin/registros': typeof AdminRegistrosRoute
+  '/admin/relatorio-ronda': typeof AdminRelatorioRondaRouteWithChildren
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/historico': typeof AppHistoricoRoute
   '/app/perfil': typeof AppPerfilRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/admin/relatorio-ronda/$id': typeof AdminRelatorioRondaIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -117,12 +133,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/admin/observacoes': typeof AdminObservacoesRoute
   '/admin/registros': typeof AdminRegistrosRoute
+  '/admin/relatorio-ronda': typeof AdminRelatorioRondaRouteWithChildren
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/historico': typeof AppHistoricoRoute
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/relatorio-ronda/$id': typeof AdminRelatorioRondaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -133,24 +151,28 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/observacoes'
     | '/admin/registros'
+    | '/admin/relatorio-ronda'
     | '/admin/setores'
     | '/admin/usuarios'
     | '/app/historico'
     | '/app/perfil'
     | '/admin/'
     | '/app/'
+    | '/admin/relatorio-ronda/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/admin/observacoes'
     | '/admin/registros'
+    | '/admin/relatorio-ronda'
     | '/admin/setores'
     | '/admin/usuarios'
     | '/app/historico'
     | '/app/perfil'
     | '/admin'
     | '/app'
+    | '/admin/relatorio-ronda/$id'
   id:
     | '__root__'
     | '/'
@@ -159,12 +181,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/observacoes'
     | '/admin/registros'
+    | '/admin/relatorio-ronda'
     | '/admin/setores'
     | '/admin/usuarios'
     | '/app/historico'
     | '/app/perfil'
     | '/admin/'
     | '/app/'
+    | '/admin/relatorio-ronda/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -246,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSetoresRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/relatorio-ronda': {
+      id: '/admin/relatorio-ronda'
+      path: '/relatorio-ronda'
+      fullPath: '/admin/relatorio-ronda'
+      preLoaderRoute: typeof AdminRelatorioRondaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/registros': {
       id: '/admin/registros'
       path: '/registros'
@@ -260,12 +291,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminObservacoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/relatorio-ronda/$id': {
+      id: '/admin/relatorio-ronda/$id'
+      path: '/$id'
+      fullPath: '/admin/relatorio-ronda/$id'
+      preLoaderRoute: typeof AdminRelatorioRondaIdRouteImport
+      parentRoute: typeof AdminRelatorioRondaRoute
+    }
   }
 }
+
+interface AdminRelatorioRondaRouteChildren {
+  AdminRelatorioRondaIdRoute: typeof AdminRelatorioRondaIdRoute
+}
+
+const AdminRelatorioRondaRouteChildren: AdminRelatorioRondaRouteChildren = {
+  AdminRelatorioRondaIdRoute: AdminRelatorioRondaIdRoute,
+}
+
+const AdminRelatorioRondaRouteWithChildren =
+  AdminRelatorioRondaRoute._addFileChildren(AdminRelatorioRondaRouteChildren)
 
 interface AdminRouteChildren {
   AdminObservacoesRoute: typeof AdminObservacoesRoute
   AdminRegistrosRoute: typeof AdminRegistrosRoute
+  AdminRelatorioRondaRoute: typeof AdminRelatorioRondaRouteWithChildren
   AdminSetoresRoute: typeof AdminSetoresRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -274,6 +324,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminObservacoesRoute: AdminObservacoesRoute,
   AdminRegistrosRoute: AdminRegistrosRoute,
+  AdminRelatorioRondaRoute: AdminRelatorioRondaRouteWithChildren,
   AdminSetoresRoute: AdminSetoresRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,

@@ -177,6 +177,7 @@ async function buildPdf(
   periodo: string,
   supabaseUrl: string,
   serviceKey: string,
+  titulo?: string,
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -261,7 +262,7 @@ async function buildPdf(
 
   // Company name + title block
   const titleX = marginX + logoW + 16;
-  draw("BA ELÉTRICA", titleX, y, 18, true, brandRed);
+  draw(titulo ?? "BA ELÉTRICA", titleX, y, 18, true, brandRed);
   y -= 16;
   draw("Sistema de Controle de Ronda", titleX, y, 10, false, navyBlue);
   y -= 14;
@@ -636,9 +637,10 @@ function buildEmailHtml(
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
           <tr><td style="font-size:13px;color:#0B1120;font-weight:bold;font-family:Arial,Helvetica,sans-serif">Anexos do E-mail</td></tr>
           <tr><td style="font-size:12px;color:#64748B;padding:6px 0 0 0;font-family:Arial,Helvetica,sans-serif">
-            Relatorio_Ronda_BA_Eletrica.pdf — Folha oficial com horários e fotos de cada registro<br>
-            Auditoria_Dados_Brutos.xlsx — Dados detalhados de cada registro<br>
-            Fotos das rondas — Arquivos fotográficos de cada etapa (início, meio e fim)
+            Relatorio_CD_GUARDAS.pdf — Relatório do setor CD - Guardas<br>
+            Relatorio_LOJA_GUARDAS.pdf — Relatório do setor LOJA - Guardas<br>
+            Fotos das rondas — Imagens com data, hora e setor de cada registro<br>
+            Auditoria_Dados_Brutos.xlsx — Dados detalhados de todos os registros
           </td></tr>
           </table>
         </td></tr>
@@ -904,14 +906,6 @@ Deno.serve(async (req) => {
       r._photoBase64 = photoMap.get(r.id) ?? null;
     }
 
-    // Reconstruir rondas e anexar foto de cada passo
-    const rondas = reconstructRondas(rows);
-    for (const ronda of rondas) {
-      for (const passo of ronda.passos) {
-        (passo as any)._photoBase64 = photoMap.get(passo.id) ?? null;
-      }
-    }
-
     // Fetch unique avatars
     const uniqueAvatarPaths = new Map<string, string>();
     for (const r of rows) {
@@ -948,34 +942,67 @@ Deno.serve(async (req) => {
       );
     }
 
-    const [xlsxBytes, pdfBytes] = await Promise.all([
-      buildXlsx(rows),
-      buildPdf(rows, rondas, periodo, SUPABASE_URL, SERVICE_KEY),
-    ]);
+    // ── Gerar 2 PDFs por setor (CD + LOJA) ──
+    const attachments: { filename: string; content: string }[] = [];
+    let totalRegistros = 0;
+
+    const SETORES = [
+      { key: "CD", match: "CD", titulo: "BA ELÉTRICA CD - ( CD - GUARDAS)", filePrefix: "CD_GUARDAS" },
+      { key: "LOJA", match: "LOJA", titulo: "BA ELÉTRICA LOJA - ( LOJA - GUARDAS)", filePrefix: "LOJA_GUARDAS" },
+    ];
+
+    for (const setor of SETORES) {
+      const setorRows = rows.filter((r: any) => {
+        const s = (r.setor ?? "").toUpperCase();
+        return s.includes(setor.match);
+      });
+      if (setorRows.length === 0) continue;
+
+      const setorRondas = reconstructRondas(setorRows);
+      for (const ronda of setorRondas) {
+        for (const passo of ronda.passos) {
+          (passo as any)._photoBase64 = photoMap.get(passo.id) ?? null;
+        }
+      }
+
+      const pdfBytes = await buildPdf(setorRows, setorRondas, periodo, SUPABASE_URL, SERVICE_KEY, setor.titulo);
+      attachments.push({
+        filename: `Relatorio_${setor.filePrefix}.pdf`,
+        content: toBase64(pdfBytes),
+      });
+
+      for (const r of setorRows) {
+        if (r._photoBase64) {
+          const nome = (r.nome ?? "colaborador").replace(/[\/\\:*?"<>|\s]+/g, "_");
+          const tipo = (TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao).replace(/\s+/g, "_");
+          const data = fmtManaus(r.horario_acao).replace(/[\/ :]/g, "-");
+          attachments.push({
+            filename: `Foto_${setor.key}_${nome}_${tipo}_${data}.jpg`,
+            content: r._photoBase64,
+          });
+        }
+      }
+      totalRegistros += setorRows.length;
+    }
+
+    // XLSX com todos os registros
+    const xlsxBytes = await buildXlsx(rows);
+    attachments.unshift({ filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) });
+
+    if (attachments.length <= 1) {
+      return new Response(
+        JSON.stringify({ ok: false, message: "Nenhum registro nos setores CD/LOJA.", recipients: [], count: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+
     const ciclos = rows.filter((r: any) => r.tipo_acao === "check_out_2").length;
     const ag = new Set(rows.map((r: any) => r.user_id)).size;
-    const html = buildEmailHtml(periodo, rows.length, ciclos, ag);
-
-    // Preparar anexos: PDF + XLSX + fotos das rondas
-    const attachments: { filename: string; content: string }[] = [
-      { filename: "Relatorio_Ronda_BA_Eletrica.pdf", content: toBase64(pdfBytes) },
-      { filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) },
-    ];
-    for (const r of rows) {
-      if (r._photoBase64) {
-        const tipo = (TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao).replace(/\s+/g, "_");
-        const nome = (r.nome ?? "colaborador").replace(/[\/\\:*?"<>|\s]+/g, "_");
-        const data = fmtManaus(r.horario_acao).replace(/[\/ :]/g, "-");
-        attachments.push({
-          filename: `Foto_${nome}_${tipo}_${data}.jpg`,
-          content: r._photoBase64,
-        });
-      }
-    }
+    const html = buildEmailHtml(periodo, totalRegistros, ciclos, ag);
 
     const result = await sendResend(
       recipients,
-      `BA Elétrica — Controle de Ronda (${periodo})`,
+      `BA Elétrica — Relatório de Ronda (${periodo})`,
       html,
       attachments,
     );

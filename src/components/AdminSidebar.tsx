@@ -9,6 +9,7 @@ import {
   UserRoundCog,
   Camera,
   FileText,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -19,6 +20,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/registros", label: "Controle de Ronda", icon: ShieldCheck },
+  { to: "/admin/relatorio-ronda", label: "Relatório de Ronda", icon: ClipboardList },
   { to: "/admin/usuarios", label: "Usuários", icon: Users },
   { to: "/admin/observacoes", label: "Observações", icon: FileText },
   { to: "/admin/setores", label: "Setores", icon: Building2 },
