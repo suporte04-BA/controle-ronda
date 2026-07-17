@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   FileText,
@@ -296,9 +296,10 @@ function RondaCardItem({
       </div>
 
       {/* Card body — clickable (SPA navigation preserves auth state) */}
-      <Link
-        to="/admin/relatorio-ronda/$id/$inicio"
-        params={{ id: card.user_id, inicio: card.inicio }}
+      <a
+        href={`/admin/relatorio-ronda/${encodeURIComponent(card.user_id)}/${encodeURIComponent(card.inicio)}`}
+        target="_blank"
+        rel="noopener noreferrer"
         className="block p-4 space-y-2 w-full text-left cursor-pointer"
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -337,7 +338,7 @@ function RondaCardItem({
         <div className="flex items-center justify-end text-xs text-primary font-medium pt-1">
           Ver detalhes <ArrowRight className="w-3 h-3 ml-1" />
         </div>
-      </Link>
+      </a>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -347,12 +347,12 @@ function DetalheRonda() {
   return (
     <div className="p-4 sm:p-8 space-y-6 max-w-3xl mx-auto">
       <header className="flex flex-wrap items-center gap-3">
-        <Link
-          to="/admin/relatorio-ronda"
+        <button
+          onClick={() => { window.close(); }}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </Link>
+          <ArrowLeft className="w-4 h-4" /> Fechar aba
+        </button>
         <div className="ml-auto flex gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="w-4 h-4 mr-1" /> Imprimir
