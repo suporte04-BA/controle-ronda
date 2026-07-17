@@ -22,6 +22,7 @@ import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
 import { Route as AdminRelatorioRondaRouteImport } from './routes/admin.relatorio-ronda'
 import { Route as AdminRegistrosRouteImport } from './routes/admin.registros'
 import { Route as AdminObservacoesRouteImport } from './routes/admin.observacoes'
+import { Route as AdminRondaDetalheIdInicioRouteImport } from './routes/admin.ronda-detalhe.$id.$inicio'
 import { Route as AdminRelatorioRondaIdInicioRouteImport } from './routes/admin.relatorio-ronda.$id.$inicio'
 
 const LoginRoute = LoginRouteImport.update({
@@ -89,6 +90,12 @@ const AdminObservacoesRoute = AdminObservacoesRouteImport.update({
   path: '/observacoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRondaDetalheIdInicioRoute =
+  AdminRondaDetalheIdInicioRouteImport.update({
+    id: '/ronda-detalhe/$id/$inicio',
+    path: '/ronda-detalhe/$id/$inicio',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminRelatorioRondaIdInicioRoute =
   AdminRelatorioRondaIdInicioRouteImport.update({
     id: '/$id/$inicio',
@@ -111,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/admin/relatorio-ronda/$id/$inicio': typeof AdminRelatorioRondaIdInicioRoute
+  '/admin/ronda-detalhe/$id/$inicio': typeof AdminRondaDetalheIdInicioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,6 +133,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/admin/relatorio-ronda/$id/$inicio': typeof AdminRelatorioRondaIdInicioRoute
+  '/admin/ronda-detalhe/$id/$inicio': typeof AdminRondaDetalheIdInicioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,6 +151,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/admin/relatorio-ronda/$id/$inicio': typeof AdminRelatorioRondaIdInicioRoute
+  '/admin/ronda-detalhe/$id/$inicio': typeof AdminRondaDetalheIdInicioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/app/'
     | '/admin/relatorio-ronda/$id/$inicio'
+    | '/admin/ronda-detalhe/$id/$inicio'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/admin/relatorio-ronda/$id/$inicio'
+    | '/admin/ronda-detalhe/$id/$inicio'
   id:
     | '__root__'
     | '/'
@@ -190,6 +202,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/app/'
     | '/admin/relatorio-ronda/$id/$inicio'
+    | '/admin/ronda-detalhe/$id/$inicio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminObservacoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/ronda-detalhe/$id/$inicio': {
+      id: '/admin/ronda-detalhe/$id/$inicio'
+      path: '/ronda-detalhe/$id/$inicio'
+      fullPath: '/admin/ronda-detalhe/$id/$inicio'
+      preLoaderRoute: typeof AdminRondaDetalheIdInicioRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/relatorio-ronda/$id/$inicio': {
       id: '/admin/relatorio-ronda/$id/$inicio'
       path: '/$id/$inicio'
@@ -320,6 +340,7 @@ interface AdminRouteChildren {
   AdminSetoresRoute: typeof AdminSetoresRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminRondaDetalheIdInicioRoute: typeof AdminRondaDetalheIdInicioRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -329,6 +350,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSetoresRoute: AdminSetoresRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminRondaDetalheIdInicioRoute: AdminRondaDetalheIdInicioRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
