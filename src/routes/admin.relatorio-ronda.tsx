@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   FileText,
@@ -259,9 +259,17 @@ function RondaCardItem({
   card: RondaCard;
   onExcluir: () => void;
 }) {
+  const navigate = useNavigate();
   const isAndamento = card.status === "andamento";
   const horaInicio = formatHora(card.inicio);
   const horaFim = card.fim ? formatHora(card.fim) : "—";
+
+  const irParaDetalhes = () => {
+    navigate({
+      to: `/admin/relatorio-ronda/${card.user_id}`,
+      search: { inicio: card.inicio },
+    });
+  };
 
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md">
@@ -296,10 +304,10 @@ function RondaCardItem({
       </div>
 
       {/* Card body — clickable */}
-      <Link
-        to={`/admin/relatorio-ronda/${encodeURIComponent(card.user_id)}`}
-        search={{ inicio: card.inicio }}
-        className="block p-4 space-y-2"
+      <button
+        type="button"
+        onClick={irParaDetalhes}
+        className="block p-4 space-y-2 w-full text-left cursor-pointer"
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -337,7 +345,7 @@ function RondaCardItem({
         <div className="flex items-center justify-end text-xs text-primary font-medium pt-1">
           Ver detalhes <ArrowRight className="w-3 h-3 ml-1" />
         </div>
-      </Link>
+      </button>
     </div>
   );
 }

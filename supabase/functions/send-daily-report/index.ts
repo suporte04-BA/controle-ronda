@@ -943,13 +943,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Gerar 2 PDFs por setor (CD + LOJA) ──
+    // ── Gerar 2 PDFs por setor (LOJA primeiro, depois CD) ──
     const attachments: { filename: string; content: string }[] = [];
+    const photoAttachments: { filename: string; content: string }[] = [];
     let totalRegistros = 0;
 
     const SETORES = [
-      { key: "CD", match: "CD", titulo: "BA ELÉTRICA CD - ( CD - GUARDAS)", subtitulo: "que conterá somente o registro das pessoas que fizeram a ronda com o setor ( CD - GUARDAS)", filePrefix: "CD_GUARDAS" },
       { key: "LOJA", match: "LOJA", titulo: "BA ELÉTRICA LOJA - ( LOJA - GUARDAS)", subtitulo: "que conterá somente o registro das pessoas que fizeram a ronda com o setor ( LOJA - GUARDAS)", filePrefix: "LOJA_GUARDAS" },
+      { key: "CD", match: "CD", titulo: "BA ELÉTRICA CD - ( CD - GUARDAS)", subtitulo: "que conterá somente o registro das pessoas que fizeram a ronda com o setor ( CD - GUARDAS)", filePrefix: "CD_GUARDAS" },
     ];
 
     for (const setor of SETORES) {
@@ -977,7 +978,7 @@ Deno.serve(async (req) => {
           const nome = (r.nome ?? "colaborador").replace(/[\/\\:*?"<>|\s]+/g, "_");
           const tipo = (TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao).replace(/\s+/g, "_");
           const data = fmtManaus(r.horario_acao).replace(/[\/ :]/g, "-");
-          attachments.push({
+          photoAttachments.push({
             filename: `Foto_${setor.key}_${nome}_${tipo}_${data}.jpg`,
             content: r._photoBase64,
           });
@@ -986,9 +987,10 @@ Deno.serve(async (req) => {
       totalRegistros += setorRows.length;
     }
 
-    // XLSX com todos os registros
+    // Anexos: PDFs primeiro, depois fotos, depois XLSX
+    attachments.push(...photoAttachments);
     const xlsxBytes = await buildXlsx(rows);
-    attachments.unshift({ filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) });
+    attachments.push({ filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) });
 
     if (attachments.length <= 1) {
       return new Response(
