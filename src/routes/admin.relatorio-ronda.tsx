@@ -297,7 +297,7 @@ function RondaCardItem({
 
       {/* Card body — clickable (SPA navigation preserves auth state) */}
       <a
-        href={`/admin/relatorio-ronda/${encodeURIComponent(card.user_id)}/${encodeURIComponent(card.inicio)}`}
+        href={`/admin/ronda-detalhe/${encodeURIComponent(card.user_id)}/${encodeURIComponent(card.inicio)}`}
         target="_blank"
         rel="noopener noreferrer"
         className="block p-4 space-y-2 w-full text-left cursor-pointer"
