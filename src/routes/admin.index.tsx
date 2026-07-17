@@ -40,13 +40,23 @@ const PIE_COLORS = [
   "#A855F7",
 ];
 
+// Cor consistente por setor (funciona em dark e light)
+export function setorColor(setor: string | undefined | null): string {
+  const s = (setor ?? "").toUpperCase();
+  if (s.includes("CD")) return "#0EA5E9"; // CD - Guardas -> azul-ciano
+  if (s.includes("LOJA")) return "#F59E0B"; // LOJA - Guardas -> âmbar
+  if (s.includes("TI") || s.includes("DEPARTAMENTO")) return "#A855F7";
+  if (s.includes("GESTOR")) return "#10B981";
+  return "#64748B"; // fallback neutro
+}
+
 function AdminDashboard() {
   const { theme } = useTheme();
   const [finalizadas, setFinalizadas] = useState(0);
   const [abertas, setAbertas] = useState(0);
   const [agentes, setAgentes] = useState(0);
   const [ultimo, setUltimo] = useState<UltimoPonto | null>(null);
-  const [ranking, setRanking] = useState<{ nome: string; rondas: number }[]>([]);
+  const [ranking, setRanking] = useState<{ nome: string; setor: string; rondas: number }[]>([]);
   const [porSetor, setPorSetor] = useState<{ setor: string; rondas: number }[]>([]);
 
   useEffect(() => {
@@ -136,10 +146,17 @@ function AdminDashboard() {
       });
 
       const rankingArr = Array.from(completaPorUser.entries())
-        .map(([uid, qtd]) => ({
-          nome: ((profMap.get(uid) as any)?.nome as string) ?? "—",
-          rondas: qtd,
-        }))
+        .map(([uid, qtd]) => {
+          const p: any = profMap.get(uid);
+          const setorNome = p?.setor_id
+            ? ((setMap.get(p.setor_id) as string) ?? "Sem setor")
+            : "Sem setor";
+          return {
+            nome: (p?.nome as string) ?? "—",
+            setor: setorNome,
+            rondas: qtd,
+          };
+        })
         .sort((a, b) => b.rondas - a.rondas)
         .slice(0, 8);
       setRanking(rankingArr);
@@ -204,9 +221,19 @@ function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="card-neon p-5 lg:col-span-2 transition-all duration-300">
           <h2 className="text-sm font-semibold mb-1 text-foreground">Ranking de Vigilantes</h2>
-          <p className="text-xs text-muted-foreground mb-4">
+          <p className="text-xs text-muted-foreground mb-3">
             Rondas completas (ciclo até Fim de Ronda)
           </p>
+          <div className="flex flex-wrap gap-3 mb-3 text-xs">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm" style={{ background: setorColor("CD - GUARDAS") }} />
+              <span className="text-muted-foreground">CD - Guardas</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm" style={{ background: setorColor("LOJA - GUARDAS") }} />
+              <span className="text-muted-foreground">LOJA - Guardas</span>
+            </span>
+          </div>
           <div className="h-72">
             {ranking.length === 0 ? (
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -253,11 +280,14 @@ function AdminDashboard() {
                           }
                     }
                   />
-                  <Bar
-                    dataKey="rondas"
-                    fill={theme === "dark" ? "#00F0FF" : "#0284C7"}
-                    radius={[6, 6, 0, 0]}
-                  />
+                  <Bar dataKey="rondas" radius={[6, 6, 0, 0]}>
+                    {ranking.map((entry, i) => (
+                      <Cell
+                        key={i}
+                        fill={setorColor(entry.setor)}
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -283,8 +313,8 @@ function AdminDashboard() {
                     outerRadius={88}
                     paddingAngle={2}
                   >
-                    {porSetor.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    {porSetor.map((entry, i) => (
+                      <Cell key={i} fill={setorColor(entry.setor)} />
                     ))}
                   </Pie>
                   <Tooltip
