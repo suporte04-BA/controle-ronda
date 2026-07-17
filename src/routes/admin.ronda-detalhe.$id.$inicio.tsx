@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -95,6 +95,7 @@ function Field({
 }
 
 function DetalheRonda() {
+  const navigate = useNavigate();
   const { id: userId, inicio: inicioRaw } = Route.useParams();
   const inicio = inicioRaw ? decodeURIComponent(inicioRaw) : "";
   const [nome, setNome] = useState("");
@@ -400,12 +401,12 @@ function DetalheRonda() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+    <div className="min-h-screen bg-background overflow-y-auto">
       {/* Sticky top bar */}
       <div className="sticky top-0 z-10 bg-background border-b border-border shadow-sm no-print">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <button
-            onClick={() => window.close()}
+            onClick={() => navigate({ to: "/admin/relatorio-ronda" })}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Voltar ao relatório
