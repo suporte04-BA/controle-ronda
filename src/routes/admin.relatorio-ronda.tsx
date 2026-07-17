@@ -297,9 +297,8 @@ function RondaCardItem({
 
       {/* Card body — clickable */}
       <Link
-        to={`/admin/relatorio-ronda/${
-          encodeURIComponent(card.user_id)
-        }?inicio=${encodeURIComponent(card.inicio)}`}
+        to={`/admin/relatorio-ronda/${encodeURIComponent(card.user_id)}`}
+        search={{ inicio: card.inicio }}
         className="block p-4 space-y-2"
       >
         <div className="flex items-center gap-2 min-w-0">

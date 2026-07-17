@@ -178,6 +178,7 @@ async function buildPdf(
   supabaseUrl: string,
   serviceKey: string,
   titulo?: string,
+  subtitulo?: string,
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -266,7 +267,7 @@ async function buildPdf(
   y -= 16;
   draw("Sistema de Controle de Ronda", titleX, y, 10, false, navyBlue);
   y -= 14;
-  draw("Folha Oficial de Registro e Auditoria", titleX, y, 9, false, grayText);
+  draw(subtitulo ?? "Folha Oficial de Registro e Auditoria", titleX, y, 9, false, grayText);
   y -= 20;
 
   // Divider
@@ -947,8 +948,8 @@ Deno.serve(async (req) => {
     let totalRegistros = 0;
 
     const SETORES = [
-      { key: "CD", match: "CD", titulo: "BA ELÉTRICA CD - ( CD - GUARDAS)", filePrefix: "CD_GUARDAS" },
-      { key: "LOJA", match: "LOJA", titulo: "BA ELÉTRICA LOJA - ( LOJA - GUARDAS)", filePrefix: "LOJA_GUARDAS" },
+      { key: "CD", match: "CD", titulo: "BA ELÉTRICA CD - ( CD - GUARDAS)", subtitulo: "que conterá somente o registro das pessoas que fizeram a ronda com o setor ( CD - GUARDAS)", filePrefix: "CD_GUARDAS" },
+      { key: "LOJA", match: "LOJA", titulo: "BA ELÉTRICA LOJA - ( LOJA - GUARDAS)", subtitulo: "que conterá somente o registro das pessoas que fizeram a ronda com o setor ( LOJA - GUARDAS)", filePrefix: "LOJA_GUARDAS" },
     ];
 
     for (const setor of SETORES) {
@@ -965,7 +966,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      const pdfBytes = await buildPdf(setorRows, setorRondas, periodo, SUPABASE_URL, SERVICE_KEY, setor.titulo);
+      const pdfBytes = await buildPdf(setorRows, setorRondas, periodo, SUPABASE_URL, SERVICE_KEY, setor.titulo, setor.subtitulo);
       attachments.push({
         filename: `Relatorio_${setor.filePrefix}.pdf`,
         content: toBase64(pdfBytes),

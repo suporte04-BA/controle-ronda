@@ -22,8 +22,14 @@ import {
   CICLO_RONDA,
 } from "@/lib/timezone";
 import { getSignedFotoUrl } from "@/lib/storage";
+import { z } from "zod";
+
+const rondaSearchSchema = z.object({
+  inicio: z.string().min(1),
+});
 
 export const Route = createFileRoute("/admin/relatorio-ronda/$id")({
+  validateSearch: (search) => rondaSearchSchema.parse(search),
   component: DetalheRonda,
 });
 
@@ -38,7 +44,7 @@ interface PassoDetalhe {
 
 function DetalheRonda() {
   const { id: userId } = Route.useParams();
-  const inicio = new URLSearchParams(window.location.search).get("inicio") ?? "";
+  const { inicio } = Route.useSearch();
   const [nome, setNome] = useState("");
   const [setor, setSetor] = useState("");
   const [passos, setPassos] = useState<PassoDetalhe[]>([]);
