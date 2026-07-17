@@ -119,6 +119,118 @@ async function buildXlsx(rows: any[]): Promise<Uint8Array> {
   return new Uint8Array(out as ArrayBuffer);
 }
 
+// Cria um mini-PDF com todas as fotos de uma ronda em grid (2 colunas)
+// Funciona com qualquer quantidade de fotos (9, 10, etc.)
+async function buildMontagem(
+  ronda: Ronda,
+  photoMap: Map<string, string | null>,
+  index: number,
+): Promise<Uint8Array | null> {
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const pageW = 595;
+  const pageH = 842;
+  const marginX = 24;
+  const GAP = 10;
+  const COLS = 2;
+  const photoW = (pageW - marginX * 2 - GAP * (COLS - 1)) / COLS;
+  const photoMaxH = 280;
+  const LABEL_H = 38;
+
+  const brandRed = rgb(0.83, 0.15, 0.12);
+  const darkText = rgb(0.07, 0.09, 0.15);
+  const grayText = rgb(0.45, 0.48, 0.53);
+  const white = rgb(1, 1, 1);
+  const lightBg = rgb(0.96, 0.97, 0.98);
+  const borderColor = rgb(0.88, 0.9, 0.93);
+
+  let page = pdf.addPage([pageW, pageH]);
+  let y = pageH - 10;
+
+  // Header
+  page.drawRectangle({ x: 0, y: y - 60, width: pageW, height: 60, color: rgb(0.07, 0.09, 0.15) });
+  page.drawText(`RONDA ${index} — ${ronda.nome}`, { x: marginX, y: y - 22, size: 16, font: fontB, color: rgb(0.98, 0.75, 0.15) });
+  page.drawText(ronda.setor, { x: marginX, y: y - 38, size: 12, font, color: white });
+  page.drawText(`${fmtManaus(ronda.inicio, false)} a ${fmtManaus(ronda.fim, false)}`, { x: marginX, y: y - 52, size: 9, font, color: rgb(0.6, 0.63, 0.68) });
+  y -= 70;
+
+  let num = 0;
+  for (let i = 0; i < ronda.passos.length; i++) {
+    const passo = ronda.passos[i];
+    num++;
+    const b64 = photoMap.get(passo.id);
+
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    const x = marginX + col * (photoW + GAP);
+    const py = y - row * (photoMaxH + LABEL_H + GAP);
+
+    // Check if new page needed
+    if (py - photoMaxH - LABEL_H < 40) {
+      page = pdf.addPage([pageW, pageH]);
+      y = pageH - 30;
+      page.drawText(`RONDA ${index} — ${ronda.nome} (continuação)`, { x: marginX, y, size: 12, font: fontB, color: brandRed });
+      y -= 20;
+    }
+
+    const tipoLabel = TIPO_LABEL[passo.tipo] ?? passo.tipo;
+    const dataHora = fmtManaus(passo.horario_acao);
+    const isCheckIn = num === 1;
+    const isCheckOut = num === ronda.passos.length;
+    const accentColor = isCheckIn ? rgb(0.13, 0.77, 0.37) : isCheckOut ? rgb(0.96, 0.62, 0.04) : rgb(0.23, 0.51, 0.96);
+
+    // Card background
+    page.drawRectangle({
+      x, y: py - photoMaxH - LABEL_H,
+      width: photoW, height: photoMaxH + LABEL_H,
+      borderColor, borderWidth: 0.5, color: white,
+    });
+
+    // Accent bar
+    page.drawRectangle({ x, y: py - photoMaxH - LABEL_H, width: 3, height: photoMaxH + LABEL_H, color: accentColor });
+
+    // Badge number
+    page.drawCircle({ x: x + 14, y: py - 10, size: 10, color: accentColor });
+    page.drawText(String(num), { x: x + (num > 9 ? 10 : 11.5), y: py - 14, size: 9, font: fontB, color: white });
+
+    // Photo
+    if (b64) {
+      try {
+        const imgBytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+        let img;
+        const isJpeg = imgBytes[0] === 0xff && imgBytes[1] === 0xd8;
+        if (isJpeg) {
+          img = await pdf.embedJpg(imgBytes);
+        } else {
+          img = await pdf.embedPng(imgBytes);
+        }
+        const scale = Math.min(photoW / img.width, photoMaxH / img.height, 1);
+        const dw = img.width * scale;
+        const dh = img.height * scale;
+        const dx = x + 10 + (photoW - 20 - dw) / 2;
+        const dy = py - 20 - (photoMaxH - 20 - dh) / 2;
+
+        page.drawRectangle({ x: dx - 1, y: dy - 1, width: dw + 2, height: dh + 2, borderColor: accentColor, borderWidth: 0.5 });
+        page.drawImage(img, { x: dx, y: dy, width: dw, height: dh });
+      } catch {
+        page.drawText("Erro ao carregar imagem", { x: x + photoW / 2 - 60, y: py - photoMaxH / 2, size: 8, font, color: grayText });
+      }
+    } else {
+      page.drawRectangle({ x: x + 10, y: py - photoMaxH + 10, width: photoW - 20, height: photoMaxH - 30, color: lightBg });
+      page.drawText("Foto indisponível", { x: x + photoW / 2 - 48, y: py - photoMaxH / 2, size: 8, font, color: grayText });
+    }
+
+    // Label com descrição rica
+    const labelY = py - photoMaxH - LABEL_H + LABEL_H - 10;
+    page.drawText(`${num}º — ${tipoLabel}`, { x: x + 8, y: labelY, size: 8, font: fontB, color: darkText });
+    page.drawText(`${ronda.setor} | ${dataHora}`, { x: x + 8, y: labelY - 12, size: 7, font, color: grayText });
+  }
+
+  const pdfBytes = await pdf.save();
+  return new Uint8Array(pdfBytes);
+}
+
 async function fetchPhotoAsBase64(
   fotoUrl: string,
   supabaseUrl: string,
@@ -511,7 +623,7 @@ async function buildPdf(
     page.drawRectangle({ x: marginX, y: y - 30, width: tableW, height: 30, color: navyBlue });
     draw(`RONDA ${ri + 1} — ${ronda.nome ?? "—"}`, marginX + 10, y - 19, 10, true, white);
     draw(
-      `${ronda.setor ?? "—"}  •  ${fmtManaus(ronda.inicio, false)} ${fmtManaus(ronda.inicio).split(" ")[1] ?? ""}`,
+      `${ronda.setor ?? "-"}  |  ${fmtManaus(ronda.inicio, false)} ${fmtManaus(ronda.inicio).split(" ")[1] ?? ""}`,
       marginX + 10,
       y - 9,
       7.5,
@@ -630,7 +742,7 @@ function buildEmailHtml(
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
       <tr><td style="font-size:16px;font-weight:bold;color:#0B1120;line-height:24px;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">Olá, Gestor.</td></tr>
       <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">O relatório diário consolidado do <strong>Controle de Ronda da BA Elétrica</strong> foi processado com sucesso pelo sistema de segurança.</td></tr>
-      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará o <strong>PDF gerencial</strong> (com gráficos e indicadores de conformidade) e a <strong>planilha Excel</strong> com a auditoria detalhada de todos os registros de rondas. Ambos os arquivos refletem fielmente os dados extraídos do sistema.</td></tr>
+      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará os <strong>PDFs gerenciais</strong> (com gráficos, indicadores de conformidade e evidências fotográficas) dos setores CD e LOJA. Os arquivos refletem fielmente os dados extraídos do sistema.</td></tr>
       <tr><td style="padding:0 0 24px 0">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0">
         <tr><td style="padding:16px 20px">
@@ -666,8 +778,7 @@ function buildEmailHtml(
           <tr><td style="font-size:12px;color:#64748B;padding:6px 0 0 0;font-family:Arial,Helvetica,sans-serif">
             Relatorio_CD_GUARDAS.pdf — Relatório do setor CD - Guardas<br>
             Relatorio_LOJA_GUARDAS.pdf — Relatório do setor LOJA - Guardas<br>
-            Fotos das rondas — Imagens com data, hora e setor de cada registro<br>
-            Auditoria_Dados_Brutos.xlsx — Dados detalhados de todos os registros
+            Ronda_X_*.jpg — Montagem com todas as fotos de cada ronda (grid com labels)
           </td></tr>
           </table>
         </td></tr>
@@ -958,7 +1069,6 @@ Deno.serve(async (req) => {
 
     // ── Gerar 2 PDFs por setor (LOJA primeiro, depois CD) ──
     const attachments: { filename: string; content: string }[] = [];
-    const photoAttachments: { filename: string; content: string }[] = [];
     let totalRegistros = 0;
 
     const SETORES = [
@@ -986,26 +1096,41 @@ Deno.serve(async (req) => {
         content: toBase64(pdfBytes),
       });
 
-      for (const r of setorRows) {
-        if (r._photoBase64) {
-          const nome = (r.nome ?? "colaborador").replace(/[\/\\:*?"<>|\s]+/g, "_");
-          const tipo = (TIPO_LABEL[r.tipo_acao] ?? r.tipo_acao).replace(/\s+/g, "_");
-          const data = fmtManaus(r.horario_acao).replace(/[\/ :]/g, "-");
-          photoAttachments.push({
-            filename: `Foto_${setor.key}_${nome}_${tipo}_${data}.jpg`,
-            content: r._photoBase64,
-          });
-        }
-      }
       totalRegistros += setorRows.length;
     }
 
-    // Anexos: PDFs primeiro, depois fotos, depois XLSX
-    attachments.push(...photoAttachments);
-    const xlsxBytes = await buildXlsx(rows);
-    attachments.push({ filename: "Auditoria_Dados_Brutos.xlsx", content: toBase64(xlsxBytes) });
+    // ── Gerar montagens de fotos por ronda (anexos no email) ──
+    let rondaIdx = 0;
+    for (const setor of SETORES) {
+      const setorRows = rows.filter((r: any) => {
+        const s = (r.setor ?? "").toUpperCase();
+        return s.includes(setor.match);
+      });
+      if (setorRows.length === 0) continue;
+      const setorRondas = reconstructRondas(setorRows);
+      for (const ronda of setorRondas) {
+        rondaIdx++;
+        const montagem = await buildMontagem(ronda, photoMap, rondaIdx);
+        if (montagem) {
+          const nome = ronda.nome.replace(/[\/\\:*?"<>|\s]+/g, "_");
+          attachments.push({
+            filename: `Ronda_${rondaIdx}_${setor.key}_${nome}.jpg`,
+            content: toBase64(montagem),
+          });
+        }
+      }
+    }
 
-    if (attachments.length <= 1) {
+    // Liberar memória das fotos e avatares
+    photoMap.clear();
+    avatarMap.clear();
+    for (const r of rows) {
+      r._photoBase64 = null;
+      r._avatarBase64 = null;
+    }
+
+    // Anexos: PDFs + montagens de fotos
+    if (attachments.length === 0) {
       return new Response(
         JSON.stringify({ ok: false, message: "Nenhum registro nos setores CD/LOJA.", recipients: [], count: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },

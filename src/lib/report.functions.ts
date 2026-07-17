@@ -28,11 +28,16 @@ export async function sendTestReport() {
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90000);
+
   const response = await fetch(REPORT_FUNCTION_URL, {
     method: "POST",
     headers,
     body: JSON.stringify({ modo: "teste", periodo: "hoje_ontem" }),
+    signal: controller.signal,
   });
+  clearTimeout(timeout);
 
   const text = await response.text();
   let data: any = null;

@@ -298,8 +298,14 @@ function RondaCardItem({
       {/* Card body — clickable */}
       <a
         href={`/admin/ronda-detalhe/${encodeURIComponent(card.user_id)}/${encodeURIComponent(card.inicio)}`}
-        target="_blank"
-        rel="noopener noreferrer"
+        onClick={(e) => {
+          e.preventDefault();
+          window.open(
+            `/admin/ronda-detalhe/${encodeURIComponent(card.user_id)}/${encodeURIComponent(card.inicio)}`,
+            "_blank",
+            "noopener,noreferrer"
+          );
+        }}
         className="block p-4 space-y-2 w-full text-left cursor-pointer"
       >
         <div className="flex items-center gap-2 min-w-0">

@@ -133,7 +133,8 @@ function TodosRegistros() {
           toast.error(`Falha: ${errMsg}`, { id, duration: 12000 });
         }
       } else {
-        toast.success(`Enviado para: ${(r.recipients ?? []).join(", ") || "(ninguém)"}`, { id });
+        toast.success(`Enviado para: ${(r.recipients ?? []).join(", ") || "(ninguem)"}`, { id });
+        setTimeout(() => window.location.reload(), 2000);
       }
     } catch (e: any) {
       const errMsg = e?.message ?? "erro desconhecido";
@@ -142,6 +143,11 @@ function TodosRegistros() {
           "Chave RESEND_API_KEY não configurada no Supabase. Veja os logs da Edge Function.",
           { id, duration: 15000 },
         );
+      } else if (errMsg.includes("aborted") || errMsg.includes("timeout")) {
+        toast.error("Tempo esgotado. A function demorou mais de 90s. Tente novamente.", {
+          id,
+          duration: 12000,
+        });
       } else {
         toast.error(`Falha: ${errMsg}`, { id, duration: 12000 });
       }
