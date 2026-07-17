@@ -11,7 +11,7 @@ import {
   MapPin,
   CheckCircle2,
   CircleDot,
-  AlertCircle,
+  Camera,
 } from "lucide-react";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { toast } from "sonner";
@@ -400,10 +400,10 @@ function DetalheRonda() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
       {/* Sticky top bar */}
       <div className="sticky top-0 z-10 bg-background border-b border-border shadow-sm no-print">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <button
             onClick={() => window.history.back()}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -427,7 +427,7 @@ function DetalheRonda() {
           <span className="text-sm text-muted-foreground">Carregando ronda...</span>
         </div>
       ) : (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Main card */}
           <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
             {/* Dark header */}
@@ -526,53 +526,7 @@ function DetalheRonda() {
                 </div>
               </Section>
 
-              {/* Fotos */}
-              <Section title="Registro Fotográfico">
-                <div className="space-y-4">
-                  {passos.map((p, idx) => {
-                    const accent =
-                      p.tipo === "check_in"
-                        ? "border-l-green-500"
-                        : p.tipo === "check_out_2"
-                          ? "border-l-amber-500"
-                          : "border-l-primary";
-                    const tipoLabel = TIPO_ACAO_LABEL[p.tipo] ?? p.tipo;
-                    return (
-                      <div
-                        key={p.id}
-                        className={`bg-background border border-border border-l-4 ${accent} rounded-xl overflow-hidden`}
-                      >
-                        <div className="px-4 py-3 flex items-center justify-between">
-                          <div>
-                            <div className="font-semibold text-sm">
-                              {idx + 1}. {tipoLabel}
-                            </div>
-                            <div className="text-xs text-muted-foreground font-mono">
-                              Captura: {formatManaus(p.horario_acao)} | Envio:{" "}
-                              {formatManaus(p.horario_foto)}
-                            </div>
-                          </div>
-                        </div>
-                        {p.signedUrl ? (
-                          <img
-                            src={p.signedUrl}
-                            alt={tipoLabel}
-                            className="w-full object-cover max-h-96 cursor-pointer hover:opacity-90 transition-opacity"
-                            loading="lazy"
-                            onClick={() => setFotoExpandida(p.signedUrl ?? null)}
-                          />
-                        ) : (
-                          <div className="w-full h-48 bg-muted flex items-center justify-center text-muted-foreground text-sm">
-                            Foto indisponível
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </Section>
-
-              {/* Observação */}
+              {/* Observações — ACIMA das fotos */}
               {observacoes && (
                 <Section title="Observações" highlight>
                   <p className="text-sm whitespace-pre-wrap break-words leading-relaxed text-foreground">
@@ -580,6 +534,58 @@ function DetalheRonda() {
                   </p>
                 </Section>
               )}
+
+              {/* Registro Fotográfico — grid 4x4x2 */}
+              <Section title="Registro Fotográfico">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {passos.map((p, idx) => {
+                    const borderColor =
+                      p.tipo === "check_in"
+                        ? "border-green-500"
+                        : p.tipo === "check_out_2"
+                          ? "border-amber-500"
+                          : "border-primary";
+                    const badgeColor =
+                      p.tipo === "check_in"
+                        ? "bg-green-500/10 text-green-600"
+                        : p.tipo === "check_out_2"
+                          ? "bg-amber-500/10 text-amber-600"
+                          : "bg-primary/10 text-primary";
+                    const tipoLabel = TIPO_ACAO_LABEL[p.tipo] ?? p.tipo;
+                    return (
+                      <div
+                        key={p.id}
+                        className={`bg-background border-2 ${borderColor} rounded-xl overflow-hidden group cursor-pointer`}
+                        onClick={() => setFotoExpandida(p.signedUrl ?? null)}
+                      >
+                        {p.signedUrl ? (
+                          <img
+                            src={p.signedUrl}
+                            alt={tipoLabel}
+                            className="w-full aspect-square object-cover group-hover:opacity-80 transition-opacity"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full aspect-square bg-muted flex items-center justify-center">
+                            <Camera className="w-8 h-8 text-muted-foreground/30" />
+                          </div>
+                        )}
+                        <div className="px-2 py-1.5 border-t border-border">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${badgeColor}`}>
+                              {idx + 1}. {tipoLabel}
+                            </span>
+                          </div>
+                          <div className="text-[9px] text-muted-foreground font-mono mt-0.5 space-y-0">
+                            <div>Captura: {formatManaus(p.horario_acao)}</div>
+                            <div>Envio: {formatManaus(p.horario_foto)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
             </div>
 
             {/* Footer */}
@@ -599,7 +605,7 @@ function DetalheRonda() {
       {/* Lightbox foto */}
       {fotoExpandida && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 no-print"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 no-print"
           onClick={() => setFotoExpandida(null)}
         >
           <img
