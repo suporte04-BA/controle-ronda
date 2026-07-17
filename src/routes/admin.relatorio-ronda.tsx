@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   FileText,
@@ -42,6 +42,10 @@ function RelatorioRonda() {
   const [items, setItems] = useState<RondaCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const isChildRoute = Route.useRouterState({
+    select: (s) => s.location.pathname !== "/admin/relatorio-ronda",
+  });
 
   const carregar = async () => {
     setLoading(true);
@@ -112,8 +116,12 @@ function RelatorioRonda() {
   };
 
   useEffect(() => {
-    carregar();
-  }, []);
+    if (!isChildRoute) carregar();
+  }, [isChildRoute]);
+
+  if (isChildRoute) {
+    return <Outlet />;
+  }
 
   const excluir = async (card: RondaCard) => {
     const id = toast.loading("Excluindo ronda...");
@@ -297,7 +305,7 @@ function RondaCardItem({
 
       {/* Card body — clickable (SPA navigation preserves auth state) */}
       <a
-        href={`/admin/ronda-detalhe/${encodeURIComponent(card.user_id)}/${encodeURIComponent(card.inicio)}`}
+        href={`/admin/relatorio-ronda/${encodeURIComponent(card.user_id)}/${encodeURIComponent(card.inicio)}`}
         target="_blank"
         rel="noopener noreferrer"
         className="block p-4 space-y-2 w-full text-left cursor-pointer"

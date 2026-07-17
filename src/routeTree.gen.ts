@@ -22,7 +22,7 @@ import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
 import { Route as AdminRelatorioRondaRouteImport } from './routes/admin.relatorio-ronda'
 import { Route as AdminRegistrosRouteImport } from './routes/admin.registros'
 import { Route as AdminObservacoesRouteImport } from './routes/admin.observacoes'
-import { Route as AdminRondaDetalheIdInicioRouteImport } from './routes/admin.ronda-detalhe.$id.$inicio'
+import { Route as AdminRelatorioRondaIdInicioRouteImport } from './routes/admin.relatorio-ronda.$id.$inicio'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -89,11 +89,11 @@ const AdminObservacoesRoute = AdminObservacoesRouteImport.update({
   path: '/observacoes',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminRondaDetalheIdInicioRoute =
-  AdminRondaDetalheIdInicioRouteImport.update({
-    id: '/ronda-detalhe/$id/$inicio',
-    path: '/ronda-detalhe/$id/$inicio',
-    getParentRoute: () => AdminRoute,
+const AdminRelatorioRondaIdInicioRoute =
+  AdminRelatorioRondaIdInicioRouteImport.update({
+    id: '/$id/$inicio',
+    path: '/$id/$inicio',
+    getParentRoute: () => AdminRelatorioRondaRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -103,28 +103,28 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin/observacoes': typeof AdminObservacoesRoute
   '/admin/registros': typeof AdminRegistrosRoute
-  '/admin/relatorio-ronda': typeof AdminRelatorioRondaRoute
+  '/admin/relatorio-ronda': typeof AdminRelatorioRondaRouteWithChildren
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/historico': typeof AppHistoricoRoute
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/admin/ronda-detalhe/$id/$inicio': typeof AdminRondaDetalheIdInicioRoute
+  '/admin/relatorio-ronda/$id/$inicio': typeof AdminRelatorioRondaIdInicioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/admin/observacoes': typeof AdminObservacoesRoute
   '/admin/registros': typeof AdminRegistrosRoute
-  '/admin/relatorio-ronda': typeof AdminRelatorioRondaRoute
+  '/admin/relatorio-ronda': typeof AdminRelatorioRondaRouteWithChildren
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/historico': typeof AppHistoricoRoute
   '/app/perfil': typeof AppPerfilRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
-  '/admin/ronda-detalhe/$id/$inicio': typeof AdminRondaDetalheIdInicioRoute
+  '/admin/relatorio-ronda/$id/$inicio': typeof AdminRelatorioRondaIdInicioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,14 +134,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/admin/observacoes': typeof AdminObservacoesRoute
   '/admin/registros': typeof AdminRegistrosRoute
-  '/admin/relatorio-ronda': typeof AdminRelatorioRondaRoute
+  '/admin/relatorio-ronda': typeof AdminRelatorioRondaRouteWithChildren
   '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/historico': typeof AppHistoricoRoute
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/admin/ronda-detalhe/$id/$inicio': typeof AdminRondaDetalheIdInicioRoute
+  '/admin/relatorio-ronda/$id/$inicio': typeof AdminRelatorioRondaIdInicioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -159,7 +159,7 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin/'
     | '/app/'
-    | '/admin/ronda-detalhe/$id/$inicio'
+    | '/admin/relatorio-ronda/$id/$inicio'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -173,7 +173,7 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin'
     | '/app'
-    | '/admin/ronda-detalhe/$id/$inicio'
+    | '/admin/relatorio-ronda/$id/$inicio'
   id:
     | '__root__'
     | '/'
@@ -189,7 +189,7 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin/'
     | '/app/'
-    | '/admin/ronda-detalhe/$id/$inicio'
+    | '/admin/relatorio-ronda/$id/$inicio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -292,34 +292,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminObservacoesRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/ronda-detalhe/$id/$inicio': {
-      id: '/admin/ronda-detalhe/$id/$inicio'
-      path: '/ronda-detalhe/$id/$inicio'
-      fullPath: '/admin/ronda-detalhe/$id/$inicio'
-      preLoaderRoute: typeof AdminRondaDetalheIdInicioRouteImport
-      parentRoute: typeof AdminRoute
+    '/admin/relatorio-ronda/$id/$inicio': {
+      id: '/admin/relatorio-ronda/$id/$inicio'
+      path: '/$id/$inicio'
+      fullPath: '/admin/relatorio-ronda/$id/$inicio'
+      preLoaderRoute: typeof AdminRelatorioRondaIdInicioRouteImport
+      parentRoute: typeof AdminRelatorioRondaRoute
     }
   }
 }
 
+interface AdminRelatorioRondaRouteChildren {
+  AdminRelatorioRondaIdInicioRoute: typeof AdminRelatorioRondaIdInicioRoute
+}
+
+const AdminRelatorioRondaRouteChildren: AdminRelatorioRondaRouteChildren = {
+  AdminRelatorioRondaIdInicioRoute: AdminRelatorioRondaIdInicioRoute,
+}
+
+const AdminRelatorioRondaRouteWithChildren =
+  AdminRelatorioRondaRoute._addFileChildren(AdminRelatorioRondaRouteChildren)
+
 interface AdminRouteChildren {
   AdminObservacoesRoute: typeof AdminObservacoesRoute
   AdminRegistrosRoute: typeof AdminRegistrosRoute
-  AdminRelatorioRondaRoute: typeof AdminRelatorioRondaRoute
+  AdminRelatorioRondaRoute: typeof AdminRelatorioRondaRouteWithChildren
   AdminSetoresRoute: typeof AdminSetoresRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
-  AdminRondaDetalheIdInicioRoute: typeof AdminRondaDetalheIdInicioRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminObservacoesRoute: AdminObservacoesRoute,
   AdminRegistrosRoute: AdminRegistrosRoute,
-  AdminRelatorioRondaRoute: AdminRelatorioRondaRoute,
+  AdminRelatorioRondaRoute: AdminRelatorioRondaRouteWithChildren,
   AdminSetoresRoute: AdminSetoresRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
-  AdminRondaDetalheIdInicioRoute: AdminRondaDetalheIdInicioRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
