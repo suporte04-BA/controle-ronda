@@ -16,6 +16,7 @@ import {
   type TipoAcao,
 } from "@/lib/timezone";
 import { CameraCapture } from "@/components/CameraCapture";
+import { adicionarOverlay } from "@/lib/photoOverlay";
 
 export const Route = createFileRoute("/app/")({
   component: BaterPonto,
@@ -28,7 +29,7 @@ interface PendingFoto {
 }
 
 function BaterPonto() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [now, setNow] = useState(nowManaus());
   const [acoesHoje, setAcoesHoje] = useState<string[]>([]);
   const [camOpen, setCamOpen] = useState(false);
@@ -36,6 +37,8 @@ function BaterPonto() {
   const [obsText, setObsText] = useState("");
   const [pendingFoto, setPendingFoto] = useState<PendingFoto | null>(null);
   const uploadingRef = useRef(false);
+
+  const [setorNome, setSetorNome] = useState<string>("");
 
   useEffect(() => {
     const i = setInterval(() => setNow(nowManaus()), 1000);
@@ -70,6 +73,16 @@ function BaterPonto() {
     carregarHoje();
   }, [user]);
 
+  useEffect(() => {
+    if (!profile?.setor_id) return;
+    supabase
+      .from("setores")
+      .select("nome")
+      .eq("id", profile.setor_id)
+      .single()
+      .then(({ data }) => { if (data) setSetorNome(data.nome); });
+  }, [profile?.setor_id]);
+
   const proxima = useMemo(() => proximaAcao(acoesHoje), [acoesHoje]);
   const cicloAtual = useMemo(() => acoesDoCicloAtual(acoesHoje), [acoesHoje]);
 
@@ -102,7 +115,18 @@ function BaterPonto() {
     timestamps: { horarioCapturaOriginal: string; horarioConfirmacaoEnvio: string },
   ) => {
     if (!user || !proxima || uploadingRef.current) return;
-    const pend: PendingFoto = { blob, timestamps, acao: proxima };
+
+    let fotoBlob = blob;
+    try {
+      fotoBlob = await adicionarOverlay(blob, {
+        nome: profile?.nome ?? user.email ?? "",
+        setor: setorNome || "Ronda",
+      });
+    } catch (e) {
+      console.warn("Overlay falhou, usando foto original:", e);
+    }
+
+    const pend: PendingFoto = { blob: fotoBlob, timestamps, acao: proxima };
 
     // Última ação do ciclo (Fim) -> abre tela de ocorrência antes de salvar
     if (proxima === "check_out_2") {
