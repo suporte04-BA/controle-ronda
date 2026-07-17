@@ -203,6 +203,16 @@ async function buildPdf(
   const white = rgb(1, 1, 1);
   const softRed = rgb(0.99, 0.93, 0.93);
 
+  // Cor do setor (consistente com dashboard): CD=azul, LOJA=âmbar
+  const setorPdfColor = (setor: string | undefined | null): { r: number; g: number; b: number } => {
+    const s = (setor ?? "").toUpperCase();
+    if (s.includes("CD")) return { r: 0.055, g: 0.647, b: 0.914 }; // #0EA5E9
+    if (s.includes("LOJA")) return { r: 0.961, g: 0.62, b: 0.043 }; // #F59E0B
+    if (s.includes("TI") || s.includes("DEPARTAMENTO")) return { r: 0.659, g: 0.333, b: 0.969 };
+    if (s.includes("GESTOR")) return { r: 0.063, g: 0.725, b: 0.506 };
+    return { r: 0.392, g: 0.459, b: 0.545 };
+  };
+
   let page = pdf.addPage([pageW, pageH]);
   let pageNum = 1;
   let y = pageH - 36;
@@ -411,7 +421,23 @@ async function buildPdf(
 
     x = tableX;
     for (let i = 0; i < cells.length; i++) {
-      draw(cells[i], x + 6, y, 7.5, false, darkText);
+      if (i === 2) {
+        // Coluna SETOR: faixa de cor + texto em branco
+        const sc = setorPdfColor(r.setor);
+        const bandX = x + 4;
+        const bandW = colWidths[i] - 8;
+        page.drawRectangle({
+          x: bandX,
+          y: y - 4,
+          width: bandW,
+          height: rowH - 2,
+          color: rgb(sc.r, sc.g, sc.b),
+          borderRadius: 2,
+        });
+        draw(cells[i], bandX + 5, y + 1, 6.5, true, white);
+      } else {
+        draw(cells[i], x + 6, y, 7.5, false, darkText);
+      }
       x += colWidths[i];
     }
     y -= rowH;
@@ -890,41 +916,28 @@ Deno.serve(async (req) => {
 
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
 
-    const photoResults = await Promise.allSettled(
-      rows.map(async (r: any) => {
-        const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
-        return { id: r.id, photoBase64: b64 };
-      }),
-    );
+    // Download photos SEQUENTIALLY to avoid memory spike (250MB limit)
     const photoMap = new Map<string, string | null>();
-    for (const pr of photoResults) {
-      if (pr.status === "fulfilled") {
-        photoMap.set(pr.value.id, pr.value.photoBase64);
-      }
+    for (const r of rows) {
+      const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
+      photoMap.set(r.id, b64);
     }
     // Attach photos to rows
     for (const r of rows) {
       r._photoBase64 = photoMap.get(r.id) ?? null;
     }
 
-    // Fetch unique avatars
+    // Fetch unique avatars SEQUENTIALLY
     const uniqueAvatarPaths = new Map<string, string>();
     for (const r of rows) {
       if (r.avatar_url && !uniqueAvatarPaths.has(r.user_id)) {
         uniqueAvatarPaths.set(r.user_id, r.avatar_url);
       }
     }
-    const avatarResults = await Promise.allSettled(
-      Array.from(uniqueAvatarPaths.entries()).map(async ([userId, path]) => {
-        const b64 = await fetchAvatarAsBase64(path, SUPABASE_URL, SERVICE_KEY);
-        return { userId, avatarBase64: b64 };
-      }),
-    );
     const avatarMap = new Map<string, string | null>();
-    for (const ar of avatarResults) {
-      if (ar.status === "fulfilled") {
-        avatarMap.set(ar.value.userId, ar.value.avatarBase64);
-      }
+    for (const [userId, path] of uniqueAvatarPaths) {
+      const b64 = await fetchAvatarAsBase64(path, SUPABASE_URL, SERVICE_KEY);
+      avatarMap.set(userId, b64);
     }
     for (const r of rows) {
       r._avatarBase64 = avatarMap.get(r.user_id) ?? null;

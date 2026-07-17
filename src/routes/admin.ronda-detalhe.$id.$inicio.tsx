@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -404,12 +404,12 @@ function DetalheRonda() {
       {/* Sticky top bar */}
       <div className="sticky top-0 z-10 bg-background border-b border-border shadow-sm no-print">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <button
-            onClick={() => window.history.back()}
+          <Link
+            to="/admin/relatorio-ronda"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Voltar ao relatório
-          </button>
+          </Link>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               <Printer className="w-4 h-4 mr-1" /> Imprimir
@@ -577,8 +577,9 @@ function DetalheRonda() {
                             </span>
                           </div>
                           <div className="text-[9px] text-muted-foreground font-mono mt-0.5 space-y-0">
-                            <div>Captura: {formatManaus(p.horario_acao)}</div>
-                            <div>Envio: {formatManaus(p.horario_foto)}</div>
+                            <div className="flex items-center gap-1"><User className="w-2.5 h-2.5" />{nome}</div>
+                            <div className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" />{setor}</div>
+                            <div>{formatData(p.horario_acao)} • {formatHora(p.horario_acao)}</div>
                           </div>
                         </div>
                       </div>

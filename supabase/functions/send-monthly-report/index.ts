@@ -220,6 +220,7 @@ async function buildPdf(
   const lineColor = rgb(0.83, 0.86, 0.9);
   const borderColor = rgb(0.88, 0.9, 0.93);
   const white = rgb(1, 1, 1);
+  const softRed = rgb(0.98, 0.92, 0.92);
 
   let page = pdf.addPage([pageW, pageH]);
   let pageNum = 1;
@@ -571,6 +572,64 @@ async function buildPdf(
     drawPageFooter(pageNum);
   }
 
+  // ═══ OBSERVATIONS SECTION ═══
+  const obsRows = rows.filter((r: any) => r.tipo_acao === "check_out_2" && r.observacoes && r.observacoes.trim());
+  if (obsRows.length > 0) {
+    const wrapText = (text: string, maxWidth: number, size: number): string[] => {
+      const words = text.split(/\s+/);
+      const lines: string[] = [];
+      let line = "";
+      for (const w of words) {
+        const test = line ? `${line} ${w}` : w;
+        if (font.widthOfTextAtSize(test, size) > maxWidth) {
+          if (line) lines.push(line);
+          line = w;
+        } else {
+          line = test;
+        }
+      }
+      if (line) lines.push(line);
+      return lines.length ? lines : [""];
+    };
+
+    page = pdf.addPage([pageW, pageH]);
+    pageNum++;
+    page.drawRectangle({ x: 0, y: pageH - 10, width: pageW, height: 10, color: brandRed });
+    y = pageH - 36;
+
+    draw("OBSERVAÇÕES — MENSAL", marginX, y, 14, true, brandRed);
+    y -= 14;
+    draw(`Período: ${periodo} — ${obsRows.length} observação(ões)`, marginX, y, 8, false, grayText);
+    y -= 8;
+    lineH(marginX, pageW - marginX, y, 1.5, brandRed);
+    y -= 16;
+
+    for (const r of obsRows) {
+      const obsLines = wrapText(r.observacoes, tableW - 28, 8.5);
+      const obsBlockH = obsLines.length * 13 + 30;
+      ensurePage(obsBlockH + 10);
+
+      page.drawRectangle({
+        x: marginX, y: y - obsBlockH, width: tableW, height: obsBlockH,
+        borderColor: brandRed, borderWidth: 0.8, color: softRed,
+      });
+      page.drawRectangle({
+        x: marginX, y: y - obsBlockH, width: 4, height: obsBlockH, color: brandRed,
+      });
+
+      draw("OBSERVAÇÃO", marginX + 12, y - 12, 8, true, brandRed);
+      draw(`${r.nome ?? "—"} — ${fmtManaus(r.horario_acao, false)}`, marginX + 90, y - 12, 7, false, grayText);
+      y -= 22;
+
+      obsLines.forEach((ln, li) => {
+        draw(ln, marginX + 12, y - li * 13, 8, false, darkText);
+      });
+      y -= obsLines.length * 13 + 12;
+    }
+
+    drawPageFooter(pageNum);
+  }
+
   return pdf.save();
 }
 
@@ -655,7 +714,7 @@ async function fetchRows(admin: any, fromIso: string, toIso: string) {
   const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
     admin
       .from("registros_ponto")
-      .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url")
+      .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
       .gte("horario_acao", fromIso)
       .lte("horario_acao", toIso)
       .order("horario_acao", { ascending: true }),
