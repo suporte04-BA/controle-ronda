@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   FileText,
@@ -263,8 +263,6 @@ function RondaCardItem({
   const horaInicio = formatHora(card.inicio);
   const horaFim = card.fim ? formatHora(card.fim) : "—";
 
-  const detalheHref = `/admin/relatorio-ronda/${encodeURIComponent(card.user_id)}?inicio=${encodeURIComponent(card.inicio)}`;
-
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md">
       {/* Header with status */}
@@ -297,9 +295,10 @@ function RondaCardItem({
         </button>
       </div>
 
-      {/* Card body — clickable */}
-      <a
-        href={detalheHref}
+      {/* Card body — clickable (SPA navigation preserves auth state) */}
+      <Link
+        to="/admin/relatorio-ronda/$id/$inicio"
+        params={{ id: card.user_id, inicio: card.inicio }}
         className="block p-4 space-y-2 w-full text-left cursor-pointer"
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -338,7 +337,7 @@ function RondaCardItem({
         <div className="flex items-center justify-end text-xs text-primary font-medium pt-1">
           Ver detalhes <ArrowRight className="w-3 h-3 ml-1" />
         </div>
-      </a>
+      </Link>
     </div>
   );
 }

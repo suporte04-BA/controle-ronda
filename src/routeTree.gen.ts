@@ -22,7 +22,7 @@ import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
 import { Route as AdminRelatorioRondaRouteImport } from './routes/admin.relatorio-ronda'
 import { Route as AdminRegistrosRouteImport } from './routes/admin.registros'
 import { Route as AdminObservacoesRouteImport } from './routes/admin.observacoes'
-import { Route as AdminRelatorioRondaIdRouteImport } from './routes/admin.relatorio-ronda.$id'
+import { Route as AdminRelatorioRondaIdInicioRouteImport } from './routes/admin.relatorio-ronda.$id.$inicio'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -89,11 +89,12 @@ const AdminObservacoesRoute = AdminObservacoesRouteImport.update({
   path: '/observacoes',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminRelatorioRondaIdRoute = AdminRelatorioRondaIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminRelatorioRondaRoute,
-} as any)
+const AdminRelatorioRondaIdInicioRoute =
+  AdminRelatorioRondaIdInicioRouteImport.update({
+    id: '/$id/$inicio',
+    path: '/$id/$inicio',
+    getParentRoute: () => AdminRelatorioRondaRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,7 +110,7 @@ export interface FileRoutesByFullPath {
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/admin/relatorio-ronda/$id': typeof AdminRelatorioRondaIdRoute
+  '/admin/relatorio-ronda/$id/$inicio': typeof AdminRelatorioRondaIdInicioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,7 +124,7 @@ export interface FileRoutesByTo {
   '/app/perfil': typeof AppPerfilRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
-  '/admin/relatorio-ronda/$id': typeof AdminRelatorioRondaIdRoute
+  '/admin/relatorio-ronda/$id/$inicio': typeof AdminRelatorioRondaIdInicioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -140,7 +141,7 @@ export interface FileRoutesById {
   '/app/perfil': typeof AppPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/admin/relatorio-ronda/$id': typeof AdminRelatorioRondaIdRoute
+  '/admin/relatorio-ronda/$id/$inicio': typeof AdminRelatorioRondaIdInicioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -158,7 +159,7 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin/'
     | '/app/'
-    | '/admin/relatorio-ronda/$id'
+    | '/admin/relatorio-ronda/$id/$inicio'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -172,7 +173,7 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin'
     | '/app'
-    | '/admin/relatorio-ronda/$id'
+    | '/admin/relatorio-ronda/$id/$inicio'
   id:
     | '__root__'
     | '/'
@@ -188,7 +189,7 @@ export interface FileRouteTypes {
     | '/app/perfil'
     | '/admin/'
     | '/app/'
-    | '/admin/relatorio-ronda/$id'
+    | '/admin/relatorio-ronda/$id/$inicio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -291,22 +292,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminObservacoesRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/relatorio-ronda/$id': {
-      id: '/admin/relatorio-ronda/$id'
-      path: '/$id'
-      fullPath: '/admin/relatorio-ronda/$id'
-      preLoaderRoute: typeof AdminRelatorioRondaIdRouteImport
+    '/admin/relatorio-ronda/$id/$inicio': {
+      id: '/admin/relatorio-ronda/$id/$inicio'
+      path: '/$id/$inicio'
+      fullPath: '/admin/relatorio-ronda/$id/$inicio'
+      preLoaderRoute: typeof AdminRelatorioRondaIdInicioRouteImport
       parentRoute: typeof AdminRelatorioRondaRoute
     }
   }
 }
 
 interface AdminRelatorioRondaRouteChildren {
-  AdminRelatorioRondaIdRoute: typeof AdminRelatorioRondaIdRoute
+  AdminRelatorioRondaIdInicioRoute: typeof AdminRelatorioRondaIdInicioRoute
 }
 
 const AdminRelatorioRondaRouteChildren: AdminRelatorioRondaRouteChildren = {
-  AdminRelatorioRondaIdRoute: AdminRelatorioRondaIdRoute,
+  AdminRelatorioRondaIdInicioRoute: AdminRelatorioRondaIdInicioRoute,
 }
 
 const AdminRelatorioRondaRouteWithChildren =
