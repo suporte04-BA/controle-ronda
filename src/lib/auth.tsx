@@ -65,14 +65,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
     }
-    // Fallback final: ainda assim libera acesso como user
+    // Fallback final: NÃO assumir "user" em falha transitória (evita redirect
+    // indevido de admins em reload frio de página). Mantém null até resolver.
     const { data: prof } = await supabase
       .from("profiles")
       .select("id,nome,email,setor_id,foto_url")
       .eq("id", userId)
       .maybeSingle();
     setProfile((prof as Profile) ?? null);
-    setBaseRole("user");
+    setBaseRole((prev) => prev ?? "user");
   };
 
   const setDevViewRole = (role: AppRole | null) => {

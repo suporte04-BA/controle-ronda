@@ -16,7 +16,7 @@ function AdminLayout() {
   useEffect(() => {
     if (loading) return;
     if (!session) navigate({ to: "/login", replace: true });
-    else if (role !== "admin") navigate({ to: "/app", replace: true });
+    else if (role === "user") navigate({ to: "/app", replace: true });
   }, [loading, session, role, navigate]);
 
   if (loading || !session || role !== "admin") {
