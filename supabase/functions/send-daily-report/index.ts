@@ -54,6 +54,10 @@ function normalizeEmail(email: unknown): string | null {
   return normalized;
 }
 
+function sanitizeWinAnsi(text: string): string {
+  return text.replace(/[^\x20-\x7E\xC0-\xFF]/g, "?");
+}
+
 function isCorporateEmail(email: string) {
   const domain = email.split("@")[1] ?? "";
   return CORPORATE_DOMAINS.includes(domain);
@@ -119,116 +123,29 @@ async function buildXlsx(rows: any[]): Promise<Uint8Array> {
   return new Uint8Array(out as ArrayBuffer);
 }
 
-// Cria um mini-PDF com todas as fotos de uma ronda em grid (2 colunas)
-// Funciona com qualquer quantidade de fotos (9, 10, etc.)
-async function buildMontagem(
+// Gera anexos JPG individuais para cada foto da ronda
+async function buildFotosAnexos(
   ronda: Ronda,
   photoMap: Map<string, string | null>,
-  index: number,
-): Promise<Uint8Array | null> {
-  const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const pageW = 595;
-  const pageH = 842;
-  const marginX = 24;
-  const GAP = 10;
-  const COLS = 2;
-  const photoW = (pageW - marginX * 2 - GAP * (COLS - 1)) / COLS;
-  const photoMaxH = 280;
-  const LABEL_H = 38;
+  rondaIdx: number,
+  setorKey: string,
+): Promise<{ filename: string; content: string }[]> {
+  const attachments: { filename: string; content: string }[] = [];
+  const nome = ronda.nome.replace(/[\/\\:*?"<>|\s]+/g, "_");
 
-  const brandRed = rgb(0.83, 0.15, 0.12);
-  const darkText = rgb(0.07, 0.09, 0.15);
-  const grayText = rgb(0.45, 0.48, 0.53);
-  const white = rgb(1, 1, 1);
-  const lightBg = rgb(0.96, 0.97, 0.98);
-  const borderColor = rgb(0.88, 0.9, 0.93);
-
-  let page = pdf.addPage([pageW, pageH]);
-  let y = pageH - 10;
-
-  // Header
-  page.drawRectangle({ x: 0, y: y - 60, width: pageW, height: 60, color: rgb(0.07, 0.09, 0.15) });
-  page.drawText(`RONDA ${index} — ${ronda.nome}`, { x: marginX, y: y - 22, size: 16, font: fontB, color: rgb(0.98, 0.75, 0.15) });
-  page.drawText(ronda.setor, { x: marginX, y: y - 38, size: 12, font, color: white });
-  page.drawText(`${fmtManaus(ronda.inicio, false)} a ${fmtManaus(ronda.fim, false)}`, { x: marginX, y: y - 52, size: 9, font, color: rgb(0.6, 0.63, 0.68) });
-  y -= 70;
-
-  let num = 0;
   for (let i = 0; i < ronda.passos.length; i++) {
     const passo = ronda.passos[i];
-    num++;
     const b64 = photoMap.get(passo.id);
+    if (!b64) continue;
 
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
-    const x = marginX + col * (photoW + GAP);
-    const py = y - row * (photoMaxH + LABEL_H + GAP);
+    const tipoLabel = (TIPO_LABEL[passo.tipo] ?? passo.tipo).replace(/\s+/g, "_");
+    const num = String(i + 1).padStart(2, "0");
+    const filename = `R${rondaIdx}_${setorKey}_${nome}_${num}_${tipoLabel}.jpg`;
 
-    // Check if new page needed
-    if (py - photoMaxH - LABEL_H < 40) {
-      page = pdf.addPage([pageW, pageH]);
-      y = pageH - 30;
-      page.drawText(`RONDA ${index} — ${ronda.nome} (continuação)`, { x: marginX, y, size: 12, font: fontB, color: brandRed });
-      y -= 20;
-    }
-
-    const tipoLabel = TIPO_LABEL[passo.tipo] ?? passo.tipo;
-    const dataHora = fmtManaus(passo.horario_acao);
-    const isCheckIn = num === 1;
-    const isCheckOut = num === ronda.passos.length;
-    const accentColor = isCheckIn ? rgb(0.13, 0.77, 0.37) : isCheckOut ? rgb(0.96, 0.62, 0.04) : rgb(0.23, 0.51, 0.96);
-
-    // Card background
-    page.drawRectangle({
-      x, y: py - photoMaxH - LABEL_H,
-      width: photoW, height: photoMaxH + LABEL_H,
-      borderColor, borderWidth: 0.5, color: white,
-    });
-
-    // Accent bar
-    page.drawRectangle({ x, y: py - photoMaxH - LABEL_H, width: 3, height: photoMaxH + LABEL_H, color: accentColor });
-
-    // Badge number
-    page.drawCircle({ x: x + 14, y: py - 10, size: 10, color: accentColor });
-    page.drawText(String(num), { x: x + (num > 9 ? 10 : 11.5), y: py - 14, size: 9, font: fontB, color: white });
-
-    // Photo
-    if (b64) {
-      try {
-        const imgBytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-        let img;
-        const isJpeg = imgBytes[0] === 0xff && imgBytes[1] === 0xd8;
-        if (isJpeg) {
-          img = await pdf.embedJpg(imgBytes);
-        } else {
-          img = await pdf.embedPng(imgBytes);
-        }
-        const scale = Math.min(photoW / img.width, photoMaxH / img.height, 1);
-        const dw = img.width * scale;
-        const dh = img.height * scale;
-        const dx = x + 10 + (photoW - 20 - dw) / 2;
-        const dy = py - 20 - (photoMaxH - 20 - dh) / 2;
-
-        page.drawRectangle({ x: dx - 1, y: dy - 1, width: dw + 2, height: dh + 2, borderColor: accentColor, borderWidth: 0.5 });
-        page.drawImage(img, { x: dx, y: dy, width: dw, height: dh });
-      } catch {
-        page.drawText("Erro ao carregar imagem", { x: x + photoW / 2 - 60, y: py - photoMaxH / 2, size: 8, font, color: grayText });
-      }
-    } else {
-      page.drawRectangle({ x: x + 10, y: py - photoMaxH + 10, width: photoW - 20, height: photoMaxH - 30, color: lightBg });
-      page.drawText("Foto indisponível", { x: x + photoW / 2 - 48, y: py - photoMaxH / 2, size: 8, font, color: grayText });
-    }
-
-    // Label com descrição rica
-    const labelY = py - photoMaxH - LABEL_H + LABEL_H - 10;
-    page.drawText(`${num}º — ${tipoLabel}`, { x: x + 8, y: labelY, size: 8, font: fontB, color: darkText });
-    page.drawText(`${ronda.setor} | ${dataHora}`, { x: x + 8, y: labelY - 12, size: 7, font, color: grayText });
+    attachments.push({ filename, content: b64 });
   }
 
-  const pdfBytes = await pdf.save();
-  return new Uint8Array(pdfBytes);
+  return attachments;
 }
 
 async function fetchPhotoAsBase64(
@@ -337,7 +254,7 @@ async function buildPdf(
     bold = false,
     color = darkText,
   ) => {
-    page.drawText(txt, { x: xPos, y: yPos, size, font: bold ? fontB : font, color });
+    page.drawText(sanitizeWinAnsi(txt), { x: xPos, y: yPos, size, font: bold ? fontB : font, color });
   };
   const lineH = (x1: number, x2: number, yPos: number, thickness = 0.5, color = lineColor) => {
     page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness, color });
@@ -577,7 +494,8 @@ async function buildPdf(
   };
 
   const wrapText = (text: string, maxWidth: number, size: number): string[] => {
-    const words = text.split(/\s+/);
+    const safe = sanitizeWinAnsi(text);
+    const words = safe.split(/\s+/);
     const lines: string[] = [];
     let line = "";
     for (const w of words) {
@@ -683,7 +601,7 @@ async function buildPdf(
 
     // Observação da ronda (bloco profissional com borda lateral)
     if (ronda.observacoes && ronda.observacoes.trim()) {
-      const obsLines = wrapText(ronda.observacoes, tableW - 28, 8.5);
+      const obsLines = wrapText(sanitizeWinAnsi(ronda.observacoes), tableW - 28, 8.5);
       const obsBlockH = obsLines.length * 13 + 30;
       ensurePage(obsBlockH + 10);
 
@@ -778,7 +696,7 @@ function buildEmailHtml(
           <tr><td style="font-size:12px;color:#64748B;padding:6px 0 0 0;font-family:Arial,Helvetica,sans-serif">
             Relatorio_CD_GUARDAS.pdf — Relatório do setor CD - Guardas<br>
             Relatorio_LOJA_GUARDAS.pdf — Relatório do setor LOJA - Guardas<br>
-            Ronda_X_*.jpg — Montagem com todas as fotos de cada ronda (grid com labels)
+            R1_CD_Nome_01_Inicio_de_Ronda.jpg — Fotos individuais de cada passo
           </td></tr>
           </table>
         </td></tr>
@@ -1099,7 +1017,7 @@ Deno.serve(async (req) => {
       totalRegistros += setorRows.length;
     }
 
-    // ── Gerar montagens de fotos por ronda (anexos no email) ──
+    // ── Gerar anexos de fotos individuais por ronda ──
     let rondaIdx = 0;
     for (const setor of SETORES) {
       const setorRows = rows.filter((r: any) => {
@@ -1110,14 +1028,8 @@ Deno.serve(async (req) => {
       const setorRondas = reconstructRondas(setorRows);
       for (const ronda of setorRondas) {
         rondaIdx++;
-        const montagem = await buildMontagem(ronda, photoMap, rondaIdx);
-        if (montagem) {
-          const nome = ronda.nome.replace(/[\/\\:*?"<>|\s]+/g, "_");
-          attachments.push({
-            filename: `Ronda_${rondaIdx}_${setor.key}_${nome}.jpg`,
-            content: toBase64(montagem),
-          });
-        }
+        const fotos = await buildFotosAnexos(ronda, photoMap, rondaIdx, setor.key);
+        attachments.push(...fotos);
       }
     }
 
