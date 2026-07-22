@@ -1,17 +1,20 @@
 -- BA Elétrica — Agendamento de relatórios de Controle de Ronda
--- Executar uma única vez no SQL Editor do Supabase
+-- Seguro pra rodar quantas vezes quiser (idempotente)
+-- Execute no SQL Editor do Supabase Dashboard
+
+-- Garantir extensões ativas
 CREATE EXTENSION IF NOT EXISTS pg_net;
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- ══════════════════════════════════════════════════════════════════
--- RELATÓRIO DIÁRIO — Todos os dias às 07:00 America/Manaus
+-- RELATÓRIO DIÁRIO — Todos os dias às 07:00 America/Manaus (11:00 UTC)
 -- ══════════════════════════════════════════════════════════════════
 
 -- Remove agendamento anterior (se existir) para evitar duplicidade
 SELECT cron.unschedule('ba-report-daily')
 WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'ba-report-daily');
 
--- Agenda para 11:00 UTC = 07:00 America/Manaus, todos os dias
+-- Agenda para todos os dias
 SELECT cron.schedule(
   'ba-report-daily',
   '0 11 * * *',
@@ -25,14 +28,12 @@ SELECT cron.schedule(
 );
 
 -- ══════════════════════════════════════════════════════════════════
--- RELATÓRIO MENSAL — Dia 1 de cada mês às 08:00 America/Manaus
+-- RELATÓRIO MENSAL — Dia 1 de cada mês às 08:00 America/Manaus (12:00 UTC)
 -- ══════════════════════════════════════════════════════════════════
 
--- Remove agendamento anterior (se existir) para evitar duplicidade
 SELECT cron.unschedule('ba-report-monthly')
 WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'ba-report-monthly');
 
--- Agenda para 12:00 UTC = 08:00 America/Manaus, dia 1 de cada mês
 SELECT cron.schedule(
   'ba-report-monthly',
   '0 12 1 * *',
@@ -44,3 +45,16 @@ SELECT cron.schedule(
   );
   $$
 );
+
+-- ══════════════════════════════════════════════════════════════════
+-- VERIFICAÇÃO — Rode pra confirmar que tá tudo OK
+-- ══════════════════════════════════════════════════════════════════
+
+-- Lista os crons ativos
+SELECT jobid, jobname, schedule, active FROM cron.job WHERE jobname LIKE 'ba-report%';
+
+-- Últimos disparos (se tiver)
+SELECT jobid, status, start_time, end_time 
+FROM cron.job_run_details 
+WHERE jobid IN (SELECT jobid FROM cron.job WHERE jobname LIKE 'ba-report%')
+ORDER BY start_time DESC LIMIT 5;
