@@ -1,8 +1,12 @@
-name: Keep Supabase Alive + Enviar Relatório
+name: Relatórios BA Elétrica
 
 on:
   schedule:
-    # Keep-alive: todos os dias às 06:00 UTC (02:00 Manaus)
+    # Relatório diário: 11:00 UTC = 07:00 Manaus, todos os dias
+    - cron: '0 11 * * *'
+    # Relatório mensal: 12:00 UTC = 08:00 Manaus, dia 1 de cada mês
+    - cron: '0 12 1 * *'
+    # Keep-alive: 06:00 UTC = 02:00 Manaus, todos os dias (previne pausa)
     - cron: '0 6 * * *'
   workflow_dispatch:
 
@@ -13,16 +17,14 @@ env:
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
+    if: github.event.schedule == '0 6 * * *'
     steps:
-      - name: Ping Supabase Health
-        run: |
-          curl -s -o /dev/null -w "HTTP %{http_code}" \
-            "${{ env.SUPABASE_URL }}/functions/v1/health"
-          echo " - Keep-alive ping enviado"
+      - name: Ping Supabase
+        run: curl -s -o /dev/null -w "HTTP %{http_code}" "${{ env.SUPABASE_URL }}/functions/v1/health"
 
   send-daily-report:
     runs-on: ubuntu-latest
-    needs: keep-alive
+    if: github.event.schedule == '0 11 * * *' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Enviar Relatório Diário
         run: |
@@ -32,18 +34,11 @@ jobs:
             -H "apikey: ${{ env.SUPABASE_ANON_KEY }}" \
             -d '{"modo":"diario"}')
           echo "Resposta: $response"
-          
-          if echo "$response" | grep -q '"ok":true'; then
-            echo "✅ Relatório enviado com sucesso!"
-          else
-            echo "❌ Falha no envio do relatório"
-            exit 1
-          fi
+          echo "$response" | grep -q '"ok":true' && echo "OK" || (echo "FALHOU" && exit 1)
 
   send-monthly-report:
     runs-on: ubuntu-latest
-    if: github.event.schedule == '0 6 1 * *' || github.event_name == 'workflow_dispatch'
-    needs: keep-alive
+    if: github.event.schedule == '0 12 1 * *'
     steps:
       - name: Enviar Relatório Mensal
         run: |
@@ -53,10 +48,4 @@ jobs:
             -H "apikey: ${{ env.SUPABASE_ANON_KEY }}" \
             -d '{}')
           echo "Resposta: $response"
-          
-          if echo "$response" | grep -q '"ok":true'; then
-            echo "✅ Relatório mensal enviado com sucesso!"
-          else
-            echo "❌ Falha no envio do relatório mensal"
-            exit 1
-          fi
+          echo "$response" | grep -q '"ok":true' && echo "OK" || (echo "FALHOU" && exit 1)
