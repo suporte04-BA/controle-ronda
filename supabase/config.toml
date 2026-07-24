@@ -1,5 +1,8 @@
 project_id = "rdmbayprbfqbjhfqcasp"
 
+[functions.health]
+verify_jwt = false
+
 [functions.send-daily-report]
 verify_jwt = false
 
