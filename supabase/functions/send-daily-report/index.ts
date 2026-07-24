@@ -55,7 +55,11 @@ function normalizeEmail(email: unknown): string | null {
 }
 
 function sanitizeWinAnsi(text: string): string {
-  return text.replace(/[^\x20-\x7E\xC0-\xFF]/g, "?");
+  return text
+    .replace(/–/g, "-").replace(/—/g, "-")
+    .replace(/\u00A0/g, " ")
+    .replace(/[""]/g, '"').replace(/['']/g, "'")
+    .replace(/[^\x20-\x7E\xC0-\xFF]/g, "");
 }
 
 function isCorporateEmail(email: string) {
@@ -972,7 +976,10 @@ Deno.serve(async (req) => {
       r._avatarBase64 = avatarMap.get(r.user_id) ?? null;
     }
 
-    const recipients = await fetchRecipientEmails(admin);
+    let recipients = await fetchRecipientEmails(admin);
+    if (modo === "teste") {
+      recipients = recipients.filter((e) => e === "suporte04@baeletrica.com.br");
+    }
     if (!recipients.length) {
       return new Response(
         JSON.stringify({
