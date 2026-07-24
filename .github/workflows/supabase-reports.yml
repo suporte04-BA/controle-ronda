@@ -1,0 +1,62 @@
+name: Keep Supabase Alive + Enviar Relatório
+
+on:
+  schedule:
+    # Keep-alive: todos os dias às 06:00 UTC (02:00 Manaus)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+env:
+  SUPABASE_URL: https://rdmbayprbfqbjhfqcasp.supabase.co
+  SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Health
+        run: |
+          curl -s -o /dev/null -w "HTTP %{http_code}" \
+            "${{ env.SUPABASE_URL }}/functions/v1/health"
+          echo " - Keep-alive ping enviado"
+
+  send-daily-report:
+    runs-on: ubuntu-latest
+    needs: keep-alive
+    steps:
+      - name: Enviar Relatório Diário
+        run: |
+          response=$(curl -s -X POST \
+            "${{ env.SUPABASE_URL }}/functions/v1/send-daily-report" \
+            -H "Content-Type: application/json" \
+            -H "apikey: ${{ env.SUPABASE_ANON_KEY }}" \
+            -d '{"modo":"diario"}')
+          echo "Resposta: $response"
+          
+          if echo "$response" | grep -q '"ok":true'; then
+            echo "✅ Relatório enviado com sucesso!"
+          else
+            echo "❌ Falha no envio do relatório"
+            exit 1
+          fi
+
+  send-monthly-report:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 6 1 * *' || github.event_name == 'workflow_dispatch'
+    needs: keep-alive
+    steps:
+      - name: Enviar Relatório Mensal
+        run: |
+          response=$(curl -s -X POST \
+            "${{ env.SUPABASE_URL }}/functions/v1/send-monthly-report" \
+            -H "Content-Type: application/json" \
+            -H "apikey: ${{ env.SUPABASE_ANON_KEY }}" \
+            -d '{}')
+          echo "Resposta: $response"
+          
+          if echo "$response" | grep -q '"ok":true'; then
+            echo "✅ Relatório mensal enviado com sucesso!"
+          else
+            echo "❌ Falha no envio do relatório mensal"
+            exit 1
+          fi

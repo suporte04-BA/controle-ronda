@@ -1,86 +1,33 @@
 -- ══════════════════════════════════════════════════════════════════
 -- BA Elétrica — Agendamento de relatórios de Controle de Ronda
 -- ══════════════════════════════════════════════════════════════════
--- 
--- SOLUÇÃO: cron-job.org (externo, gratuito, confiável)
--- O pg_cron + pg_net NÃO é confiável no free tier do Supabase
--- porque o banco pausa após 7 dias sem tráfego e o cron para.
+--
+-- SOLUÇÃO: GitHub Actions (MAIS CONFIÁVEL)
+-- O GitHub Actions roda como scheduler EXTERNO, sem depender do banco.
+-- Não há risco de pausa por inatividade.
 --
 -- INSTRUÇÕES:
--- 1. Acesse https://cron-job.org (crie conta gratuita)
--- 2. Crie 3 jobs conforme abaixo
--- 3. IMPORTANTE: os headers devem incluir Authorization com a anon key
+-- 1. O arquivo .github/workflows/supabase-reports.yml já está no repo
+-- 2. Ative os workflows em: https://github.com/suporte04-BA/controle-ronda/actions
+-- 3. O keep-alive roda todo dia às 06:00 UTC (02:00 Manaus)
+-- 4. O relatório diário roda todo dia às 06:00 UTC (02:00 Manaus)
+-- 5. O relatório mensal roda no dia 1 de cada mês
+--
+-- ALTERNATIVA: cron-job.org (backup)
+-- Se preferir um scheduler externo além do GitHub:
+-- https://cron-job.org → crie 3 jobs conforme CRON_SQL_PRONTO.sql.bak
+--
+-- ALTERNATIVA: pg_cron (NÃO recomendado no free tier)
+-- O pg_cron para quando o banco pausa (7 dias sem tráfego).
+-- Só usar se o projeto tiver tráfego constante.
 --
 -- ══════════════════════════════════════════════════════════════════
--- JOB 1: RELATÓRIO DIÁRIO
--- ══════════════════════════════════════════════════════════════════
--- Title:   BA - Relatório Diário de Ronda
--- Method:  POST
--- URL:     https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report
--- Schedule: 0 11 * * * (11:00 UTC = 07:00 Manaus, todos os dias)
--- Timezone: UTC
--- Headers:
---   Content-Type: application/json
---   Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w
--- Body (POST): {"modo":"diario"}
---
--- ══════════════════════════════════════════════════════════════════
--- JOB 2: RELATÓRIO MENSAL
--- ══════════════════════════════════════════════════════════════════
--- Title:   BA - Relatório Mensal de Ronda
--- Method:  POST
--- URL:     https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-monthly-report
--- Schedule: 0 12 1 * * (12:00 UTC = 08:00 Manaus, dia 1 de cada mês)
--- Timezone: UTC
--- Headers:
---   Content-Type: application/json
---   Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w
--- Body (POST): {}
---
--- ══════════════════════════════════════════════════════════════════
--- JOB 3: KEEP-ALIVE (mantém projeto Supabase ativo)
--- ══════════════════════════════════════════════════════════════════
--- Title:   BA - Keep Alive
--- Method:  GET
--- URL:     https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/health
--- Schedule: 0 9 * * 1 (toda segunda às 09:00 UTC)
--- Timezone: UTC
--- (sem headers de auth, a function health não precisa)
---
--- ══════════════════════════════════════════════════════════════════
--- ALTERNATIVA: pg_cron (SE o projeto não pausar)
--- Se preferir manter pg_cron como backup, rode o SQL abaixo:
+-- VERIFICAÇÃO — Rode pra confirmar que tá tudo OK
 -- ══════════════════════════════════════════════════════════════════
 
--- CREATE EXTENSION IF NOT EXISTS pg_net;
--- CREATE EXTENSION IF NOT EXISTS pg_cron;
---
--- SELECT cron.unschedule('ba-report-daily')
--- WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'ba-report-daily');
---
--- SELECT cron.schedule(
---   'ba-report-daily',
---   '0 11 * * *',
---   $$
---   SELECT net.http_post(
---     url := 'https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report',
---     headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w"}'::jsonb,
---     body := '{"modo":"diario"}'::jsonb
---   );
---   $$
--- );
---
--- SELECT cron.unschedule('ba-report-monthly')
--- WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'ba-report-monthly');
---
--- SELECT cron.schedule(
---   'ba-report-monthly',
---   '0 12 1 * *',
---   $$
---   SELECT net.http_post(
---     url := 'https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-monthly-report',
---     headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w"}'::jsonb,
---     body := '{}'::jsonb
---   );
---   $$
--- );
+-- Testar a edge function (deve retornar 200)
+-- GET https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/health
+
+-- Testar envio do relatório (deve retornar ok:true)
+-- POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report
+-- Body: {"modo":"diario"}
