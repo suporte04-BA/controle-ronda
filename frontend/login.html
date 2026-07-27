@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Controle de Ronda</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2306b6d4'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='white' font-size='16' font-weight='bold' font-family='Arial'%3EBA%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body{display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;}
+        .login-container{width:100%;max-width:420px;padding:20px;z-index:10;}
+        .login-card{background:rgba(18,18,24,0.85);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:40px 36px;box-shadow:0 25px 60px rgba(0,0,0,0.5),0 0 40px rgba(6,182,212,0.06);animation:modalIn 0.5s cubic-bezier(0.4,0,0.2,1);}
+        .login-logo{text-align:center;margin-bottom:32px;}
+        .login-logo img{width:100px;height:100px;border-radius:20px;object-fit:cover;box-shadow:0 0 20px rgba(6,182,212,0.35),0 0 40px rgba(6,182,212,0.18),0 0 80px rgba(6,182,212,0.08);border:2px solid rgba(6,182,212,0.3);animation:neonPulse 4s ease-in-out infinite;}
+        .login-logo h1{font-size:20px;font-weight:800;color:var(--text-primary);letter-spacing:2px;margin-top:16px;}
+        .login-logo p{font-size:11px;color:var(--primary-light);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;}
+        .login-form{display:flex;flex-direction:column;gap:16px;}
+        .login-field{position:relative;}
+        .login-field i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;pointer-events:none;transition:color 0.25s ease;}
+        .login-field input{width:100%;padding:14px 14px 14px 42px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;font-size:14px;color:var(--text-primary);font-family:'Inter',sans-serif;transition:all 0.25s ease;outline:none;}
+        .login-field input::placeholder{color:var(--text-muted);}
+        .login-field input:hover{border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);}
+        .login-field input:focus{border-color:rgba(6,182,212,0.5);background:rgba(6,182,212,0.04);box-shadow:0 0 0 3px rgba(6,182,212,0.1),0 0 20px rgba(6,182,212,0.1);}
+        .login-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:white;border:none;border-radius:14px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 20px rgba(6,182,212,0.3);letter-spacing:0.5px;margin-top:8px;}
+        .login-btn:hover{background:linear-gradient(135deg,var(--primary-light),var(--primary));box-shadow:0 6px 25px rgba(6,182,212,0.4),0 0 40px rgba(6,182,212,0.15);transform:translateY(-2px);}
+        .login-btn:active{transform:translateY(0);}
+        .login-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important;}
+        .login-error{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--red);display:none;align-items:center;gap:8px;animation:fadeInUp 0.3s ease;}
+        .login-error.visible{display:flex;}
+        .login-users{margin-top:20px;padding:14px;background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.1);border-radius:12px;}
+        .login-users p{font-size:10px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
+        .login-users .user-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);padding:3px 0;}
+        .login-users .user-row span:first-child{color:var(--primary-light);font-weight:600;font-family:'JetBrains Mono',monospace;}
+        .hidden{display:none!important;}
+        .login-register{display:block;text-align:center;margin-top:20px;padding:14px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.15);border-radius:12px;text-decoration:none;color:var(--green);font-size:13px;font-weight:600;transition:all 0.3s ease;}
+        .login-register:hover{background:rgba(52,211,153,0.1);border-color:rgba(52,211,153,0.3);box-shadow:0 0 20px rgba(52,211,153,0.1);transform:translateY(-1px);}
+        .login-register i{margin-right:6px;}
+        .login-footer{text-align:center;margin-top:16px;}
+        .login-footer p{font-size:10px;color:var(--text-muted);letter-spacing:0.5px;}
+        @media(max-width:480px){
+            .login-container{padding:12px;}
+            .login-card{padding:28px 18px;border-radius:20px;}
+            .login-logo img{width:72px;height:72px;}
+            .login-logo h1{font-size:16px;letter-spacing:1px;}
+            .login-logo p{font-size:10px;}
+            .login-field input{padding:12px 12px 12px 38px;font-size:13px;}
+            .login-field i{left:12px;font-size:13px;}
+            .login-btn{padding:12px;font-size:13px;}
+            .login-users{padding:10px;}
+            .login-users .user-row{font-size:10px;}
+            .login-register{padding:12px;font-size:12px;}
+            .login-footer p{font-size:9px;}
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="assets/logo.png" alt="BA Eletrica" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2720%27 fill=%27%2306b6d4%27/%3E%3Ctext x=%2750%27 y=%2765%27 text-anchor=%27middle%27 fill=%27white%27 font-size=%2740%27 font-weight=%27bold%27 font-family=%27Arial%27%3EBA%3C/text%3E%3C/svg%3E'">
+                <h1>CONTROLE RONDA</h1>
+                <p>BA Eletrica - Sistema de Gestao de TI</p>
+            </div>
+            <form class="login-form" id="login-form">
+                <div class="login-error" id="login-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="login-error-text">Erro ao fazer login</span>
+                </div>
+                <div class="login-field">
+                    <input type="text" id="login-usuario" placeholder="Usuario" required autocomplete="username">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="login-field">
+                    <input type="password" id="login-senha" placeholder="Senha" required autocomplete="current-password">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <button type="submit" class="login-btn" id="login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+            </form>
+            <div class="login-users" id="login-demo-toggle" style="cursor:pointer;" onclick="document.getElementById('login-demo-creds').classList.toggle('hidden')">
+                <p><i class="fas fa-info-circle"></i> Credenciais de demonstracao <i class="fas fa-chevron-down" style="margin-left:4px;font-size:10px;"></i></p>
+                <div id="login-demo-creds" class="hidden" style="margin-top:8px;">
+                    <div class="user-row"><span>admin</span> / admin123</div>
+                    <div class="user-row"><span>tecnico</span> / tecnico123</div>
+                    <div class="user-row"><span>usuario</span> / usuario123</div>
+                </div>
+            </div>
+            <a href="registro.html" class="login-register" id="register-link">
+                <i class="fas fa-user-plus"></i> Cadastrar novo usuario
+            </a>
+            <div class="login-footer">
+                <p>BA Eletrica &copy; 2026 - Todos os direitos reservados</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        if (localStorage.getItem('authToken')) {
+            window.location.href = 'index.html';
+        }
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            const errorEl = document.getElementById('login-error');
+            const errorText = document.getElementById('login-error-text');
+            const usuario = document.getElementById('login-usuario').value.trim();
+            const senha = document.getElementById('login-senha').value;
+            if (!usuario || !senha) {
+                errorText.textContent = 'Preencha todos os campos';
+                errorEl.classList.add('visible');
+                return;
+            }
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;"></span> Entrando...';
+            errorEl.classList.remove('visible');
+            const MOCK_USERS = {
+                admin: { senha: 'admin123', perfil: 'ADMIN', nome: 'Administrador' },
+                carlos: { senha: '123456', perfil: 'USUARIO', nome: 'Carlos Silva' },
+                ana: { senha: '123456', perfil: 'USUARIO', nome: 'Ana Beatriz' },
+                'carlos.mendes': { senha: '123456', perfil: 'TECNICO', nome: 'Carlos Mendes' },
+                roberto: { senha: '123456', perfil: 'TECNICO', nome: 'Roberto Alves' },
+                maria: { senha: '123456', perfil: 'TECNICO', nome: 'Maria Ferreira' },
+                'joao.pedro': { senha: '123456', perfil: 'ADMIN', nome: 'Joao Pedro' },
+                fernanda: { senha: '123456', perfil: 'USUARIO', nome: 'Fernanda Lima' }
+            };
+
+            function doLogin(data) {
+                localStorage.setItem('authToken', data.token || 'mock-token');
+                localStorage.setItem('userPerfil', data.perfil);
+                localStorage.setItem('userName', data.nome || data.nomeCompleto);
+                localStorage.setItem('userUsername', data.username);
+                btn.innerHTML = '<i class="fas fa-check"></i> Redirecionando...';
+                btn.style.background = 'linear-gradient(135deg, #34d399, #059669)';
+                setTimeout(() => { window.location.href = 'index.html'; }, 600);
+            }
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: usuario, senha: senha })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.erro || data.mensagem || 'Usuario ou senha invalidos');
+                doLogin(data);
+            } catch (err) {
+                const mock = MOCK_USERS[usuario];
+                if (mock && mock.senha === senha) {
+                    doLogin({ token: 'mock-' + Date.now(), perfil: mock.perfil, nome: mock.nome, username: usuario });
+                } else {
+                    errorText.textContent = err.message || 'Usuario ou senha invalidos';
+                    errorEl.classList.add('visible');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';
+                    document.getElementById('login-senha').value = '';
+                    document.getElementById('login-senha').focus();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

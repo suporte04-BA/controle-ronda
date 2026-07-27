@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Ronda - BA Eletrica</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2306b6d4'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='white' font-size='16' font-weight='bold' font-family='Arial'%3EBA%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        @media(max-width:768px){
+            #painel > div:nth-child(2){grid-template-columns:1fr!important;}
+            .modal{max-width:100%!important;margin:8px!important;}
+            .modal-header{padding:14px 16px;}
+            .modal-header h3{font-size:13px;}
+            .modal-body{padding:16px;}
+            .modal-footer{flex-direction:column;gap:8px;}
+            .modal-footer .btn{width:100%;}
+        }
+        @media(max-width:480px){
+            .modal{max-width:100%!important;margin:4px!important;border-radius:16px!important;}
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Orbs -->
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-logo" style="flex-direction:column; align-items:center; padding:24px 16px; gap:8px;">
+            <img src="assets/logo.png" alt="BA Eletrica" class="logo-neon" style="width:80px; height:80px; border-radius:16px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div class="logo-fallback" style="width:80px;height:80px;border-radius:16px;display:none;">
+                <i class="fas fa-bolt" style="font-size:28px;"></i>
+            </div>
+            <div class="sidebar-logo-text" style="text-align:center;">
+                <h1 style="font-size:13px; letter-spacing:1.5px;">CONTROLE RONDA</h1>
+                <p style="font-size:9px; color:var(--primary-light); letter-spacing:1px;">BA ELETRICA</p>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button onclick="showSection('painel')" class="nav-btn active" data-section="painel">
+                <i class="fas fa-th-large nav-icon"></i>
+                <span>Dashboard</span>
+                <span class="nav-badge" id="nav-total">0</span>
+            </button>
+            <button onclick="showSection('equipamentos')" class="nav-btn" data-section="equipamentos">
+                <i class="fas fa-desktop nav-icon"></i>
+                <span>Equipamentos</span>
+            </button>
+            <button onclick="showSection('manutencoes')" class="nav-btn" data-section="manutencoes">
+                <i class="fas fa-tools nav-icon"></i>
+                <span>Manutencoes</span>
+            </button>
+            <button onclick="showSection('ordens-servico')" class="nav-btn" data-section="ordens-servico">
+                <i class="fas fa-clipboard-list nav-icon"></i>
+                <span>Ordens de Servico</span>
+            </button>
+            <button onclick="showSection('relatorios')" class="nav-btn" data-section="relatorios">
+                <i class="fas fa-chart-bar nav-icon"></i>
+                <span>Relatorios</span>
+            </button>
+            <button onclick="showSection('usuarios')" class="nav-btn" data-section="usuarios">
+                <i class="fas fa-users nav-icon"></i>
+                <span>Usuarios</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-user-avatar">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="sidebar-user-info">
+                    <p id="sidebarUserName">Carregando...</p>
+                    <p class="sidebar-perfil" id="sidebarUserRole">-</p>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="btn btn-ghost btn-sm" style="margin-top:10px; width:100%; justify-content:center;">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </div>
+    </aside>
+
+    <!-- Mobile Toggle -->
+    <button onclick="toggleSidebar()" class="mobile-toggle" id="mobile-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="sidebar-overlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="header-title">
+                    <h2 id="page-title">Dashboard</h2>
+                    <p id="page-subtitle">Visao geral do sistema</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-user" id="header-user" style="display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid var(--border-glass); font-size:12px; color:var(--text-secondary);">
+                    <i class="fas fa-user-shield" style="color:var(--primary-light); font-size:12px;"></i>
+                    <span id="header-user-name">Admin</span>
+                </div>
+                <button class="header-btn" title="Notificacoes" onclick="showToast('Nenhuma notificacao', 'info')">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge-dot" id="notification-dot"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Section: Painel (Dashboard) -->
+        <section id="painel" class="section-content">
+            <div class="kpi-grid" id="dashboardKpis"></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:24px;">
+                <div class="glass-panel">
+                    <div class="glass-panel-header">
+                        <h3><i class="fas fa-chart-pie"></i> Status dos Equipamentos</h3>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-wrapper"><canvas id="chartStatus"></canvas></div>
+                    </div>
+                </div>
+                <div class="glass-panel">
+                    <div class="glass-panel-header">
+                        <h3><i class="fas fa-chart-pie"></i> Manutencoes por Tipo</h3>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-wrapper"><canvas id="chartManutencoes"></canvas></div>
+                    </div>
+                </div>
+                <div class="glass-panel" style="grid-column: 1 / -1;">
+                    <div class="glass-panel-header">
+                        <h3><i class="fas fa-chart-bar"></i> Ordens de Servico por Prioridade</h3>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-wrapper"><canvas id="chartOrdens"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Equipamentos -->
+        <section id="equipamentos" class="section-content hidden">
+            <div class="toolbar">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="busca-input" placeholder="Buscar por nome, modelo, serie..." class="search-input">
+                </div>
+                <select id="filtro-status" class="form-input" style="width:auto; min-width:200px;">
+                    <option value="">Todos os Status</option>
+                    <option value="ATIVO">Ativo</option>
+                    <option value="MANUTENCAO_PREDITIVA">Manutencao Preditiva</option>
+                    <option value="MANUTENCAO_PREVENTIVA">Manutencao Preventiva</option>
+                    <option value="MANUTENCAO_EMERGENCIAL">Manutencao Emergencial</option>
+                    <option value="CONCLUIDO">Concluido</option>
+                </select>
+                <div class="toolbar-actions">
+                    <button onclick="showEquipamentoForm()" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Novo</button>
+                </div>
+            </div>
+            <div id="pc-cards-grid" class="pc-cards-grid">
+                <div class="empty-state" style="grid-column:1/-1;"><div class="spinner"></div></div>
+            </div>
+            <div id="cards-pagination" class="pagination" style="justify-content:center; margin-top:16px;"></div>
+        </section>
+
+        <!-- Section: Manutencoes -->
+        <section id="manutencoes" class="section-content hidden">
+            <div class="toolbar">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="man-busca-input" placeholder="Buscar manutencao..." class="search-input">
+                </div>
+                <select id="man-filtro-status" class="form-input" style="width:auto; min-width:200px;">
+                    <option value="">Todos os Status</option>
+                    <option value="PENDENTE">Pendente</option>
+                    <option value="EM_ANDAMENTO">Em Andamento</option>
+                    <option value="CONCLUIDA">Concluida</option>
+                    <option value="CANCELADA">Cancelada</option>
+                </select>
+                <div class="toolbar-actions">
+                    <button onclick="showManutencaoForm()" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Nova Manutencao</button>
+                </div>
+            </div>
+            <div class="glass-panel">
+                <table class="data-table" id="manutencoesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Equipamento</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th>Tecnico</th>
+                            <th>Custo</th>
+                            <th>Acoes</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="man-pagination" class="pagination" style="justify-content:center; margin-top:16px;"></div>
+        </section>
+
+        <!-- Section: Ordens de Servico -->
+        <section id="ordens-servico" class="section-content hidden">
+            <div class="toolbar">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="os-busca-input" placeholder="Buscar ordem de servico..." class="search-input">
+                </div>
+                <select id="os-filtro-status" class="form-input" style="width:auto; min-width:180px;">
+                    <option value="">Todos os Status</option>
+                    <option value="ABERTA">Aberta</option>
+                    <option value="EM_ANALISE">Em Analise</option>
+                    <option value="EM_EXECUCAO">Em Execucao</option>
+                    <option value="CONCLUIDA">Concluida</option>
+                    <option value="CANCELADA">Cancelada</option>
+                </select>
+                <select id="os-filtro-prioridade" class="form-input" style="width:auto; min-width:180px;">
+                    <option value="">Todas Prioridades</option>
+                    <option value="BAIXA">Baixa</option>
+                    <option value="MEDIA">Media</option>
+                    <option value="ALTA">Alta</option>
+                    <option value="CRITICA">Critica</option>
+                </select>
+                <div class="toolbar-actions">
+                    <button onclick="showOrdemForm()" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Nova Ordem</button>
+                </div>
+            </div>
+            <div class="glass-panel">
+                <table class="data-table" id="ordensTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Titulo</th>
+                            <th>Equipamento</th>
+                            <th>Prioridade</th>
+                            <th>Status</th>
+                            <th>Solicitante</th>
+                            <th>Previsao</th>
+                            <th>Acoes</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="os-pagination" class="pagination" style="justify-content:center; margin-top:16px;"></div>
+        </section>
+
+        <!-- Section: Relatorios -->
+        <section id="relatorios" class="section-content hidden">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                <div class="glass-panel">
+                    <div class="glass-panel-header"><h3><i class="fas fa-chart-bar"></i> Equipamentos por Modelo</h3></div>
+                    <div class="chart-container"><div class="chart-wrapper"><canvas id="chartMarcas"></canvas></div></div>
+                </div>
+                <div class="glass-panel">
+                    <div class="glass-panel-header"><h3><i class="fas fa-chart-line"></i> Manutencoes por Mes</h3></div>
+                    <div class="chart-container"><div class="chart-wrapper"><canvas id="chartManutencoesMes"></canvas></div></div>
+                </div>
+                <div class="glass-panel">
+                    <div class="glass-panel-header"><h3><i class="fas fa-table"></i> Estatisticas Gerais</h3></div>
+                    <div style="padding:24px;" id="statsGerais"></div>
+                </div>
+                <div class="glass-panel">
+                    <div class="glass-panel-header"><h3><i class="fas fa-dollar-sign"></i> Custos de Manutencao</h3></div>
+                    <div style="padding:24px;" id="custosManutencao"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Usuarios -->
+        <section id="usuarios" class="section-content hidden">
+            <div class="toolbar">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="user-busca-input" placeholder="Buscar usuario..." class="search-input">
+                </div>
+                <div class="toolbar-actions">
+                    <button onclick="showUsuarioForm()" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Novo Usuario</button>
+                </div>
+            </div>
+            <div class="glass-panel">
+                <table class="data-table" id="usuariosTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Perfil</th>
+                            <th>Status</th>
+                            <th>Acoes</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Detail / Edit / Confirm -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal" style="max-width:640px;">
+            <div class="modal-header">
+                <h3 id="modal-title"><i class="fas fa-desktop"></i> Detalhes</h3>
+                <button onclick="closeModal()" class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer" id="modal-footer"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirm Delete -->
+    <div id="confirm-overlay" class="modal-overlay">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-body" style="padding:28px; text-align:center;">
+                <div class="modal-confirm-icon"><i class="fas fa-trash-alt"></i></div>
+                <p class="modal-confirm-title">Confirmar Exclusao</p>
+                <p class="modal-confirm-text" id="confirm-text">Tem certeza que deseja excluir?</p>
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+                <button id="confirm-yes-btn" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Excluir</button>
+                <button onclick="closeConfirm()" class="btn btn-ghost btn-sm">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

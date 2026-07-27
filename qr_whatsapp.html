@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WhatsApp QR Code - Transobras</title>
+    <style>
+        body { display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; background:#111b21; font-family:Arial; flex-direction:column; }
+        h1 { color:#e9edef; margin-bottom:20px; }
+        img { width:300px; height:300px; border:4px solid #00a884; border-radius:12px; }
+        p { color:#8696a0; margin-top:20px; }
+        #status { color:#00a884; margin-top:10px; font-size:14px; }
+    </style>
+</head>
+<body>
+    <h1>WhatsApp - Transobras</h1>
+    <img id="qr" alt="QR Code">
+    <p>Escaneie com seu WhatsApp (Dispositivos conectados)</p>
+    <p id="status">Aguardando QR code...</p>
+    <script>
+        var cacheBuster = 0;
+        function loadQR() {
+            cacheBuster++;
+            var script = document.createElement('script');
+            script.src = 'qr.js?v=' + cacheBuster;
+            script.onload = function() {
+                document.getElementById('status').textContent = 'QR atualizado: ' + new Date().toLocaleTimeString();
+            };
+            script.onerror = function() {
+                document.getElementById('status').textContent = 'Erro ao carregar QR code...';
+            };
+            var old = document.getElementById('qr-script');
+            if (old) old.remove();
+            script.id = 'qr-script';
+            document.body.appendChild(script);
+        }
+        loadQR();
+        setInterval(loadQR, 30000);
+    </script>
+</body>
+</html>
