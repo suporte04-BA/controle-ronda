@@ -1,3 +1,2 @@
--- pg_cron REMOVIDO definitivamente.
--- Relatórios mensais agora são disparados via GitHub Actions (08:00 Manaus, dia 1).
--- Não recriar este job.
+-- Relatório mensal: agora agendado via pg_cron (migration 20260728000000).
+-- GitHub Actions faz SÓ keep-alive pra banco não pausar.

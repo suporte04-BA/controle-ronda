@@ -1,12 +1,9 @@
-name: Relatórios BA Elétrica
+name: Keep-Alive Supabase
 
 on:
   schedule:
-    # Relatório diário: 11:00 UTC = 07:00 Manaus, todos os dias
-    - cron: '0 11 * * *'
-    # Relatório mensal: 12:00 UTC = 08:00 Manaus, dia 1 de cada mês
-    - cron: '0 12 1 * *'
-    # Keep-alive: 06:00 UTC = 02:00 Manaus, todos os dias (previne pausa)
+    # Keep-alive: 06:00 UTC = 02:00 Manaus, todos os dias
+    # Previne que o banco free pause após 7 dias sem tráfego
     - cron: '0 6 * * *'
 
 env:
@@ -16,35 +13,9 @@ env:
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
-    if: github.event.schedule == '0 6 * * *'
     steps:
-      - name: Ping Supabase
-        run: curl -s -o /dev/null -w "HTTP %{http_code}" "${{ env.SUPABASE_URL }}/functions/v1/health"
-
-  send-daily-report:
-    runs-on: ubuntu-latest
-    if: github.event.schedule == '0 11 * * *'
-    steps:
-      - name: Enviar Relatório Diário
+      - name: Ping Supabase Health
         run: |
-          response=$(curl -s -X POST \
-            "${{ env.SUPABASE_URL }}/functions/v1/send-daily-report" \
-            -H "Content-Type: application/json" \
-            -H "apikey: ${{ env.SUPABASE_ANON_KEY }}" \
-            -d '{"modo":"diario"}')
-          echo "Resposta: $response"
-          echo "$response" | grep -q '"ok":true' && echo "OK" || (echo "FALHOU" && exit 1)
-
-  send-monthly-report:
-    runs-on: ubuntu-latest
-    if: github.event.schedule == '0 12 1 * *'
-    steps:
-      - name: Enviar Relatório Mensal
-        run: |
-          response=$(curl -s -X POST \
-            "${{ env.SUPABASE_URL }}/functions/v1/send-monthly-report" \
-            -H "Content-Type: application/json" \
-            -H "apikey: ${{ env.SUPABASE_ANON_KEY }}" \
-            -d '{}')
-          echo "Resposta: $response"
-          echo "$response" | grep -q '"ok":true' && echo "OK" || (echo "FALHOU" && exit 1)
+          response=$(curl -s -o /dev/null -w "HTTP %{http_code}" "${{ env.SUPABASE_URL }}/functions/v1/health")
+          echo "Health check: $response"
+          echo "$response" | grep -q "200" && echo "OK" || (echo "FALHOU" && exit 1)
