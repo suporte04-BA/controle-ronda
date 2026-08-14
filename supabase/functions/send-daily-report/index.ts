@@ -76,7 +76,15 @@ function rangeFor(modo: "teste" | "diario", periodo?: string) {
   const startYdayManaus = new Date(startTodayManaus.getTime() - 86400000);
   let startManaus: Date;
   let endManaus: Date;
-  if (periodo === "hoje_ontem") {
+
+  // Suporta período customizado: "YYYY-MM-DD/YYYY-MM-DD"
+  if (periodo && periodo.includes("/")) {
+    const [startStr, endStr] = periodo.split("/");
+    const [sy, sm, sd] = startStr.split("-").map(Number);
+    const [ey, em, ed] = endStr.split("-").map(Number);
+    startManaus = new Date(Date.UTC(sy, sm - 1, sd, 0, 0, 0));
+    endManaus = new Date(Date.UTC(ey, em - 1, ed, 23, 59, 59));
+  } else if (periodo === "hoje_ontem") {
     startManaus = startYdayManaus;
     endManaus = new Date(startTodayManaus.getTime() + 86400000 - 1);
   } else {
