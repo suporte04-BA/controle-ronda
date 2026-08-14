@@ -644,7 +644,13 @@ function buildEmailHtml(
   totalEventos: number,
   ciclos: number,
   agentes: number,
+  setorLabel?: string,
 ): string {
+  const setorInfo = setorLabel
+    ? `<tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará o <strong>PDF gerencial do setor ${setorLabel}</strong> (com evidências fotográficas e registro de rondas). O arquivo reflete fielmente os dados extraídos do sistema.</td></tr>`
+    : `<tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará os <strong>PDFs gerenciais</strong> (com gráficos, indicadores de conformidade e evidências fotográficas) dos setores CD e LOJA. Os arquivos refletem fielmente os dados extraídos do sistema.</td></tr>`;
+
+  const subjectSuffix = setorLabel ? ` (${setorLabel})` : "";
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -664,7 +670,7 @@ function buildEmailHtml(
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
       <tr><td style="font-size:16px;font-weight:bold;color:#0B1120;line-height:24px;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">Olá, Gestor.</td></tr>
       <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 16px 0;font-family:Arial,Helvetica,sans-serif">O relatório diário consolidado do <strong>Controle de Ronda da BA Elétrica</strong> foi processado com sucesso pelo sistema de segurança.</td></tr>
-      <tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará os <strong>PDFs gerenciais</strong> (com gráficos, indicadores de conformidade e evidências fotográficas) dos setores CD e LOJA. Os arquivos refletem fielmente os dados extraídos do sistema.</td></tr>
+      ${setorInfo}
       <tr><td style="padding:0 0 24px 0">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0">
         <tr><td style="padding:16px 20px">
@@ -858,7 +864,7 @@ async function fetchAvatarAsBase64(
   }
 }
 
-async function fetchRecipientEmails(admin: any): Promise<string[]> {
+async function fetchRecipientEmails(admin: any, setorParam: string | null): Promise<string[]> {
   const seen = new Set<string>();
   const recipients: string[] = [];
 
@@ -866,9 +872,15 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
   const { data: adminRoles } = await admin.from("user_roles").select("user_id").eq("role", "admin");
   const adminIds = new Set((adminRoles ?? []).map((r: any) => r.user_id));
 
-  // Buscar setor GESTOR
+  // Buscar setores e filtrar por GESTOR + setorParam
   const { data: sets } = await admin.from("setores").select("id,nome");
-  const gestorSetores = (sets ?? []).filter((s: any) => s.nome?.toUpperCase().includes("GESTOR"));
+  const gestorSetores = (sets ?? []).filter((s: any) => {
+    const n = (s.nome ?? "").toUpperCase();
+    if (!n.includes("GESTOR")) return false;
+    if (setorParam === "CD") return !n.includes("LOJA");
+    if (setorParam === "LOJA") return !n.includes("CD");
+    return true; // teste: todos os GESTOR
+  });
   const gestorIds = new Set(gestorSetores.map((s: any) => s.id));
 
   const { data: allProfiles } = await admin.from("profiles").select("id,nome,email,setor_id");
@@ -876,25 +888,12 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
   if (allProfiles?.length) {
     for (const p of allProfiles) {
       const email = normalizeEmail(p.email);
-      if (!email || !isCorporateEmail(email) || seen.has(email)) continue;
-      // Admin E setor GESTOR
+      if (!email || seen.has(email)) continue;
       if (!adminIds.has(p.id)) continue;
       if (!p.setor_id || !gestorIds.has(p.setor_id)) continue;
       seen.add(email);
       recipients.push(email);
     }
-  }
-
-  const suporte = normalizeEmail("suporte04@baeletrica.com.br");
-  if (suporte && !seen.has(suporte)) {
-    seen.add(suporte);
-    recipients.push(suporte);
-  }
-
-  const benjamin = normalizeEmail("benjaminmarcos215@gmail.com");
-  if (benjamin && !seen.has(benjamin)) {
-    seen.add(benjamin);
-    recipients.push(benjamin);
   }
 
   return recipients;
@@ -939,6 +938,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const modo: "teste" | "diario" = body?.modo === "diario" ? "diario" : "teste";
     const periodoParam = body?.periodo as string | undefined;
+    const setorParam = (body?.setor as string | undefined)?.toUpperCase() ?? null;
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -976,7 +976,7 @@ Deno.serve(async (req) => {
       r._avatarBase64 = avatarMap.get(r.user_id) ?? null;
     }
 
-    let recipients = await fetchRecipientEmails(admin);
+    let recipients = await fetchRecipientEmails(admin, setorParam);
     if (modo === "teste") {
       recipients = recipients.filter((e) => e === "suporte04@baeletrica.com.br");
     }
@@ -996,10 +996,13 @@ Deno.serve(async (req) => {
     const attachments: { filename: string; content: string }[] = [];
     let totalRegistros = 0;
 
-    const SETORES = [
+    const ALL_SETORES = [
       { key: "LOJA", match: "LOJA", titulo: "BA ELÉTRICA LOJA - ( LOJA - GUARDAS)", subtitulo: "que conterá somente o registro das pessoas que fizeram a ronda com o setor ( LOJA - GUARDAS)", filePrefix: "LOJA_GUARDAS" },
       { key: "CD", match: "CD", titulo: "BA ELÉTRICA CD - ( CD - GUARDAS)", subtitulo: "que conterá somente o registro das pessoas que fizeram a ronda com o setor ( CD - GUARDAS)", filePrefix: "CD_GUARDAS" },
     ];
+    const SETORES = setorParam
+      ? ALL_SETORES.filter((s) => s.key === setorParam)
+      : ALL_SETORES;
 
     for (const setor of SETORES) {
       const setorRows = rows.filter((r: any) => {
@@ -1050,19 +1053,24 @@ Deno.serve(async (req) => {
 
     // Anexos: PDFs + montagens de fotos
     if (attachments.length === 0) {
+      const msg = setorParam
+        ? `Nenhum registro no setor ${setorParam} no período.`
+        : "Nenhum registro nos setores CD/LOJA.";
       return new Response(
-        JSON.stringify({ ok: false, message: "Nenhum registro nos setores CD/LOJA.", recipients: [], count: 0 }),
+        JSON.stringify({ ok: true, message: msg, recipients: [], count: 0, setor: setorParam }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
       );
     }
 
     const ciclos = rows.filter((r: any) => r.tipo_acao === "check_out_2").length;
     const ag = new Set(rows.map((r: any) => r.user_id)).size;
-    const html = buildEmailHtml(periodo, totalRegistros, ciclos, ag);
+    const setorLabel = SETORES.length === 1 ? SETORES[0].titulo : undefined;
+    const html = buildEmailHtml(periodo, totalRegistros, ciclos, ag, setorLabel);
 
+    const subjectSuffix = setorLabel ? ` — ${setorLabel}` : "";
     const result = await sendResend(
       recipients,
-      `BA Elétrica — Relatório de Ronda (${periodo})`,
+      `BA Elétrica — Relatório de Ronda${subjectSuffix} (${periodo})`,
       html,
       attachments,
     );
@@ -1071,6 +1079,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         modo,
+        setor: setorParam,
         periodo,
         count: rows.length,
         recipients,

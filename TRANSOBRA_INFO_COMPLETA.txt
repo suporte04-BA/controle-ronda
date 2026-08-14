@@ -1,0 +1,207 @@
+============================================
+ TRANSOBRA - INFORMACOES COMPLETAS DO SISTEMA
+ Atualizado: 31/07/2026
+============================================
+
+============================================
+1. APIs E CREDENCIAIS
+============================================
+
+EVOLUTION API:
+  URL Local:        http://localhost:8080
+  URL Externa:      https://president-unbundle-quill.ngrok-free.dev
+  API Key:          transobra-evolution-2026-chave-secreta
+  Instance Name:    transobras
+  Instance ID:      48d7d94c-9f53-4b1e-b9ac-c4a6a419da21
+  Versao:           v2.3.7
+
+CLOUDFLARE WORKER:
+  URL:              https://transobras.suporte04.workers.dev
+  Account ID:       3b8a5aa418a5d7ae254ba675291f540c
+  Worker Name:      transobras
+
+SUPABASE:
+  URL:              https://mbcdbclosomqpfboyffj.supabase.co
+  Anon Key:         eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iY2RiY2xvc29tcXBmYm95ZmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MDcxMTksImV4cCI6MjA5NzE4MzExOX0.iNh0wpvpblUGCAo3wOkNxelMTlLUe7RBoFlqPLjxXxE
+
+NGROK:
+  Auth Token:       (configurar em https://dashboard.ngrok.com/get-started/your-authtoken)
+  Domaino Estatico: president-unbundle-quill.ngrok-free.dev
+  Dashboard:        https://dashboard.ngrok.com
+
+EMAIL (GAS):
+  URL:              https://script.google.com/macros/s/AKfycbxpzc8tXrltNXg-dZSjm9toPHpbRjekl2rvfz0j9x3CiWzty_w_EIGcdhQdJYiRUjDn/exec
+  API Key:          transobra-email-key-2026
+
+EMAIL (MAILEROO):
+  From:             notificacoes@a36a5312d126d178.maileroo.org
+
+REMETENTE EMAIL:
+  From:             TransObra <transobras.no.replay@gmail.com>
+  Destinatario:     suporte04@baeletrica.com.br
+
+TELEFONES:
+  Proprietario:     (92) 98805-9432
+  Proprietario 2:   (92) 99270-3185
+
+============================================
+2. DOCKER CONTAINERS
+============================================
+
+CONTAINER              PORTA    REDE
+evolution_api          8080     evolution-net
+evolution_postgres     5432     evolution-net
+evolution_redis        6379     evolution-net
+
+VOLUMES:
+  evolution_instances   -> /evolution/instances (sessao WhatsApp)
+  postgres_data         -> /var/lib/postgresql/data (banco de dados)
+  evolution_redis       -> /data (cache)
+
+DOCKER COMPOSE PATH:
+  Windows: C:\Users\usuario\Downloads\evolution-api\docker-compose.yml
+  Linux:   /opt/transobras/docker-compose.yml
+
+ENV PATH:
+  Windows: C:\Users\usuario\Downloads\evolution-api\.env
+  Linux:   /opt/transobras/.env
+
+============================================
+3. ENDPOINTS DO WORKER
+============================================
+
+WHATSAPP:
+  POST /api/whatsapp/send          - Enviar mensagem
+  POST /api/whatsapp/test          - Teste de envio
+  GET  /api/whatsapp/status        - Status da conexao
+  GET  /api/whatsapp/connection-state - Estado detalhado
+  GET  /api/whatsapp/logs          - Logs de envio
+  GET  /api/whatsapp/anti-spam     - Diagnostico anti-spam
+  GET  /api/whatsapp/template-preview - Preview do proximo template
+
+INSTANCE MANAGEMENT:
+  GET  /api/whatsapp/instance      - Info da instancia
+  GET  /api/whatsapp/qr            - QR Code
+  GET  /api/whatsapp/pairing-code  - Codigo de pareamento
+  POST /api/whatsapp/create        - Criar instancia
+  POST /api/whatsapp/connect       - Conectar
+  POST /api/whatsapp/restart       - Reiniciar
+  POST /api/whatsapp/disconnect    - Desconectar
+  DELETE /api/whatsapp/instance    - Deletar instancia
+
+EMAIL:
+  POST /api/email/send             - Enviar email
+
+QUEUE:
+  POST /api/whatsapp/process-queue - Processar fila
+
+============================================
+4. WRANGLER.TOML
+============================================
+
+name = "transobras"
+main = "src/worker/index.js"
+account_id = "3b8a5aa418a5d7ae254ba675291f540c"
+
+[vars]
+EVOLUTION_API_URL = "https://president-unbundle-quill.ngrok-free.dev"
+EVOLUTION_INSTANCE = "transobras"
+WHATSAPP_ENABLED = "true"
+SUPABASE_URL = "https://mbcdbclosomqpfboyffj.supabase.co"
+EMAIL_RECIPIENT = "suporte04@baeletrica.com.br"
+
+============================================
+5. PASSO A PASSO - MIGRACAO SERVIDOR LINUX
+============================================
+
+REQUISITOS DO SERVIDOR:
+  - Ubuntu 22.04+ (recomendado)
+  - 2GB RAM minimo
+  - 1 vCPU minimo
+  - 20GB SSD
+  - IP fixo ou DDNS
+
+PASSO 1: COPIAR ARQUIVOS
+  Na Windows, abra o PowerShell:
+  > scp -r "C:\Users\usuario\Downloads\evolution-api\migracao-server\*" usuario@IP_SERVIDOR:/opt/transobras/
+
+PASSO 2: CONECTAR NO SERVIDOR
+  > ssh usuario@IP_SERVIDOR
+
+PASSO 3: INSTALAR DEPENDENCIAS
+  > cd /opt/transobras
+  > chmod +x *.sh
+  > ./01-setup-linux.sh
+  (Faça logout/login apos instalar Docker)
+
+PASSO 4: RESTAURAR DADOS
+  > cd /opt/transobras
+  > ./03-restore-linux.sh
+
+PASSO 5: CONFIGURAR NGROK
+  > ngrok config add-authtoken SEU_AUTH_TOKEN
+  > ngrok http http://localhost:8080 --domain=president-unbundle-quill.ngrok-free.dev
+
+PASSO 6: INICIAR SISTEMA
+  > cd /opt/transobras
+  > chmod +x start.sh
+  > ./start.sh
+
+PASSO 7: AUTO-START NO BOOT
+  > sudo cp transobras.service /etc/systemd/system/
+  > sudo systemctl enable transobras
+
+PASSO 8: TESTAR
+  Abra o navegador:
+  > http://localhost:8080/instance/fetchInstances
+  > https://transobras.suporte04.workers.dev/api/whatsapp/status
+
+============================================
+6. COMANDOS UTEIS
+============================================
+
+VER STATUS:
+  docker ps
+
+REINICIAR TUDO:
+  cd /opt/transobras && docker-compose restart
+
+PARAR TUDO:
+  cd /opt/transobras && docker-compose down
+
+LOGS EVOLUTION API:
+  docker logs evolution_api -f
+
+LOGS NGROK:
+  tail -f /var/log/ngrok.log
+
+TESTAR API:
+  curl http://localhost:8080/instance/fetchInstances -H "apikey:transobra-evolution-2026-chave-secreta"
+
+DEPLOY WORKER:
+  cd C:\Users\usuario\Downloads\industrialflow-crm
+  npx wrangler deploy
+
+============================================
+7. TROUBLESHOOTING
+============================================
+
+PROBLEMA: Porta 8080 nao escuta
+  SOLUCAO: docker-compose down && docker-compose up -d
+
+PROBLEMA: ngrok nao conecta
+  SOLUCAO: pkill ngrok && ngrok http http://localhost:8080 --domain=president-unbundle-quill.ngrok-free.dev
+
+PROBLEMA: WhatsApp desconectado
+  SOLUCAO: curl -X POST http://localhost:8080/instance/connect/transobras -H "apikey:transobra-evolution-2026-chave-secreta"
+
+PROBLEMA: Worker nao responde
+  SOLUCAO: npx wrangler deploy (redeploy)
+
+PROBLEMA: Evolution API não inicia
+  SOLUCAO: docker logs evolution_api (ver erro)
+           docker-compose down && docker volume rm evolution-api_postgres_data && docker-compose up -d
+
+============================================
+FIM
+============================================
