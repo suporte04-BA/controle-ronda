@@ -136,6 +136,7 @@ function DetalheRonda() {
       const ciclo: PassoDetalhe[] = [];
       let obs: string | null = null;
       for (const r of regs ?? []) {
+        if (r.tipo_acao === "check_in" && ciclo.length > 0) break;
         ciclo.push({
           id: r.id,
           tipo: r.tipo_acao,
