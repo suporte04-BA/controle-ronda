@@ -160,31 +160,36 @@ function TodosRegistros() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
-        supabase
-          .from("registros_ponto")
-          .select("id,tipo_acao,horario_acao,horario_foto,foto_url,user_id")
-          .order("horario_acao", { ascending: false })
-          .limit(5000),
-        supabase.from("profiles").select("id,nome,email,setor_id"),
-        supabase.from("setores").select("id,nome"),
-      ]);
-      if (cancelled) return;
-      const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
-      const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
-      setSetores(sets ?? []);
-      const merged: Row[] = (regs ?? []).map((r: any) => {
-        const p: any = profMap.get(r.user_id);
-        return {
-          ...r,
-          nome: p?.nome ?? "—",
-          email: p?.email ?? "",
-          setor: p?.setor_id ? (setMap.get(p.setor_id) ?? null) : null,
-          setor_id: p?.setor_id ?? null,
-        };
-      });
-      setRows(merged);
-      setLoading(false);
+      try {
+        const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
+          supabase
+            .from("registros_ponto")
+            .select("id,tipo_acao,horario_acao,horario_foto,foto_url,user_id")
+            .order("horario_acao", { ascending: false })
+            .limit(5000),
+          supabase.from("profiles").select("id,nome,email,setor_id"),
+          supabase.from("setores").select("id,nome"),
+        ]);
+        if (cancelled) return;
+        const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
+        const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
+        setSetores(sets ?? []);
+        const merged: Row[] = (regs ?? []).map((r: any) => {
+          const p: any = profMap.get(r.user_id);
+          return {
+            ...r,
+            nome: p?.nome ?? "—",
+            email: p?.email ?? "",
+            setor: p?.setor_id ? (setMap.get(p.setor_id) ?? null) : null,
+            setor_id: p?.setor_id ?? null,
+          };
+        });
+        setRows(merged);
+      } catch (e: any) {
+        console.error("Erro ao carregar registros:", e);
+      } finally {
+        setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
@@ -412,8 +417,8 @@ function TodosRegistros() {
                     <td className="px-4 py-3 text-muted-foreground">{r.setor ?? "—"}</td>
                     <td className="px-4 py-3">{TIPO_ACAO_LABEL[r.tipo_acao] ?? r.tipo_acao}</td>
                     <td className="px-4 py-3">{formatData(r.horario_acao)}</td>
-                    <td className="px-4 py-3 tabular-nums">{formatHora(r.horario_acao)}</td>
                     <td className="px-4 py-3 tabular-nums">{formatHora(r.horario_foto)}</td>
+                    <td className="px-4 py-3 tabular-nums">{formatHora(r.horario_acao)}</td>
                     <td className="px-4 py-3 text-right no-print">
                       <Button
                         size="sm"

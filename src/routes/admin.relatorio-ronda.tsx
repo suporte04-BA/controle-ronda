@@ -45,72 +45,77 @@ function RelatorioRonda() {
 
   const carregar = async () => {
     setLoading(true);
-    const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
-      supabase
-        .from("registros_ponto")
-        .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
-        .order("horario_acao", { ascending: true })
-        .limit(10000),
-      supabase.from("profiles").select("id,nome,setor_id"),
-      supabase.from("setores").select("id,nome"),
-    ]);
+    try {
+      const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
+        supabase
+          .from("registros_ponto")
+          .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
+          .order("horario_acao", { ascending: true })
+          .limit(10000),
+        supabase.from("profiles").select("id,nome,setor_id"),
+        supabase.from("setores").select("id,nome"),
+      ]);
 
-    const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
-    const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
+      const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
+      const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
 
-    const porUser = new Map<string, any[]>();
-    (regs ?? []).forEach((r: any) => {
-      if (!porUser.has(r.user_id)) porUser.set(r.user_id, []);
-      porUser.get(r.user_id)!.push(r);
-    });
-
-    const rondas: RondaCard[] = [];
-    porUser.forEach((lista, userId) => {
-      const p: any = profMap.get(userId);
-      const nome = p?.nome ?? "—";
-      const setor = p?.setor_id ? (setMap.get(p.setor_id) as string) ?? "—" : "—";
-
-      let ciclo: any[] = [];
-      const flush = () => {
-        if (ciclo.length === 0) return;
-        const checkIn = ciclo[0];
-        const last = ciclo[ciclo.length - 1];
-        const lastTipo = String(last.tipo_acao);
-        const isFinished = lastTipo === "check_out_2";
-        rondas.push({
-          cycleKey: `${userId}_${checkIn.horario_acao}`,
-          user_id: userId,
-          nome,
-          setor,
-          inicio: checkIn.horario_acao,
-          fim: isFinished ? last.horario_acao : null,
-          status: isFinished ? "finalizado" : "andamento",
-          passosCount: ciclo.length,
-          observacoes: isFinished ? (last.observacoes ?? null) : null,
-        });
-        ciclo = [];
-      };
-
-      lista.forEach((r: any) => {
-        const tipo = String(r.tipo_acao);
-        if (tipo === "check_in") {
-          if (ciclo.length > 0) flush();
-          ciclo = [r];
-        } else if (tipo === "check_out_2") {
-          ciclo.push(r);
-          flush();
-        } else {
-          ciclo.push(r);
-        }
+      const porUser = new Map<string, any[]>();
+      (regs ?? []).forEach((r: any) => {
+        if (!porUser.has(r.user_id)) porUser.set(r.user_id, []);
+        porUser.get(r.user_id)!.push(r);
       });
-      flush();
-    });
 
-    rondas.sort(
-      (a, b) => new Date(b.inicio).getTime() - new Date(a.inicio).getTime(),
-    );
-    setItems(rondas);
-    setLoading(false);
+      const rondas: RondaCard[] = [];
+      porUser.forEach((lista, userId) => {
+        const p: any = profMap.get(userId);
+        const nome = p?.nome ?? "—";
+        const setor = p?.setor_id ? (setMap.get(p.setor_id) as string) ?? "—" : "—";
+
+        let ciclo: any[] = [];
+        const flush = () => {
+          if (ciclo.length === 0) return;
+          const checkIn = ciclo[0];
+          const last = ciclo[ciclo.length - 1];
+          const lastTipo = String(last.tipo_acao);
+          const isFinished = lastTipo === "check_out_2";
+          rondas.push({
+            cycleKey: `${userId}_${checkIn.horario_acao}`,
+            user_id: userId,
+            nome,
+            setor,
+            inicio: checkIn.horario_acao,
+            fim: isFinished ? last.horario_acao : null,
+            status: isFinished ? "finalizado" : "andamento",
+            passosCount: ciclo.length,
+            observacoes: isFinished ? (last.observacoes ?? null) : null,
+          });
+          ciclo = [];
+        };
+
+        lista.forEach((r: any) => {
+          const tipo = String(r.tipo_acao);
+          if (tipo === "check_in") {
+            if (ciclo.length > 0) flush();
+            ciclo = [r];
+          } else if (tipo === "check_out_2") {
+            ciclo.push(r);
+            flush();
+          } else {
+            ciclo.push(r);
+          }
+        });
+        flush();
+      });
+
+      rondas.sort(
+        (a, b) => new Date(b.inicio).getTime() - new Date(a.inicio).getTime(),
+      );
+      setItems(rondas);
+    } catch (e: any) {
+      toast.error(`Erro ao carregar rondas: ${e?.message ?? "desconhecido"}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

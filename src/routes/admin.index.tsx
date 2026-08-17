@@ -109,8 +109,10 @@ function AdminDashboard() {
       let finalizadasCount = 0;
       let abertasCount = 0;
       porUser.forEach((arr) => {
-        finalizadasCount += Math.floor(arr.length / 2);
-        if (arr.length % 2 !== 0) abertasCount++;
+        const checkIns = arr.filter((t) => t === "check_in").length;
+        const checkOuts = arr.filter((t) => t === "check_out_2").length;
+        finalizadasCount += Math.min(checkIns, checkOuts);
+        if (checkIns > checkOuts) abertasCount += checkIns - checkOuts;
       });
 
       setFinalizadas(finalizadasCount);

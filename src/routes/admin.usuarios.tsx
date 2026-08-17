@@ -255,18 +255,23 @@ function Usuarios() {
 
   const carregar = async () => {
     setLoading(true);
-    const [{ data: profs }, { data: roles }, { data: sets }] = await Promise.all([
-      supabase.from("profiles").select("id,nome,email,setor_id,foto_url"),
-      supabase.from("user_roles").select("user_id,role"),
-      supabase.from("setores").select("id,nome").order("nome"),
-    ]);
-    const roleMap = new Map<string, string>();
-    (roles ?? []).forEach((r: any) => {
-      if (r.role === "admin" || !roleMap.has(r.user_id)) roleMap.set(r.user_id, r.role);
-    });
-    setUsers((profs ?? []).map((p: any) => ({ ...p, role: roleMap.get(p.id) ?? "user" })));
-    setSetores(sets ?? []);
-    setLoading(false);
+    try {
+      const [{ data: profs }, { data: roles }, { data: sets }] = await Promise.all([
+        supabase.from("profiles").select("id,nome,email,setor_id,foto_url"),
+        supabase.from("user_roles").select("user_id,role"),
+        supabase.from("setores").select("id,nome").order("nome"),
+      ]);
+      const roleMap = new Map<string, string>();
+      (roles ?? []).forEach((r: any) => {
+        if (r.role === "admin" || !roleMap.has(r.user_id)) roleMap.set(r.user_id, r.role);
+      });
+      setUsers((profs ?? []).map((p: any) => ({ ...p, role: roleMap.get(p.id) ?? "user" })));
+      setSetores(sets ?? []);
+    } catch (e: any) {
+      console.error("Erro ao carregar usuários:", e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

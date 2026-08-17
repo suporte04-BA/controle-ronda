@@ -20,6 +20,14 @@ const DASHBOARD_URL = "https://controle-ronda.suporte04.workers.dev";
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Início de Ronda",
+  meio1: "Meio de Ronda 1",
+  meio2: "Meio de Ronda 2",
+  meio3: "Meio de Ronda 3",
+  meio4: "Meio de Ronda 4",
+  meio5: "Meio de Ronda 5",
+  meio6: "Meio de Ronda 6",
+  meio7: "Meio de Ronda 7",
+  meio8: "Meio de Ronda 8",
   check_out_2: "Fim de Ronda",
 };
 
@@ -785,12 +793,6 @@ async function fetchRecipientEmails(admin: any): Promise<string[]> {
     recipients.push(suporte);
   }
 
-  const benjamin = normalizeEmail("benjaminmarcos215@gmail.com");
-  if (benjamin && !seen.has(benjamin)) {
-    seen.add(benjamin);
-    recipients.push(benjamin);
-  }
-
   return recipients;
 }
 
@@ -839,16 +841,13 @@ Deno.serve(async (req) => {
 
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
 
-    const photoResults = await Promise.allSettled(
-      rows.map(async (r: any) => {
-        const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
-        return { id: r.id, photoBase64: b64 };
-      }),
-    );
     const photoMap = new Map<string, string | null>();
-    for (const pr of photoResults) {
-      if (pr.status === "fulfilled") {
-        photoMap.set(pr.value.id, pr.value.photoBase64);
+    for (const r of rows) {
+      try {
+        const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
+        photoMap.set(r.id, b64);
+      } catch {
+        photoMap.set(r.id, null);
       }
     }
     for (const r of rows) {

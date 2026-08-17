@@ -71,43 +71,47 @@ function Historico() {
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("registros_ponto")
-        .select("id,tipo_acao,horario_acao,horario_foto,foto_url,user_id")
-        .eq("user_id", user.id)
-        .order("horario_acao", { ascending: false })
-        .limit(100);
-      if (cancelled) return;
+      try {
+        const { data } = await supabase
+          .from("registros_ponto")
+          .select("id,tipo_acao,horario_acao,horario_foto,foto_url,user_id")
+          .eq("user_id", user.id)
+          .order("horario_acao", { ascending: false })
+          .limit(100);
+        if (cancelled) return;
 
-      const list = (data ?? []) as Registro[];
+        const list = (data ?? []) as Registro[];
 
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("id,nome,foto_url")
-        .eq("id", user.id)
-        .maybeSingle();
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id,nome,foto_url")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      const nome = prof?.nome ?? user.email ?? "";
-      const avatarPath = prof?.foto_url ?? null;
+        const nome = prof?.nome ?? user.email ?? "";
+        const avatarPath = prof?.foto_url ?? null;
 
-      const listWithNome = list.map((r) => ({ ...r, nome }));
+        const listWithNome = list.map((r) => ({ ...r, nome }));
 
-      setItems(listWithNome);
+        setItems(listWithNome);
 
-      const map = await getSignedFotoUrls(listWithNome.map((r) => r.foto_url));
-      if (cancelled) return;
-      setSigned(map);
+        const map = await getSignedFotoUrls(listWithNome.map((r) => r.foto_url));
+        if (cancelled) return;
+        setSigned(map);
 
-      if (avatarPath) {
-        const { data: urlData } = await supabase.storage
-          .from("avatars")
-          .createSignedUrl(avatarPath, 3600);
-        if (urlData?.signedUrl && !cancelled) {
-          setAvatarUrls(new Map([[user.id, urlData.signedUrl]]));
+        if (avatarPath) {
+          const { data: urlData } = await supabase.storage
+            .from("avatars")
+            .createSignedUrl(avatarPath, 3600);
+          if (urlData?.signedUrl && !cancelled) {
+            setAvatarUrls(new Map([[user.id, urlData.signedUrl]]));
+          }
         }
+      } catch (e: any) {
+        console.error("Erro ao carregar histórico:", e);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     })();
     return () => {
       cancelled = true;
