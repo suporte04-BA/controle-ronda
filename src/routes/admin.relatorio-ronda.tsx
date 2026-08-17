@@ -75,7 +75,8 @@ function RelatorioRonda() {
         if (ciclo.length === 0) return;
         const checkIn = ciclo[0];
         const last = ciclo[ciclo.length - 1];
-        const isFinished = last.tipo_acao === "check_out_2";
+        const lastTipo = String(last.tipo_acao);
+        const isFinished = lastTipo === "check_out_2";
         rondas.push({
           cycleKey: `${userId}_${checkIn.horario_acao}`,
           user_id: userId,
@@ -91,10 +92,11 @@ function RelatorioRonda() {
       };
 
       lista.forEach((r: any) => {
-        if (r.tipo_acao === "check_in") {
-          flush();
+        const tipo = String(r.tipo_acao);
+        if (tipo === "check_in") {
+          if (ciclo.length > 0) flush();
           ciclo = [r];
-        } else if (r.tipo_acao === "check_out_2") {
+        } else if (tipo === "check_out_2") {
           ciclo.push(r);
           flush();
         } else {

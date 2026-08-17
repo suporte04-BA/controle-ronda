@@ -74,6 +74,7 @@ export type TipoAcao =
   | "meio5"
   | "meio6"
   | "meio7"
+  | "meio8"
   | "check_out_1"
   | "check_out_2";
 
