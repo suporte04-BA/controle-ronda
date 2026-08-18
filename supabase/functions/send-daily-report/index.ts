@@ -877,11 +877,16 @@ async function fetchRecipientEmails(admin: any, setorParam: string | null): Prom
   const recipients: string[] = [];
 
   // Buscar IDs de admins
-  const { data: adminRoles } = await admin.from("user_roles").select("user_id").eq("role", "admin");
+  const { data: adminRoles, error: adminErr } = await admin.from("user_roles").select("user_id").eq("role", "admin");
+  console.log(`[recipients] user_roles query error:`, adminErr?.message ?? "none");
+  console.log(`[recipients] admin roles found:`, (adminRoles ?? []).length);
   const adminIds = new Set((adminRoles ?? []).map((r: any) => r.user_id));
+  console.log(`[recipients] admin IDs:`, [...adminIds].slice(0, 10));
 
   // Buscar setores e filtrar por GESTOR + setorParam
-  const { data: sets } = await admin.from("setores").select("id,nome");
+  const { data: sets, error: setsErr } = await admin.from("setores").select("id,nome");
+  console.log(`[recipients] setores query error:`, setsErr?.message ?? "none");
+  console.log(`[recipients] all setores:`, (sets ?? []).map((s: any) => `${s.id}=${s.nome}`));
   const gestorSetores = (sets ?? []).filter((s: any) => {
     const n = (s.nome ?? "").toUpperCase();
     if (!n.includes("GESTOR")) return false;
@@ -890,8 +895,12 @@ async function fetchRecipientEmails(admin: any, setorParam: string | null): Prom
     return true; // teste: todos os GESTOR
   });
   const gestorIds = new Set(gestorSetores.map((s: any) => s.id));
+  console.log(`[recipients] gestor setores for ${setorParam}:`, gestorSetores.map((s: any) => `${s.id}=${s.nome}`));
+  console.log(`[recipients] gestor IDs:`, [...gestorIds]);
 
-  const { data: allProfiles } = await admin.from("profiles").select("id,nome,email,setor_id");
+  const { data: allProfiles, error: profsErr } = await admin.from("profiles").select("id,nome,email,setor_id");
+  console.log(`[recipients] profiles query error:`, profsErr?.message ?? "none");
+  console.log(`[recipients] total profiles:`, (allProfiles ?? []).length);
 
   if (allProfiles?.length) {
     for (const p of allProfiles) {
@@ -901,9 +910,11 @@ async function fetchRecipientEmails(admin: any, setorParam: string | null): Prom
       if (!p.setor_id || !gestorIds.has(p.setor_id)) continue;
       seen.add(email);
       recipients.push(email);
+      console.log(`[recipients] MATCH: ${p.nome} <${email}> setor_id=${p.setor_id}`);
     }
   }
 
+  console.log(`[recipients] FINAL recipients (${setorParam}):`, recipients);
   return recipients;
 }
 
@@ -956,13 +967,31 @@ Deno.serve(async (req) => {
     const periodo = `${fmtManaus(fromUtc.toISOString(), false)} a ${fmtManaus(toUtc.toISOString(), false)} (America/Manaus)`;
 
     const rows = await fetchRows(admin, fromUtc.toISOString(), toUtc.toISOString());
+    console.log(`[main] modo=${modo} setor=${setorParam} rows=${rows.length} from=${fromUtc.toISOString()} to=${toUtc.toISOString()}`);
+
+    // Log setor distribution
+    const setorCounts: Record<string, number> = {};
+    for (const r of rows) {
+      const s = r.setor ?? "null";
+      setorCounts[s] = (setorCounts[s] ?? 0) + 1;
+    }
+    console.log(`[main] rows by setor:`, setorCounts);
 
     // Download photos SEQUENTIALLY to avoid memory spike (250MB limit)
     const photoMap = new Map<string, string | null>();
-    for (const r of rows) {
+    console.log(`[main] downloading ${rows.length} photos...`);
+    let photosOk = 0;
+    let photosFail = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
       const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
       photoMap.set(r.id, b64);
+      if (b64) photosOk++; else photosFail++;
+      if ((i + 1) % 10 === 0 || i === rows.length - 1) {
+        console.log(`[main] photos progress: ${i + 1}/${rows.length} (ok=${photosOk} fail=${photosFail})`);
+      }
     }
+    console.log(`[main] photos done: ${photosOk} ok, ${photosFail} failed`);
     // Attach photos to rows
     for (const r of rows) {
       r._photoBase64 = photoMap.get(r.id) ?? null;
@@ -988,7 +1017,9 @@ Deno.serve(async (req) => {
     if (modo === "teste") {
       recipients = recipients.filter((e) => e === "suporte04@baeletrica.com.br");
     }
+    console.log(`[main] recipients after filter:`, recipients);
     if (!recipients.length) {
+      console.warn(`[main] ⚠️ NO RECIPIENTS FOUND for setor=${setorParam}. Returning early.`);
       return new Response(
         JSON.stringify({
           ok: false,
@@ -1012,11 +1043,14 @@ Deno.serve(async (req) => {
       ? ALL_SETORES.filter((s) => s.key === setorParam)
       : ALL_SETORES;
 
+    console.log(`[main] SETORES to process:`, SETORES.map((s) => s.key));
+
     for (const setor of SETORES) {
       const setorRows = rows.filter((r: any) => {
         const s = (r.setor ?? "").toUpperCase();
         return s.includes(setor.match);
       });
+      console.log(`[main] setor=${setor.key} match="${setor.match}" rows=${setorRows.length}`);
       if (setorRows.length === 0) continue;
 
       const setorRondas = reconstructRondas(setorRows);
@@ -1060,10 +1094,12 @@ Deno.serve(async (req) => {
     }
 
     // Anexos: PDFs + montagens de fotos
+    console.log(`[main] total attachments: ${attachments.length}, totalRegistros: ${totalRegistros}`);
     if (attachments.length === 0) {
       const msg = setorParam
         ? `Nenhum registro no setor ${setorParam} no período.`
         : "Nenhum registro nos setores CD/LOJA.";
+      console.warn(`[main] ⚠️ ${msg} setor=${setorParam}`);
       return new Response(
         JSON.stringify({ ok: true, message: msg, recipients: [], count: 0, setor: setorParam }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
@@ -1076,13 +1112,33 @@ Deno.serve(async (req) => {
     const html = buildEmailHtml(periodo, totalRegistros, ciclos, ag, setorLabel);
 
     const subjectSuffix = setorLabel ? ` — ${setorLabel}` : "";
-    const result = await sendResend(
-      recipients,
-      `BA Elétrica — Relatório de Ronda${subjectSuffix} (${periodo})`,
-      html,
-      attachments,
-    );
+    console.log(`[main] sending email to ${recipients.length} recipients, ${attachments.length} attachments`);
 
+    let result;
+    let lastErr;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        result = await sendResend(
+          recipients,
+          `BA Elétrica — Relatório de Ronda${subjectSuffix} (${periodo})`,
+          html,
+          attachments,
+        );
+        console.log(`[main] email sent successfully on attempt ${attempt}:`, (result as any)?.id);
+        break;
+      } catch (e: any) {
+        lastErr = e;
+        console.error(`[main] send attempt ${attempt} failed:`, e?.message);
+        if (attempt < 3) {
+          await new Promise((r) => setTimeout(r, 5000 * attempt));
+        }
+      }
+    }
+    if (!result) {
+      throw new Error(`Falha ao enviar email após 3 tentativas: ${lastErr?.message}`);
+    }
+
+    console.log(`[main] ✅ SUCCESS: email sent. id=${(result as any)?.id} recipients=${recipients.length}`);
     return new Response(
       JSON.stringify({
         ok: true,
@@ -1096,7 +1152,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (e: any) {
-    console.error("ERROR:", e?.message);
+    console.error("[main] ERROR:", e?.message);
     return new Response(JSON.stringify({ ok: false, error: String(e?.message ?? e) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

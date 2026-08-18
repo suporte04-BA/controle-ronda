@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FileText,
   Loader2,
@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Trash2,
   AlertTriangle,
+  Search,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -19,8 +20,17 @@ import {
   CICLO_RONDA,
   nowManaus,
 } from "@/lib/timezone";
+import { Preset, rangeFromPreset, toInput, addDays } from "@/lib/date-filters";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/admin/relatorio-ronda")({
   component: RelatorioRonda,
@@ -31,6 +41,7 @@ interface RondaCard {
   user_id: string;
   nome: string;
   setor: string;
+  setor_id: string | null;
   inicio: string;
   fim: string | null;
   status: "andamento" | "finalizado";
@@ -42,6 +53,13 @@ function RelatorioRonda() {
   const [items, setItems] = useState<RondaCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [preset, setPreset] = useState<Preset>("hoje");
+  const initial = rangeFromPreset("hoje")!;
+  const [dataDe, setDataDe] = useState<string>(initial.from);
+  const [dataAte, setDataAte] = useState<string>(initial.to);
+  const [busca, setBusca] = useState("");
+  const [setorFiltro, setSetorFiltro] = useState<string>("all");
+  const [setores, setSetores] = useState<{ id: string; nome: string }[]>([]);
 
   const carregar = async () => {
     setLoading(true);
@@ -56,6 +74,7 @@ function RelatorioRonda() {
         supabase.from("setores").select("id,nome"),
       ]);
 
+      setSetores((sets ?? []).map((s: any) => ({ id: s.id, nome: s.nome })));
       const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
       const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
 
@@ -83,6 +102,7 @@ function RelatorioRonda() {
             user_id: userId,
             nome,
             setor,
+            setor_id: p?.setor_id ?? null,
             inicio: checkIn.horario_acao,
             fim: isFinished ? last.horario_acao : null,
             status: isFinished ? "finalizado" : "andamento",
@@ -122,6 +142,35 @@ function RelatorioRonda() {
     carregar();
   }, []);
 
+  const handlePreset = (p: Preset) => {
+    setPreset(p);
+    if (p === "custom") return;
+    const r = rangeFromPreset(p);
+    if (r) {
+      setDataDe(r.from);
+      setDataAte(r.to);
+    }
+  };
+
+  const filtered = useMemo(() => {
+    const de = dataDe ? new Date(dataDe + "T00:00:00") : null;
+    const ate = dataAte ? new Date(dataAte + "T23:59:59") : null;
+    const q = busca.trim().toLowerCase();
+    return items.filter((item) => {
+      if (de && new Date(item.inicio) < de) return false;
+      if (ate && new Date(item.inicio) > ate) return false;
+      if (setorFiltro !== "all" && item.setor_id !== setorFiltro) return false;
+      if (q) {
+        const hay = `${item.nome} ${item.setor} ${item.observacoes ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [items, dataDe, dataAte, busca, setorFiltro]);
+
+  const andamento = filtered.filter((i) => i.status === "andamento");
+  const finalizado = filtered.filter((i) => i.status === "finalizado");
+
   const excluir = async (card: RondaCard) => {
     const id = toast.loading("Excluindo ronda...");
     try {
@@ -151,9 +200,6 @@ function RelatorioRonda() {
     }
   };
 
-  const andamento = items.filter((i) => i.status === "andamento");
-  const finalizado = items.filter((i) => i.status === "finalizado");
-
   return (
     <div className="p-4 sm:p-8 space-y-6">
       <header>
@@ -163,6 +209,99 @@ function RelatorioRonda() {
         </p>
       </header>
 
+      {/* ── Filtros ── */}
+      <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Período</label>
+            <div className="flex gap-1">
+              {(["hoje", "ontem", "ultimos7", "semana", "semana_passada", "mes", "custom"] as Preset[]).map(
+                (p) => (
+                  <button
+                    key={p}
+                    onClick={() => handlePreset(p)}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      preset === p
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                    }`}
+                  >
+                    {p === "hoje"
+                      ? "Hoje"
+                      : p === "ontem"
+                        ? "Ontem"
+                        : p === "ultimos7"
+                          ? "Últ. 7 dias"
+                          : p === "semana"
+                            ? "Semana"
+                            : p === "semana_passada"
+                              ? "Sem. pass."
+                              : p === "mes"
+                                ? "Mês"
+                                : "Personalizado"}
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">De</label>
+            <Input
+              type="date"
+              value={dataDe}
+              onChange={(e) => {
+                setDataDe(e.target.value);
+                setPreset("custom");
+              }}
+              className="h-8 w-[140px] text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Até</label>
+            <Input
+              type="date"
+              value={dataAte}
+              onChange={(e) => {
+                setDataAte(e.target.value);
+                setPreset("custom");
+              }}
+              className="h-8 w-[140px] text-xs"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Setor</label>
+            <Select value={setorFiltro} onValueChange={setSetorFiltro}>
+              <SelectTrigger className="h-8 w-[160px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {setores.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex-1 min-w-[180px] space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Buscar</label>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Nome, setor, observação..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="h-8 pl-7 text-xs"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -170,6 +309,10 @@ function RelatorioRonda() {
       ) : items.length === 0 ? (
         <div className="bg-card border border-border rounded-2xl p-10 text-center text-muted-foreground">
           Nenhuma ronda registrada.
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-card border border-border rounded-2xl p-10 text-center text-muted-foreground">
+          Nenhuma ronda encontrado com os filtros selecionados.
         </div>
       ) : (
         <>
@@ -213,7 +356,7 @@ function RelatorioRonda() {
       {!loading && items.length > 0 && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
           <FileText className="w-3.5 h-3.5" />
-          {items.length} ronda(s) no total
+          {filtered.length} de {items.length} ronda(s)
         </div>
       )}
 
