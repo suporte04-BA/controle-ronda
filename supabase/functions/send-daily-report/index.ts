@@ -977,42 +977,7 @@ Deno.serve(async (req) => {
     }
     console.log(`[main] rows by setor:`, setorCounts);
 
-    // Download photos SEQUENTIALLY to avoid memory spike (250MB limit)
-    const photoMap = new Map<string, string | null>();
-    console.log(`[main] downloading ${rows.length} photos...`);
-    let photosOk = 0;
-    let photosFail = 0;
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i];
-      const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
-      photoMap.set(r.id, b64);
-      if (b64) photosOk++; else photosFail++;
-      if ((i + 1) % 10 === 0 || i === rows.length - 1) {
-        console.log(`[main] photos progress: ${i + 1}/${rows.length} (ok=${photosOk} fail=${photosFail})`);
-      }
-    }
-    console.log(`[main] photos done: ${photosOk} ok, ${photosFail} failed`);
-    // Attach photos to rows
-    for (const r of rows) {
-      r._photoBase64 = photoMap.get(r.id) ?? null;
-    }
-
-    // Fetch unique avatars SEQUENTIALLY
-    const uniqueAvatarPaths = new Map<string, string>();
-    for (const r of rows) {
-      if (r.avatar_url && !uniqueAvatarPaths.has(r.user_id)) {
-        uniqueAvatarPaths.set(r.user_id, r.avatar_url);
-      }
-    }
-    const avatarMap = new Map<string, string | null>();
-    for (const [userId, path] of uniqueAvatarPaths) {
-      const b64 = await fetchAvatarAsBase64(path, SUPABASE_URL, SERVICE_KEY);
-      avatarMap.set(userId, b64);
-    }
-    for (const r of rows) {
-      r._avatarBase64 = avatarMap.get(r.user_id) ?? null;
-    }
-
+    // ── Fetch recipients FIRST (before expensive photo downloads) ──
     let recipients = await fetchRecipientEmails(admin, setorParam);
     if (modo === "teste") {
       recipients = recipients.filter((e) => e === "suporte04@baeletrica.com.br");
@@ -1031,10 +996,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Gerar 2 PDFs por setor (LOJA primeiro, depois CD) ──
-    const attachments: { filename: string; content: string }[] = [];
-    let totalRegistros = 0;
-
+    // ── Process each setor SEPARATELY to stay within memory limits ──
+    // Photos are downloaded per-setor, not all upfront
     const ALL_SETORES = [
       { key: "LOJA", match: "LOJA", titulo: "BA ELÉTRICA LOJA - ( LOJA - GUARDAS)", subtitulo: "que conterá somente o registro das pessoas que fizeram a ronda com o setor ( LOJA - GUARDAS)", filePrefix: "LOJA_GUARDAS" },
       { key: "CD", match: "CD", titulo: "BA ELÉTRICA CD - ( CD - GUARDAS)", subtitulo: "que conterá somente o registro das pessoas que fizeram a ronda com o setor ( CD - GUARDAS)", filePrefix: "CD_GUARDAS" },
@@ -1045,6 +1008,10 @@ Deno.serve(async (req) => {
 
     console.log(`[main] SETORES to process:`, SETORES.map((s) => s.key));
 
+    const attachments: { filename: string; content: string }[] = [];
+    let totalRegistros = 0;
+    let rondaIdx = 0;
+
     for (const setor of SETORES) {
       const setorRows = rows.filter((r: any) => {
         const s = (r.setor ?? "").toUpperCase();
@@ -1052,6 +1019,38 @@ Deno.serve(async (req) => {
       });
       console.log(`[main] setor=${setor.key} match="${setor.match}" rows=${setorRows.length}`);
       if (setorRows.length === 0) continue;
+
+      // Download photos ONLY for this setor's rows
+      const photoMap = new Map<string, string | null>();
+      console.log(`[main] downloading ${setorRows.length} photos for ${setor.key}...`);
+      let photosOk = 0;
+      let photosFail = 0;
+      for (let i = 0; i < setorRows.length; i++) {
+        const r = setorRows[i];
+        const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
+        photoMap.set(r.id, b64);
+        if (b64) photosOk++; else photosFail++;
+      }
+      console.log(`[main] photos ${setor.key} done: ${photosOk} ok, ${photosFail} failed`);
+
+      // Fetch avatars ONLY for this setor's users
+      const uniqueAvatarPaths = new Map<string, string>();
+      for (const r of setorRows) {
+        if (r.avatar_url && !uniqueAvatarPaths.has(r.user_id)) {
+          uniqueAvatarPaths.set(r.user_id, r.avatar_url);
+        }
+      }
+      const avatarMap = new Map<string, string | null>();
+      for (const [userId, path] of uniqueAvatarPaths) {
+        const b64 = await fetchAvatarAsBase64(path, SUPABASE_URL, SERVICE_KEY);
+        avatarMap.set(userId, b64);
+      }
+
+      // Attach photos/avatars to setor rows
+      for (const r of setorRows) {
+        r._photoBase64 = photoMap.get(r.id) ?? null;
+        r._avatarBase64 = avatarMap.get(r.user_id) ?? null;
+      }
 
       const setorRondas = reconstructRondas(setorRows);
       for (const ronda of setorRondas) {
@@ -1066,31 +1065,21 @@ Deno.serve(async (req) => {
         content: toBase64(pdfBytes),
       });
 
-      totalRegistros += setorRows.length;
-    }
-
-    // ── Gerar anexos de fotos individuais por ronda ──
-    let rondaIdx = 0;
-    for (const setor of SETORES) {
-      const setorRows = rows.filter((r: any) => {
-        const s = (r.setor ?? "").toUpperCase();
-        return s.includes(setor.match);
-      });
-      if (setorRows.length === 0) continue;
-      const setorRondas = reconstructRondas(setorRows);
       for (const ronda of setorRondas) {
         rondaIdx++;
         const fotos = await buildFotosAnexos(ronda, photoMap, rondaIdx, setor.key);
         attachments.push(...fotos);
       }
-    }
 
-    // Liberar memória das fotos e avatares
-    photoMap.clear();
-    avatarMap.clear();
-    for (const r of rows) {
-      r._photoBase64 = null;
-      r._avatarBase64 = null;
+      totalRegistros += setorRows.length;
+
+      // Free memory for this setor
+      photoMap.clear();
+      avatarMap.clear();
+      for (const r of setorRows) {
+        r._photoBase64 = null;
+        r._avatarBase64 = null;
+      }
     }
 
     // Anexos: PDFs + montagens de fotos
