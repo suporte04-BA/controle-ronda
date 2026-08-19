@@ -73,7 +73,7 @@ function RelatorioRonda() {
       if (ate) regsQuery = regsQuery.lte("horario_acao", ate + "T23:59:59-04:00");
 
       const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
-        regsQuery,
+        regsQuery.range(0, 49999),
         supabase.from("profiles").select("id,nome,setor_id"),
         supabase.from("setores").select("id,nome"),
       ]);
@@ -198,7 +198,7 @@ function RelatorioRonda() {
 
       toast.success("Ronda excluída!", { id });
       setConfirmDelete(null);
-      carregar();
+      carregar(dataDe, dataAte);
     } catch (e: any) {
       toast.error(`Erro: ${e?.message ?? "desconhecido"}`, { id });
     }
