@@ -185,7 +185,7 @@ function RelatorioRonda() {
         .select("id,foto_url")
         .eq("user_id", card.user_id)
         .gte("horario_acao", card.inicio)
-        .lte("horario_acao", card.fim ?? card.inicio);
+        .lte("horario_acao", card.fim ?? new Date().toISOString());
 
       for (const r of regs ?? []) {
         if (r.foto_url) {

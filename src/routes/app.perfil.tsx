@@ -7,12 +7,11 @@ import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SUPPORT_EMAIL } from "@/lib/config";
 
 export const Route = createFileRoute("/app/perfil")({
   component: Perfil,
 });
-
-const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 function Perfil() {
   const { profile, role, baseRole, devViewRole, setDevViewRole, signOut, refreshProfile } =
@@ -115,7 +114,6 @@ function Perfil() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="user"
             className="hidden"
             onChange={handleFileSelect}
           />

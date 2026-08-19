@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
+import { SUPPORT_EMAIL } from "@/lib/config";
 
 function normalizeSupportEmail(email: string) {
   const normalized = email.trim().toLowerCase();

@@ -19,12 +19,20 @@ import { formatData, formatHora, TIPO_ACAO_LABEL, formatManaus, nowManaus } from
 import { getSignedFotoUrl } from "@/lib/storage";
 import { sendTestReport } from "@/lib/report.functions";
 import { useAuth } from "@/lib/auth";
+import { SUPPORT_EMAIL } from "@/lib/config";
+import {
+  type Preset,
+  startOfDay,
+  endOfDay,
+  addDays,
+  toInput,
+  fromInput,
+  rangeFromPreset,
+} from "@/lib/date-filters";
 
 export const Route = createFileRoute("/admin/registros")({
   component: TodosRegistros,
 });
-
-const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 interface Row {
   id: string;
@@ -37,57 +45,6 @@ interface Row {
   email: string;
   setor: string | null;
   setor_id: string | null;
-}
-
-type Preset = "hoje" | "ontem" | "semana" | "semana_passada" | "mes" | "ultimos7" | "custom";
-
-function startOfDay(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-function endOfDay(d: Date) {
-  const x = new Date(d);
-  x.setHours(23, 59, 59, 999);
-  return x;
-}
-function addDays(d: Date, n: number) {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-}
-function toInput(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
-}
-function fromInput(s: string) {
-  return new Date(s + "T00:00:00");
-}
-
-function rangeFromPreset(p: Preset): { from: string; to: string } | null {
-  const now = new Date();
-  if (p === "hoje") return { from: toInput(now), to: toInput(now) };
-  if (p === "ontem") {
-    const y = addDays(now, -1);
-    return { from: toInput(y), to: toInput(y) };
-  }
-  if (p === "ultimos7") return { from: toInput(addDays(now, -6)), to: toInput(now) };
-  if (p === "semana" || p === "semana_passada") {
-    const dow = now.getDay(); // 0 sun .. 6 sat
-    const diffToMon = (dow + 6) % 7;
-    const monThis = addDays(now, -diffToMon);
-    if (p === "semana") return { from: toInput(monThis), to: toInput(addDays(monThis, 6)) };
-    const monLast = addDays(monThis, -7);
-    return { from: toInput(monLast), to: toInput(addDays(monLast, 6)) };
-  }
-  if (p === "mes") {
-    const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return { from: toInput(first), to: toInput(last) };
-  }
-  return null;
 }
 
 function TodosRegistros() {
@@ -295,7 +252,7 @@ function TodosRegistros() {
             <Download className="w-4 h-4 mr-2" /> Exportar Excel
           </Button>
           <Button onClick={imprimirRelatorio} variant="secondary" disabled={!intervaloValido}>
-            <Printer className="w-4 h-4 mr-2" /> Imprimir Relatório (PDF)
+            <Printer className="w-4 h-4 mr-2" /> Imprimir Relatório
           </Button>
         </div>
       </header>

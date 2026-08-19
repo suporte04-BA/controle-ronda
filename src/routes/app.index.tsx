@@ -49,13 +49,13 @@ function BaterPonto() {
     if (!user) return;
     // Janela 7h-7h (igual ao relatório diário)
     // 7am Manaus = 11:00 UTC (UTC-4)
-    const now = new Date();
-    const utcH = now.getUTCHours();
+    const currentUtc = new Date();
+    const utcH = currentUtc.getUTCHours();
     let cycleStart: Date;
     if (utcH >= 11) {
-      cycleStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 11, 0, 0));
+      cycleStart = new Date(Date.UTC(currentUtc.getUTCFullYear(), currentUtc.getUTCMonth(), currentUtc.getUTCDate(), 11, 0, 0));
     } else {
-      const d = new Date(now);
+      const d = new Date(currentUtc);
       d.setUTCDate(d.getUTCDate() - 1);
       cycleStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 11, 0, 0));
     }

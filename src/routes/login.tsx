@@ -76,7 +76,7 @@ function LoginPage() {
       });
       if (error) toast.error("Falha no cadastro", { description: error.message });
       else toast.success("Cadastro realizado! Faça login para acessar.");
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Erro de conexão", {
         description:
           "Não foi possível conectar ao backend agora. Verifique a internet e tente novamente.",

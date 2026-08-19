@@ -40,12 +40,11 @@ import {
   adminUpdateUser,
   adminBulkCreateUsers,
 } from "@/lib/admin-users.functions";
+import { SUPPORT_EMAIL } from "@/lib/config";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: Usuarios,
 });
-
-const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 interface User {
   id: string;
@@ -369,7 +368,7 @@ function Usuarios() {
     setFormPreview(URL.createObjectURL(file));
   };
 
-  const openEditPhoto = (userId: string, currentFotoUrl: string | null) => {
+  const openEditPhoto = (userId: string) => {
     if (editingPreview) URL.revokeObjectURL(editingPreview);
     setEditingPhoto(userId);
     setEditingFile(null);
@@ -476,7 +475,7 @@ function Usuarios() {
                       <td className="px-4 py-3 hidden sm:table-cell">
                         <div
                           className="relative group cursor-pointer"
-                          onClick={() => openEditPhoto(u.id, u.foto_url)}
+                          onClick={() => openEditPhoto(u.id)}
                         >
                           {u.foto_url ? (
                             <AvatarThumb userId={u.id} fotoUrl={u.foto_url} />
@@ -494,7 +493,7 @@ function Usuarios() {
                         <div className="flex items-center gap-2 sm:hidden mb-1">
                           <div
                             className="relative group cursor-pointer"
-                            onClick={() => openEditPhoto(u.id, u.foto_url)}
+                            onClick={() => openEditPhoto(u.id)}
                           >
                             {u.foto_url ? (
                               <AvatarThumb userId={u.id} fotoUrl={u.foto_url} size="sm" />
@@ -546,7 +545,7 @@ function Usuarios() {
                           size="sm"
                           variant="ghost"
                           className="sm:hidden"
-                          onClick={() => openEditPhoto(u.id, u.foto_url)}
+                          onClick={() => openEditPhoto(u.id)}
                         >
                           <Camera className="w-4 h-4" />
                         </Button>

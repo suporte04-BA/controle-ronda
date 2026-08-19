@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SUPPORT_EMAIL } from "@/lib/config";
 
 const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -25,8 +26,6 @@ const items = [
   { to: "/admin/observacoes", label: "Observações", icon: FileText },
   { to: "/admin/setores", label: "Setores", icon: Building2 },
 ];
-
-const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 export function AdminSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });

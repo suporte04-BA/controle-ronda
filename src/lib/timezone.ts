@@ -89,7 +89,7 @@ export function acoesDoCicloAtual(acoesHoje: string[]): string[] {
   return acoesHoje.slice(-resto);
 }
 
-// Uma ronda é concluída quando há um registro do tipo Fim (check_out_2)
+/** @deprecated Utilizado apenas internamente se necessário no futuro */
 export function contarCiclosConcluidos(tipos: string[]): number {
   return tipos.filter((t) => t === "check_out_2").length;
 }

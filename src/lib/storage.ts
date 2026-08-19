@@ -14,7 +14,10 @@ export async function getSignedFotoUrl(value: string, expiresInSec = 3600): Prom
   const { data, error } = await supabase.storage
     .from("fotos_ponto")
     .createSignedUrl(path, expiresInSec);
-  if (error) return null;
+  if (error) {
+    console.warn("[storage] createSignedUrl failed:", error.message);
+    return null;
+  }
   return data.signedUrl;
 }
 

@@ -1,11 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import { SUPPORT_EMAIL } from "@/lib/config";
 
 const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL || "https://rdmbayprbfqbjhfqcasp.supabase.co";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 
 const REPORT_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-daily-report`;
-const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
 
 export async function sendTestReport() {
   const {
@@ -26,7 +26,7 @@ export async function sendTestReport() {
     "Content-Type": "application/json",
     apikey: SUPABASE_ANON_KEY,
   };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  headers["Authorization"] = `Bearer ${token}`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 90000);

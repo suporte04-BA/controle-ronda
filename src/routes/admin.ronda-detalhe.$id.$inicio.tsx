@@ -106,59 +106,71 @@ function DetalheRonda() {
   const [fotoExpandida, setFotoExpandida] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      if (!userId || !inicio) return;
-      setLoading(true);
+      try {
+        if (!userId || !inicio) return;
+        setLoading(true);
 
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("nome,setor_id")
-        .eq("id", userId)
-        .single();
-      setNome(prof?.nome ?? "—");
-      if (prof?.setor_id) {
-        const { data: s } = await supabase
-          .from("setores")
-          .select("nome")
-          .eq("id", prof.setor_id)
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("nome,setor_id")
+          .eq("id", userId)
           .single();
-        setSetor(s?.nome ?? "—");
+        if (cancelled) return;
+        setNome(prof?.nome ?? "—");
+        if (prof?.setor_id) {
+          const { data: s } = await supabase
+            .from("setores")
+            .select("nome")
+            .eq("id", prof.setor_id)
+            .single();
+          if (cancelled) return;
+          setSetor(s?.nome ?? "—");
+        }
+
+        const { data: regs } = await supabase
+          .from("registros_ponto")
+          .select("id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
+          .eq("user_id", userId)
+          .gte("horario_acao", inicio)
+          .order("horario_acao", { ascending: true })
+          .limit(20);
+
+        if (cancelled) return;
+
+        const ciclo: PassoDetalhe[] = [];
+        let obs: string | null = null;
+        for (const r of regs ?? []) {
+          if (r.tipo_acao === "check_in" && ciclo.length > 0) break;
+          ciclo.push({
+            id: r.id,
+            tipo: r.tipo_acao,
+            horario_acao: r.horario_acao,
+            horario_foto: r.horario_foto,
+            foto_url: r.foto_url,
+          });
+          if (r.observacoes) obs = r.observacoes;
+          if (r.tipo_acao === "check_out_2" && ciclo.length > 1) break;
+        }
+
+        const comSigned = await Promise.all(
+          ciclo.map(async (p) => {
+            const url = await getSignedFotoUrl(p.foto_url, 3600);
+            return { ...p, signedUrl: url ?? undefined };
+          }),
+        );
+
+        if (cancelled) return;
+        setPassos(comSigned);
+        setObservacoes(obs);
+      } catch (e) {
+        console.error("Erro ao carregar detalhe da ronda:", e);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      const { data: regs } = await supabase
-        .from("registros_ponto")
-        .select("id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
-        .eq("user_id", userId)
-        .gte("horario_acao", inicio)
-        .order("horario_acao", { ascending: true })
-        .limit(20);
-
-      const ciclo: PassoDetalhe[] = [];
-      let obs: string | null = null;
-      for (const r of regs ?? []) {
-        if (r.tipo_acao === "check_in" && ciclo.length > 0) break;
-        ciclo.push({
-          id: r.id,
-          tipo: r.tipo_acao,
-          horario_acao: r.horario_acao,
-          horario_foto: r.horario_foto,
-          foto_url: r.foto_url,
-        });
-        if (r.observacoes) obs = r.observacoes;
-        if (r.tipo_acao === "check_out_2" && ciclo.length > 1) break;
-      }
-
-      const comSigned = await Promise.all(
-        ciclo.map(async (p) => {
-          const url = await getSignedFotoUrl(p.foto_url, 3600);
-          return { ...p, signedUrl: url ?? undefined };
-        }),
-      );
-
-      setPassos(comSigned);
-      setObservacoes(obs);
-      setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [userId, inicio]);
 
   const horaInicio = passos[0] ? formatHora(passos[0].horario_acao) : "—";

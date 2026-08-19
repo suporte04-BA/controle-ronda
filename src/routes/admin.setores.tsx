@@ -17,9 +17,14 @@ function Setores() {
 
   const carregar = async () => {
     setLoading(true);
-    const { data } = await supabase.from("setores").select("id,nome").order("nome");
-    setItems(data ?? []);
-    setLoading(false);
+    try {
+      const { data } = await supabase.from("setores").select("id,nome").order("nome");
+      setItems(data ?? []);
+    } catch (e: any) {
+      toast.error("Erro ao carregar setores: " + (e?.message ?? "desconhecido"));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -39,6 +44,7 @@ function Setores() {
   };
 
   const excluir = async (id: string) => {
+    if (!confirm("Excluir este setor?")) return;
     const { count } = await supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })

@@ -12,6 +12,7 @@ export const Route = createFileRoute("/app/historico")({
 
 interface Registro {
   id: string;
+  user_id: string;
   tipo_acao: string;
   horario_acao: string;
   horario_foto: string;

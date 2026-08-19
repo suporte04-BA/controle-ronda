@@ -123,7 +123,11 @@ function Observacoes() {
 
   const ordenarPassos = (passos: Passo[]) => {
     return [...passos].sort(
-      (a, b) => CICLO_RONDA.indexOf(a.tipo as any) - CICLO_RONDA.indexOf(b.tipo as any),
+      (a, b) => {
+        const orderA = CICLO_RONDA.indexOf(a.tipo);
+        const orderB = CICLO_RONDA.indexOf(b.tipo);
+        return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
+      },
     );
   };
 
@@ -202,7 +206,7 @@ function Observacoes() {
                     {/* Timeline dos passos */}
                     <ol className="relative border-l-2 border-primary/30 ml-3 space-y-2 py-3">
                       {passosOrdenados.map((p, idx) => (
-                        <li key={idx} className="pl-5 relative">
+                        <li key={`${p.tipo}_${idx}`} className="pl-5 relative">
                           <span className="absolute -left-[9px] top-1.5 w-3.5 h-3.5 rounded-full bg-primary border-4 border-background" />
                           <div className="flex items-center justify-between gap-2 text-sm">
                             <span className="font-medium">

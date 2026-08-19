@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-const SUPPORT_EMAIL = "suporte04@baeletrica.com.br";
+import { SUPPORT_EMAIL } from "@/lib/config";
 
 function slugify(text: string): string {
   return text
@@ -145,7 +144,6 @@ export const adminBulkCreateUsers = createServerFn({ method: "POST" })
           results.push({
             nome: u.nome,
             email: u.email,
-            password: u.password,
             ok: false,
             error: error?.message || "Falha ao criar",
           });
@@ -169,12 +167,11 @@ export const adminBulkCreateUsers = createServerFn({ method: "POST" })
           role: u.role,
         });
 
-        results.push({ nome: u.nome, email: u.email, password: u.password, ok: true });
+        results.push({ nome: u.nome, email: u.email, ok: true });
       } catch (e: any) {
         results.push({
           nome: u.nome,
           email: u.email,
-          password: u.password,
           ok: false,
           error: e?.message || "Erro desconhecido",
         });
