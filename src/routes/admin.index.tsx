@@ -29,17 +29,6 @@ interface UltimoPonto {
   tipo: string;
 }
 
-const PIE_COLORS = [
-  "#00F0FF",
-  "#7700EE",
-  "#FF006E",
-  "#00FF88",
-  "#EEFF00",
-  "#FF8C00",
-  "#4ECDC4",
-  "#A855F7",
-];
-
 // Cor consistente por setor (funciona em dark e light)
 export function setorColor(setor: string | undefined | null): string {
   const s = (setor ?? "").toUpperCase();

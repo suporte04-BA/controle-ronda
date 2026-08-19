@@ -21,7 +21,7 @@ import {
   nowManaus,
   toManausISO,
 } from "@/lib/timezone";
-import { Preset, rangeFromPreset, toInput, addDays } from "@/lib/date-filters";
+import { Preset, rangeFromPreset, toInput } from "@/lib/date-filters";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

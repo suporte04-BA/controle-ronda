@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { formatData, formatHora, TIPO_ACAO_LABEL } from "@/lib/timezone";
-import { Loader2, ImageOff, User } from "lucide-react";
+import { Loader2, User } from "lucide-react";
 import { getSignedFotoUrls } from "@/lib/storage";
 
 export const Route = createFileRoute("/app/historico")({
@@ -19,26 +19,6 @@ interface Registro {
   foto_url: string;
   nome?: string;
   avatar_url?: string | null;
-}
-
-function FotoThumbnail({ src, alt }: { src: string; alt: string }) {
-  const [error, setError] = useState(false);
-  if (error || !src) {
-    return (
-      <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-        <ImageOff className="w-5 h-5 text-muted-foreground" />
-      </div>
-    );
-  }
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className="w-12 h-12 rounded-lg object-cover bg-secondary flex-shrink-0"
-      loading="lazy"
-      onError={() => setError(true)}
-    />
-  );
 }
 
 function AvatarThumb({ src, nome }: { src: string | null; nome: string }) {

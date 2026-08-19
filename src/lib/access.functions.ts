@@ -4,6 +4,7 @@ import { SUPPORT_EMAIL } from "@/lib/config";
 
 function normalizeSupportEmail(email: string) {
   const normalized = email.trim().toLowerCase();
+  // Normaliza variante ".com" para ".com.br" (usuarios podem registrar sem .br)
   return normalized === "suporte04@baeletrica.com" ? SUPPORT_EMAIL : normalized;
 }
 
@@ -24,43 +25,6 @@ async function ensureAccessForUser(userId: string, email: string, nome?: string 
 
   return { role };
 }
-
-export const bootstrapSupportAdmin = createServerFn({ method: "POST" })
-  .validator((input: { email: string; password: string }) => input)
-  .handler(async ({ data }) => {
-    const email = normalizeSupportEmail(data.email);
-    const supportPassword = process.env.SUPPORT_PASSWORD;
-    if (!supportPassword) throw new Error("SUPPORT_PASSWORD não configurada no servidor.");
-    if (email !== SUPPORT_EMAIL || data.password !== supportPassword) {
-      return { ok: false };
-    }
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: existing } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    let user = existing.users.find((u) => normalizeSupportEmail(u.email ?? "") === SUPPORT_EMAIL);
-
-    if (!user) {
-      const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-        email: SUPPORT_EMAIL,
-        password: supportPassword,
-        email_confirm: true,
-        user_metadata: { nome: "Suporte BA Elétrica" },
-      });
-      if (error) throw new Error(error.message);
-      user = created.user;
-    } else {
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-        email: SUPPORT_EMAIL,
-        password: supportPassword,
-        email_confirm: true,
-        user_metadata: { nome: "Suporte BA Elétrica" },
-      });
-      if (error) throw new Error(error.message);
-    }
-
-    await ensureAccessForUser(user.id, SUPPORT_EMAIL, "Suporte BA Elétrica");
-    return { ok: true };
-  });
 
 export const syncCurrentUserAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

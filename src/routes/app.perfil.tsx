@@ -4,7 +4,6 @@ import { LogOut, Shield, User, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { useTheme } from "@/lib/theme";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SUPPORT_EMAIL } from "@/lib/config";

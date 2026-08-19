@@ -46,5 +46,17 @@ API_KEYS.md
 *.key
 COMMIT_MSG.txt
 
+# Test/debug files
+test_*.json
+test_*.html
+base64_raw.txt
+comprovante_teste.txt
+tunnel_*.txt
+qr_whatsapp.*
+qr.js
+refresh_qr.ps1
+CRON_SQL_PRONTO.sql
+TRANSOBRA_INFO_COMPLETA.txt
+
 # Lovable
 .lovable/
