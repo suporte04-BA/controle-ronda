@@ -99,10 +99,12 @@ function Observacoes() {
               flush();
               ciclo = [r];
             } else if (r.tipo_acao === "check_out_2") {
-              ciclo.push(r);
-              flush();
+              if (ciclo.length > 0) {
+                ciclo.push(r);
+                flush();
+              }
             } else {
-              ciclo.push(r);
+              if (ciclo.length > 0) ciclo.push(r);
             }
           });
           flush();

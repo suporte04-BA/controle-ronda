@@ -122,10 +122,12 @@ function RelatorioRonda() {
             if (ciclo.length > 0) flush();
             ciclo = [r];
           } else if (tipo === "check_out_2") {
-            ciclo.push(r);
-            flush();
+            if (ciclo.length > 0) {
+              ciclo.push(r);
+              flush();
+            }
           } else {
-            ciclo.push(r);
+            if (ciclo.length > 0) ciclo.push(r);
           }
         });
         flush();
