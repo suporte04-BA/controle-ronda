@@ -61,15 +61,19 @@ function RelatorioRonda() {
   const [setorFiltro, setSetorFiltro] = useState<string>("all");
   const [setores, setSetores] = useState<{ id: string; nome: string }[]>([]);
 
-  const carregar = async () => {
+  const carregar = async (de?: string, ate?: string) => {
     setLoading(true);
     try {
+      let regsQuery = supabase
+        .from("registros_ponto")
+        .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
+        .order("horario_acao", { ascending: true });
+
+      if (de) regsQuery = regsQuery.gte("horario_acao", de + "T00:00:00-04:00");
+      if (ate) regsQuery = regsQuery.lte("horario_acao", ate + "T23:59:59-04:00");
+
       const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
-        supabase
-          .from("registros_ponto")
-          .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
-          .order("horario_acao", { ascending: true })
-          .limit(10000),
+        regsQuery,
         supabase.from("profiles").select("id,nome,setor_id"),
         supabase.from("setores").select("id,nome"),
       ]);
@@ -139,8 +143,8 @@ function RelatorioRonda() {
   };
 
   useEffect(() => {
-    carregar();
-  }, []);
+    carregar(dataDe, dataAte);
+  }, [dataDe, dataAte]);
 
   const handlePreset = (p: Preset) => {
     setPreset(p);
