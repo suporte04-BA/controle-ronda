@@ -19,6 +19,7 @@ import {
   TIPO_ACAO_LABEL,
   CICLO_RONDA,
   nowManaus,
+  toManausISO,
 } from "@/lib/timezone";
 import { Preset, rangeFromPreset, toInput, addDays } from "@/lib/date-filters";
 import { toast } from "sonner";
@@ -69,8 +70,8 @@ function RelatorioRonda() {
         .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
         .order("horario_acao", { ascending: true });
 
-      if (de) regsQuery = regsQuery.gte("horario_acao", de + "T00:00:00-04:00");
-      if (ate) regsQuery = regsQuery.lte("horario_acao", ate + "T23:59:59-04:00");
+      if (de) regsQuery = regsQuery.gte("horario_acao", toManausISO(de, "00:00:00"));
+      if (ate) regsQuery = regsQuery.lte("horario_acao", toManausISO(ate, "23:59:59"));
 
       const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
         regsQuery.range(0, 49999),

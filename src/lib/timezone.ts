@@ -1,9 +1,19 @@
 import { format, toZonedTime } from "date-fns-tz";
 
 export const MANAUS_TZ = "America/Manaus";
+export const MANAUS_UTC_OFFSET = "-04:00";
 
 export function nowManaus(): Date {
   return toZonedTime(new Date(), MANAUS_TZ);
+}
+
+/**
+ * Converte data (AAAA-MM-DD) para ISO com offset de Manaus.
+ * Usado em queries Supabase que filtram por horario_acao.
+ * Ex: toManausISO("2026-08-19", "00:00:00") → "2026-08-19T00:00:00-04:00"
+ */
+export function toManausISO(dateStr: string, time: "00:00:00" | "23:59:59" = "00:00:00"): string {
+  return `${dateStr}T${time}${MANAUS_UTC_OFFSET}`;
 }
 
 export function formatManaus(date: Date | string, pattern = "dd/MM/yyyy HH:mm:ss"): string {
