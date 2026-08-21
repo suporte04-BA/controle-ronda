@@ -18,6 +18,7 @@ const MANAUS_OFFSET_MS = -4 * 60 * 60 * 1000;
 const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
 const DASHBOARD_URL = "https://controle-ronda.suporte04.workers.dev";
 const RESEND_API_KEY_FALLBACK = Deno.env.get("RESEND_API_KEY") || "";
+const MAX_PHOTOS = 40;
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Início de Ronda",
@@ -1008,6 +1009,47 @@ Deno.serve(async (req) => {
 
     console.log(`[main] SETORES to process:`, SETORES.map((s) => s.key));
 
+    // ── MODO TESTE: email leve (sem fotos/PDF) para validar Resend + destinatários ──
+    if (modo === "teste") {
+      const htmlTeste = `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:8px;overflow:hidden">
+  <tr><td style="background:#DC2626;padding:20px 28px;font-size:18px;font-weight:bold;color:#fff">BA Elétrica — Teste de Envio</td></tr>
+  <tr><td style="padding:28px">
+    <p style="font-size:14px;color:#0B1120;margin:0 0 12px">Olá, Gestor.</p>
+    <p style="font-size:14px;color:#475569;margin:0 0 16px">Este é um <strong>e-mail de teste</strong> do sistema de Controle de Ronda.</p>
+    <table width="100%" style="background:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0"><tr><td style="padding:16px">
+      <p style="font-size:12px;color:#64748B;margin:0">Registros encontrados: <strong style="color:#0B1120">${rows.length}</strong></p>
+      <p style="font-size:12px;color:#64748B;margin:4px 0 0">Destinatários: <strong style="color:#0B1120">${recipients.join(", ")}</strong></p>
+      <p style="font-size:12px;color:#64748B;margin:4px 0 0">Período: <strong style="color:#0B1120">${periodo}</strong></p>
+    </td></tr></table>
+  </td></tr>
+  <tr><td style="background:#F1F5F9;padding:14px 28px;font-size:11px;color:#94A3B8;border-top:1px solid #E2E8F0">
+    E-mail automático — Sistema de Controle de Ronda — BA Elétrica
+  </td></tr>
+</table></td></tr></table></body></html>`;
+
+      let result;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          result = await sendResend(recipients, `BA Elétrica — Teste de Envio (${periodo})`, htmlTeste, []);
+          break;
+        } catch (e: any) {
+          if (attempt < 3) await new Promise((r) => setTimeout(r, 3000));
+          else throw e;
+        }
+      }
+
+      console.log(`[main] ✅ TESTE OK: id=${(result as any)?.id} rows=${rows.length} recipients=${recipients.length}`);
+      return new Response(
+        JSON.stringify({ ok: true, modo: "teste", rows: rows.length, recipients, id: (result as any)?.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+
+    // ── MODO DIÁRIO: full processing com fotos + PDF ──
     const attachments: { filename: string; content: string }[] = [];
     let totalRegistros = 0;
     let rondaIdx = 0;
@@ -1020,22 +1062,25 @@ Deno.serve(async (req) => {
       console.log(`[main] setor=${setor.key} match="${setor.match}" rows=${setorRows.length}`);
       if (setorRows.length === 0) continue;
 
+      // Limitar a MAX_PHOTOS para não estourar memória do worker
+      const limitedRows = setorRows.slice(0, MAX_PHOTOS);
+
       // Download photos ONLY for this setor's rows
       const photoMap = new Map<string, string | null>();
-      console.log(`[main] downloading ${setorRows.length} photos for ${setor.key}...`);
+      console.log(`[main] downloading ${limitedRows.length} photos (limit=${MAX_PHOTOS}) for ${setor.key}...`);
       let photosOk = 0;
       let photosFail = 0;
-      for (let i = 0; i < setorRows.length; i++) {
-        const r = setorRows[i];
+      for (let i = 0; i < limitedRows.length; i++) {
+        const r = limitedRows[i];
         const b64 = await fetchPhotoAsBase64(r.foto_url, SUPABASE_URL, SERVICE_KEY);
         photoMap.set(r.id, b64);
         if (b64) photosOk++; else photosFail++;
       }
       console.log(`[main] photos ${setor.key} done: ${photosOk} ok, ${photosFail} failed`);
 
-      // Fetch avatars ONLY for this setor's users
+      // Fetch avatars ONLY for limited setor's users
       const uniqueAvatarPaths = new Map<string, string>();
-      for (const r of setorRows) {
+      for (const r of limitedRows) {
         if (r.avatar_url && !uniqueAvatarPaths.has(r.user_id)) {
           uniqueAvatarPaths.set(r.user_id, r.avatar_url);
         }
@@ -1046,7 +1091,7 @@ Deno.serve(async (req) => {
         avatarMap.set(userId, b64);
       }
 
-      // Attach photos/avatars to setor rows
+      // Attach photos/avatars to ALL setor rows (excedentes ficam sem foto)
       for (const r of setorRows) {
         r._photoBase64 = photoMap.get(r.id) ?? null;
         r._avatarBase64 = avatarMap.get(r.user_id) ?? null;
