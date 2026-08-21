@@ -487,49 +487,113 @@ function buildPdfHtml(rows, rondas, periodo, photoMap, setorKey, setorLabel) {
 
   var setorColor = setorKey === "CD" ? "#0EA5E9" : "#F59E0B";
 
+  function getSetorBadgeColor(setor) {
+    var s = (setor || "").toUpperCase();
+    if (s.indexOf("CD") >= 0) return "#0EA5E9";
+    if (s.indexOf("LOJA") >= 0) return "#F59E0B";
+    if (s.indexOf("TI") >= 0 || s.indexOf("DEPARTAMENTO") >= 0) return "#A855F7";
+    if (s.indexOf("GESTOR") >= 0) return "#12B984";
+    return "#64748B";
+  }
+
+  function getAccentColor(tipo) {
+    if (tipo === "check_in") return "#29A154";
+    if (tipo === "check_out_2") return "#D98C1A";
+    return "#D4261F";
+  }
+
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
-    'body{font-family:Arial,sans-serif;margin:0;padding:20px;color:#0B1120}' +
-    '.header{background:#DC2626;color:white;padding:20px 28px;border-radius:6px 6px 0 0}' +
-    '.header h1{margin:0;font-size:22px}' +
-    '.header .sub{color:#FCA5A5;font-size:12px}' +
-    '.card{border:1px solid #E2E8F0;border-radius:6px;padding:16px;margin:12px 0;background:#F8FAFC}' +
-    '.stats{display:flex;gap:12px;margin:16px 0}' +
-    '.stat{flex:1;text-align:center;padding:12px;border:1px solid #E2E8F0;border-radius:6px;background:white}' +
-    '.stat .val{font-size:24px;font-weight:bold}' +
-    '.stat .lbl{font-size:11px;color:#64748B}' +
-    'table{width:100%;border-collapse:collapse;margin:12px 0}' +
-    'th{background:#1E2B54;color:white;padding:8px;text-align:left;font-size:11px}' +
-    'td{padding:6px 8px;border-bottom:1px solid #E2E8F0;font-size:12px}' +
-    'tr:nth-child(even){background:#F5F7FA}' +
-    '.badge{background:' + setorColor + ';color:white;padding:2px 8px;border-radius:4px;font-size:11px}' +
-    '.pgrid{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}' +
-    '.pcard{width:48%;border:1px solid #E0E6ED;border-radius:6px;overflow:hidden}' +
-    '.pcard img{width:100%;height:180px;object-fit:cover}' +
-    '.pcard .cap{background:#1E2B54;color:white;padding:6px 10px;font-size:11px}' +
-    '.obs{background:#FCF3F3;border-left:4px solid #DC2626;padding:12px;margin:12px 0;border-radius:0 6px 6px 0}' +
-    '.obst{font-weight:bold;color:#DC2626;font-size:12px}' +
-    '.rheader{background:#1E2B54;color:white;padding:10px 14px;border-radius:6px;margin:16px 0 8px}' +
-    '.footer{text-align:center;color:#94A3B8;font-size:10px;margin-top:24px;border-top:1px solid #E2E8F0;padding-top:12px}' +
+    '@page{margin:0}' +
+    'body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:0;color:#121726;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.cover-accent{height:10px;background:#D4261F;width:100%}' +
+    '.cover-header{padding:24px 32px 16px;display:flex;align-items:center;gap:16px}' +
+    '.cover-header img{height:50px}' +
+    '.cover-header .brand{font-size:22px;font-weight:bold;color:#D4261F}' +
+    '.cover-header .subtitle{font-size:11px;color:#1E2B54;margin-top:2px}' +
+    '.cover-header .subtitle2{font-size:9px;color:#737A87;margin-top:1px}' +
+    '.divider-red{height:2px;background:#D4261F;margin:0 32px}' +
+    '.divider-gray{height:0.5px;background:#D4DBE6;margin:0 32px 16px}' +
+    '.info-card{margin:0 32px 16px;border:1px solid #E0E6ED;background:#F5F8FA;padding:14px 18px;position:relative;border-left:4px solid #D4261F}' +
+    '.info-card .label{font-size:7px;font-weight:bold;color:#737A87;text-transform:uppercase;letter-spacing:0.5px}' +
+    '.info-card .value{font-size:10px;font-weight:bold;color:#121726;margin-top:2px}' +
+    '.info-card .value-red{font-size:14px;font-weight:bold;color:#D4261F}' +
+    '.info-row{display:flex;gap:40px}' +
+    '.info-col{flex:1}' +
+    '.section-title{font-size:11px;font-weight:bold;color:#D4261F;text-transform:uppercase;letter-spacing:0.5px;margin:20px 32px 8px;padding-bottom:4px;border-bottom:1.5px solid #D4261F}' +
+    '.stats-row{display:flex;gap:8px;margin:0 32px 16px}' +
+    '.stat-card{flex:1;border:1px solid #E0E6ED;background:white;padding:0;text-align:center;overflow:hidden}' +
+    '.stat-card .accent-bar{height:3px;width:100%}' +
+    '.stat-card .val{font-size:20px;font-weight:bold;margin:8px 0 2px}' +
+    '.stat-card .lbl{font-size:6px;font-weight:bold;color:#737A87;text-transform:uppercase;letter-spacing:0.3px;padding-bottom:8px}' +
+    'table{width:100%;border-collapse:collapse}' +
+    'th{background:#1E2B54;color:white;padding:6px 8px;text-align:left;font-size:7px;font-weight:bold;text-transform:uppercase;letter-spacing:0.3px}' +
+    'td{padding:5px 8px;border-bottom:0.5px solid #E0E6ED;font-size:8px;color:#121726}' +
+    'tr:nth-child(even){background:#F5F8FA}' +
+    '.badge{display:inline-block;background:' + setorColor + ';color:white;padding:2px 8px;border-radius:2px;font-size:7px;font-weight:bold}' +
+    '.row-accent{width:2px;display:inline-block;margin-right:4px;border-radius:1px}' +
+    '.ronda-header{background:#1E2B54;color:white;padding:10px 16px;margin:20px 32px 0}' +
+    '.ronda-header .title{font-size:11px;font-weight:bold}' +
+    '.ronda-header .meta{font-size:8px;color:#D1D5EB;margin-top:2px}' +
+    '.photo-grid{display:flex;flex-wrap:wrap;gap:10px;margin:8px 32px 16px}' +
+    '.photo-card{width:calc(50% - 5px);border:1px solid #E0E6ED;overflow:hidden;background:white}' +
+    '.photo-card img{width:100%;height:180px;object-fit:contain;background:#F5F7FA;display:block}' +
+    '.photo-card .no-photo{height:180px;background:#F5F7FA;display:flex;align-items:center;justify-content:center;color:#94A3B8;font-size:9px}' +
+    '.photo-caption{position:relative}' +
+    '.photo-caption .accent-line{height:2px;width:100%}' +
+    '.photo-caption .cap-bg{background:#1E2B54;padding:6px 10px;color:white}' +
+    '.photo-caption .cap-tipo{font-size:8px;font-weight:bold}' +
+    '.photo-caption .cap-times{display:flex;justify-content:space-between;font-size:6.5px;color:#CCD5EB;margin-top:2px}' +
+    '.obs-block{margin:0 32px 16px;border:0.8px solid #D4261F;background:#FCECEC;padding:0;position:relative}' +
+    '.obs-block .obs-accent{position:absolute;left:0;top:0;bottom:0;width:4px;background:#D4261F}' +
+    '.obs-block .obs-header{padding:8px 12px 4px 16px;font-size:8px;font-weight:bold;color:#D4261F}' +
+    '.obs-block .obs-meta{font-size:7px;color:#737A87;font-weight:normal;margin-left:8px}' +
+    '.obs-block .obs-body{padding:0 12px 10px 16px;font-size:9px;color:#121726;line-height:1.4}' +
+    '.ronda-sep{height:1px;background:#D4DBE6;margin:16px 32px}' +
+    '.page-footer{margin-top:20px;border-top:0.5px solid #D4DBE6;padding:8px 32px;display:flex;justify-content:space-between;font-size:6px;color:#737A87}' +
+    '.page-footer .conf{font-weight:bold;color:#D4261F;font-size:7px}' +
     '</style></head><body>';
 
-  html += '<div class="header"><div style="display:flex;justify-content:space-between;align-items:center">' +
-    '<h1>BA Elétrica</h1><span class="sub">Sistema de Controle de Ronda</span></div></div>';
+  // ── COVER HEADER ──
+  html += '<div class="cover-accent"></div>';
+  html += '<div class="cover-header">';
+  html += '<img src="' + CONFIG.DASHBOARD_URL + '/logo.png" onerror="this.style.display=\'none\'" />';
+  html += '<div><div class="brand">BA ELÉTRICA</div>' +
+    '<div class="subtitle">Sistema de Controle de Ronda</div>' +
+    '<div class="subtitle2">Folha Oficial de Registro e Auditoria</div></div>';
+  html += '</div>';
 
-  html += '<div class="card"><div style="display:flex;justify-content:space-between">' +
-    '<div><strong>Período:</strong> ' + periodo + '</div>' +
-    '<div><strong>Emitido:</strong> ' + fmtManaus(new Date()) + '</div>' +
-    '<div><strong>Total:</strong> <span style="color:#DC2626;font-size:18px">' + rows.length + '</span></div>' +
-    '</div></div>';
+  html += '<div class="divider-red"></div>';
+  html += '<div class="divider-gray"></div>';
 
-  html += '<div class="stats">' +
-    '<div class="stat"><div class="val" style="color:#29A154">' + checkIns + '</div><div class="lbl">INÍCIOS</div></div>' +
-    '<div class="stat"><div class="val" style="color:#D98C1A">' + checkOuts + '</div><div class="lbl">FINAIS</div></div>' +
-    '<div class="stat"><div class="val" style="color:#DC2626">' + Object.keys(uniqueUsers).length + '</div><div class="lbl">COLABORADORES</div></div>' +
-    '<div class="stat"><div class="val" style="color:#1E2B54">' + Object.keys(uniqueSetores).length + '</div><div class="lbl">SETORES</div></div>' +
-    '</div>';
+  // ── INFO CARD ──
+  html += '<div class="info-card"><div class="info-row">';
+  html += '<div class="info-col"><div class="label">Período do Relatório</div><div class="value">' + periodo + '</div></div>';
+  html += '<div class="info-col"><div class="label">Emitido Em</div><div class="value">' + fmtManaus(new Date()) + '</div></div>';
+  html += '<div class="info-col" style="text-align:right"><div class="label">Total de Registros</div><div class="value-red">' + rows.length + '</div></div>';
+  html += '</div></div>';
 
-  html += '<h3 style="color:#1E2B54;border-bottom:2px solid #DC2626;padding-bottom:6px">REGISTROS</h3>' +
-    '<table><tr><th>#</th><th>COLABORADOR</th><th>SETOR</th><th>TIPO</th><th>DATA</th><th>HOR. FOTO</th><th>HOR. ENVIO</th></tr>';
+  // ── STATS ──
+  html += '<div class="section-title">Resumo Operacional</div>';
+  html += '<div class="stats-row">';
+
+  html += '<div class="stat-card"><div class="accent-bar" style="background:#29A154"></div>' +
+    '<div class="val" style="color:#29A154">' + checkIns + '</div><div class="lbl">Inícios</div></div>';
+
+  html += '<div class="stat-card"><div class="accent-bar" style="background:#D98C1A"></div>' +
+    '<div class="val" style="color:#D98C1A">' + checkOuts + '</div><div class="lbl">Finais</div></div>';
+
+  html += '<div class="stat-card"><div class="accent-bar" style="background:#D4261F"></div>' +
+    '<div class="val" style="color:#D4261F">' + Object.keys(uniqueUsers).length + '</div><div class="lbl">Colaboradores</div></div>';
+
+  html += '<div class="stat-card"><div class="accent-bar" style="background:#1E2B54"></div>' +
+    '<div class="val" style="color:#1E2B54">' + Object.keys(uniqueSetores).length + '</div><div class="lbl">Setores</div></div>';
+
+  html += '</div>';
+
+  // ── TABLE ──
+  html += '<div style="margin:0 32px">';
+  html += '<table>';
+  html += '<tr><th style="width:30px">#</th><th style="width:110px">Colaborador</th><th style="width:65px">Setor</th><th style="width:100px">Tipo de Ronda</th><th style="width:62px">Data</th><th style="width:80px">Hor. Foto</th><th style="width:80px">Hor. Envio</th></tr>';
 
   rows.forEach(function (r, i) {
     var tipo = TIPO_LABEL[r.tipo_acao] || r.tipo_acao;
@@ -537,49 +601,80 @@ function buildPdfHtml(rows, rondas, periodo, photoMap, setorKey, setorLabel) {
     var hEnvio = fmtManaus(new Date(r.horario_acao));
     var envioParts = hEnvio.split(" ");
     var fotoParts = hFoto.split(" ");
+    var accentColor = getAccentColor(r.tipo_acao);
+    var badgeColor = getSetorBadgeColor(r.setor);
 
-    html += '<tr><td>' + (i + 1) + '</td>' +
-      '<td>' + (r.nome || "—") + '</td>' +
-      '<td><span class="badge">' + (r.setor || "—") + '</span></td>' +
-      '<td>' + tipo + '</td>' +
-      '<td>' + envioParts[0] + '</td>' +
-      '<td>' + fotoParts[1] + '</td>' +
-      '<td>' + envioParts[1] + '</td></tr>';
+    html += '<tr>';
+    html += '<td><span class="row-accent" style="background:' + accentColor + '"></span>' + (i + 1) + '</td>';
+    html += '<td>' + (r.nome || "—") + '</td>';
+    html += '<td><span class="badge" style="background:' + badgeColor + '">' + (r.setor || "—") + '</span></td>';
+    html += '<td>' + tipo + '</td>';
+    html += '<td>' + envioParts[0] + '</td>';
+    html += '<td>' + fotoParts[1] + '</td>';
+    html += '<td>' + envioParts[1] + '</td>';
+    html += '</tr>';
   });
-  html += '</table>';
+  html += '</table></div>';
 
+  // ── RONDAS ──
   if (rondas.length > 0) {
-    html += '<h3 style="color:#1E2B54;border-bottom:2px solid #DC2626;padding-bottom:6px;margin-top:24px">DETALHAMENTO DAS RONDAS</h3>';
+    html += '<div style="page-break-before:always"></div>';
+    html += '<div class="section-title" style="margin-top:32px">Detalhamento das Rondas</div>';
+    html += '<div style="font-size:8px;color:#737A87;margin:0 32px 12px">Registro fotográfico completo por ronda — ' + rondas.length + ' ronda(s) no período de ' + periodo + '</div>';
 
     rondas.forEach(function (ronda, ri) {
-      html += '<div class="rheader"><strong>RONDA ' + (ri + 1) + ' — ' + (ronda.nome || "—") + '</strong>' +
-        ' | ' + (ronda.setor || "—") + ' | ' + fmtManaus(new Date(ronda.inicio)) + '</div>';
+      // Ronda header
+      html += '<div class="ronda-header">';
+      html += '<div class="title">RONDA ' + (ri + 1) + ' — ' + (ronda.nome || "—") + '</div>';
+      html += '<div class="meta">' + (ronda.setor || "—") + ' · ' + fmtManaus(new Date(ronda.inicio)) + ' a ' + fmtManaus(new Date(ronda.fim)) + '</div>';
+      html += '</div>';
 
-      html += '<div class="pgrid">';
+      // Photo grid
+      html += '<div class="photo-grid">';
       ronda.passos.forEach(function (passo) {
         var b64 = photoMap[passo.id];
         var tipo = TIPO_LABEL[passo.tipo] || passo.tipo;
-        html += '<div class="pcard">';
+        var accentColor = getAccentColor(passo.tipo);
+
+        html += '<div class="photo-card">';
         if (b64) {
           html += '<img src="data:image/jpeg;base64,' + b64 + '" />';
         } else {
-          html += '<div style="height:180px;background:#F5F7FA;display:flex;align-items:center;justify-content:center;color:#94A3B8">Foto indisponível</div>';
+          html += '<div class="no-photo">Foto indisponível</div>';
         }
-        html += '<div class="cap"><strong>' + tipo + '</strong><br>' +
-          'Enviado: ' + fmtManaus(new Date(passo.horario_foto)).split(" ")[1] +
-          ' | Registro: ' + fmtManaus(new Date(passo.horario_acao)).split(" ")[1] +
-          '</div></div>';
+        html += '<div class="photo-caption">';
+        html += '<div class="accent-line" style="background:' + accentColor + '"></div>';
+        html += '<div class="cap-bg">';
+        html += '<div class="cap-tipo">' + tipo + '</div>';
+        html += '<div class="cap-times">';
+        html += '<span>Enviado: ' + fmtManaus(new Date(passo.horario_foto)).split(" ")[1] + '</span>';
+        html += '<span>Registro: ' + fmtManaus(new Date(passo.horario_acao)).split(" ")[1] + '</span>';
+        html += '</div></div></div>';
+        html += '</div>';
       });
       html += '</div>';
 
+      // Observação
       if (ronda.observacoes && ronda.observacoes.trim()) {
-        html += '<div class="obs"><div class="obst">OBSERVAÇÃO</div>' +
-          '<div style="font-size:12px;color:#475569;margin-top:4px">' + ronda.observacoes + '</div></div>';
+        html += '<div class="obs-block"><div class="obs-accent"></div>';
+        html += '<div class="obs-header">OBSERVAÇÃO<span class="obs-meta">' + (ronda.nome || "—") + ' · ' + fmtManaus(new Date(ronda.fim)) + '</span></div>';
+        html += '<div class="obs-body">' + ronda.observacoes + '</div>';
+        html += '</div>';
+      }
+
+      if (ri < rondas.length - 1) {
+        html += '<div class="ronda-sep"></div>';
       }
     });
   }
 
-  html += '<div class="footer">BA Elétrica — Sistema de Controle de Ronda<br>CONFIDENCIAL — Fuso horário: America/Manaus (UTC-4)</div>';
+  // ── FOOTER ──
+  html += '<div class="page-footer">';
+  html += '<span>BA Elétrica — Sistema de Controle de Ronda</span>';
+  html += '<span class="conf">CONFIDENCIAL</span>';
+  html += '<span>Fuso horário: America/Manaus (UTC-4)</span>';
+  html += '</div>';
+
   html += '</body></html>';
   return html;
 }
