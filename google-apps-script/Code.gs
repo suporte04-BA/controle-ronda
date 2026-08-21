@@ -35,8 +35,12 @@ var MANAUS_OFFSET_MS = -4 * 60 * 60 * 1000;
 // ═══════════════════════════════════════════════════════════════
 
 function doGet(e) {
-  var param = (e.parameter.setor || "").toUpperCase();
-  var periodo = e.parameter.periodo || null;
+  var param = "";
+  var periodo = null;
+  if (e && e.parameter) {
+    param = (e.parameter.setor || "").toUpperCase();
+    periodo = e.parameter.periodo || null;
+  }
 
   if (param !== "CD" && param !== "LOJA") {
     return ContentService.createTextOutput(
@@ -63,7 +67,10 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    var body = JSON.parse(e.postData.contents);
+    var body = {};
+    if (e && e.postData && e.postData.contents) {
+      body = JSON.parse(e.postData.contents);
+    }
     var param = (body.setor || "").toUpperCase();
     var periodo = body.periodo || null;
 
