@@ -11,9 +11,7 @@ var CONFIG = {
   SERVICE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDk4NTA0NCwiZXhwIjoyMDk2NTYxMDQ0fQ.eNPcY1o5vZqldGKQcOtHbiy5rXRswd8JwUyU5SJBdas",
   DASHBOARD_URL: "https://controle-ronda.suporte04.workers.dev",
   REPLY_TO: "suporte04@baeletrica.com.br",
-  MAX_PHOTOS: 40,
-  RESEND_API_KEY: "re_42X7YjrW_4yUdo8Xu9QetJGVUbfiDM3Ah",
-  EMAIL_FROM: "BA Elétrica <relatorio@baeletrica.com.br>"
+  MAX_PHOTOS: 40
 };
 
 var TIPO_LABEL = {
@@ -156,51 +154,21 @@ function sendReport(setor, periodoParam) {
   var html = buildEmailHtml(win.periodo, setorRows.length, ciclos, agentesCount, setorLabel, setor);
 
   var subject = "BA Elétrica — Relatório de Ronda (" + setor + ") (" + win.periodo + ")";
+  var allAttachments = [pdfBlob].concat(jpgAttachments);
 
   var result = null;
   var lastErr = null;
   for (var attempt = 1; attempt <= 3; attempt++) {
     try {
-      var attachmentsPayload = [];
-      attachmentsPayload.push({
-        filename: "Relatorio_" + setor + "_GUARDAS.pdf",
-        content: Utilities.base64Encode(pdfBlob.getBytes())
+      GmailApp.sendEmail(recipients.join(","), subject, "Relatório de Ronda em anexo.", {
+        htmlBody: html,
+        name: "BA Elétrica",
+        replyTo: CONFIG.REPLY_TO,
+        attachments: allAttachments
       });
-      jpgAttachments.forEach(function (jpg) {
-        attachmentsPayload.push({
-          filename: jpg.getName(),
-          content: Utilities.base64Encode(jpg.getBytes())
-        });
-      });
-
-      var payload = {
-        from: CONFIG.EMAIL_FROM,
-        to: recipients,
-        subject: subject,
-        html: html,
-        reply_to: CONFIG.REPLY_TO,
-        attachments: attachmentsPayload
-      };
-
-      var res = UrlFetchApp.fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + CONFIG.RESEND_API_KEY,
-          "Content-Type": "application/json"
-        },
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      });
-
-      var code = res.getResponseCode();
-      var body = JSON.parse(res.getContentText());
-      if (code >= 200 && code < 300) {
-        Logger.log("[main] Email enviado tentativa " + attempt + " id=" + body.id);
-        result = { ok: true, attempt: attempt, id: body.id };
-        break;
-      } else {
-        throw new Error("Resend " + code + ": " + (body.message || JSON.stringify(body)));
-      }
+      Logger.log("[main] Email enviado tentativa " + attempt);
+      result = { ok: true, attempt: attempt };
+      break;
     } catch (e) {
       lastErr = e;
       Logger.log("[main] Tentativa " + attempt + " falhou: " + e.message);

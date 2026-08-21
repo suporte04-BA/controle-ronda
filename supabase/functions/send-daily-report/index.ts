@@ -19,7 +19,7 @@ const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
 const DASHBOARD_URL = "https://controle-ronda.suporte04.workers.dev";
 const RESEND_API_KEY_FALLBACK = Deno.env.get("RESEND_API_KEY") || "";
 const MAX_PHOTOS = 40;
-const GAS_FALLBACK_URL = "https://script.google.com/macros/s/AKfycbziQDc7fresaGJ0nqiuralLRXbVIcHunTuGImKvS-T76qctYaE7GXOzheUQ9uYsPqha/exec";
+const GAS_FALLBACK_URL = "https://script.google.com/macros/s/AKfycbw-8bPCCc2o3q7BKvo9W0xxdmKHY9XNCNp48qBHZFu20WRY3glozCG04eZrCOgf78_f/exec";
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Início de Ronda",
