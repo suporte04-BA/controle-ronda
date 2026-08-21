@@ -11,7 +11,9 @@ var CONFIG = {
   SERVICE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDk4NTA0NCwiZXhwIjoyMDk2NTYxMDQ0fQ.eNPcY1o5vZqldGKQcOtHbiy5rXRswd8JwUyU5SJBdas",
   DASHBOARD_URL: "https://controle-ronda.suporte04.workers.dev",
   REPLY_TO: "suporte04@baeletrica.com.br",
-  MAX_PHOTOS: 40
+  MAX_PHOTOS: 40,
+  RESEND_API_KEY: "re_42X7YjrW_4yUdo8Xu9QetJGVUbfiDM3Ah",
+  EMAIL_FROM: "BA Elétrica <relatorio@baeletrica.com.br>"
 };
 
 var TIPO_LABEL = {
@@ -151,24 +153,54 @@ function sendReport(setor, periodoParam) {
   setorRows.forEach(function (r) { agentesMap[r.user_id] = true; });
   var agentesCount = Object.keys(agentesMap).length;
 
-  var html = buildEmailHtml(win.periodo, setorRows.length, ciclos, agentesCount, setorLabel);
+  var html = buildEmailHtml(win.periodo, setorRows.length, ciclos, agentesCount, setorLabel, setor);
 
   var subject = "BA Elétrica — Relatório de Ronda (" + setor + ") (" + win.periodo + ")";
-  var allAttachments = [pdfBlob].concat(jpgAttachments);
 
   var result = null;
   var lastErr = null;
   for (var attempt = 1; attempt <= 3; attempt++) {
     try {
-      GmailApp.sendEmail(recipients.join(","), subject, "Relatório de Ronda em anexo.", {
-        htmlBody: html,
-        name: "BA Elétrica",
-        replyTo: CONFIG.REPLY_TO,
-        attachments: allAttachments
+      var attachmentsPayload = [];
+      attachmentsPayload.push({
+        filename: "Relatorio_" + setor + "_GUARDAS.pdf",
+        content: Utilities.base64Encode(pdfBlob.getBytes())
       });
-      Logger.log("[main] Email enviado tentativa " + attempt);
-      result = { ok: true, attempt: attempt };
-      break;
+      jpgAttachments.forEach(function (jpg) {
+        attachmentsPayload.push({
+          filename: jpg.getName(),
+          content: Utilities.base64Encode(jpg.getBytes())
+        });
+      });
+
+      var payload = {
+        from: CONFIG.EMAIL_FROM,
+        to: recipients,
+        subject: subject,
+        html: html,
+        reply_to: CONFIG.REPLY_TO,
+        attachments: attachmentsPayload
+      };
+
+      var res = UrlFetchApp.fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + CONFIG.RESEND_API_KEY,
+          "Content-Type": "application/json"
+        },
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+
+      var code = res.getResponseCode();
+      var body = JSON.parse(res.getContentText());
+      if (code >= 200 && code < 300) {
+        Logger.log("[main] Email enviado tentativa " + attempt + " id=" + body.id);
+        result = { ok: true, attempt: attempt, id: body.id };
+        break;
+      } else {
+        throw new Error("Resend " + code + ": " + (body.message || JSON.stringify(body)));
+      }
     } catch (e) {
       lastErr = e;
       Logger.log("[main] Tentativa " + attempt + " falhou: " + e.message);
@@ -577,7 +609,7 @@ function buildJpgAttachments(rondas, photoMap, setorKey) {
 // EMAIL HTML (idêntico ao Resend)
 // ═══════════════════════════════════════════════════════════════
 
-function buildEmailHtml(periodo, totalEventos, ciclos, agentes, setorLabel) {
+function buildEmailHtml(periodo, totalEventos, ciclos, agentes, setorLabel, setorKey) {
   var setorInfo = setorLabel
     ? '<tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará o <strong>PDF gerencial do setor ' + setorLabel + '</strong> (com evidências fotográficas e registro de rondas). O arquivo reflete fielmente os dados extraídos do sistema.</td></tr>'
     : '<tr><td style="font-size:14px;line-height:22px;color:#475569;padding:0 0 20px 0;font-family:Arial,Helvetica,sans-serif">Em anexo a este e-mail, você encontrará os <strong>PDFs gerenciais</strong> dos setores CD e LOJA.</td></tr>';
