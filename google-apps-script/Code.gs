@@ -8,7 +8,7 @@
 var CONFIG = {
   SUPABASE_URL: "https://rdmbayprbfqbjhfqcasp.supabase.co",
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODUwNDQsImV4cCI6MjA5NjU2MTA0NH0.GqxQya-VaOwqWM2_MFx4E3nWdzbXHtTlYKonMOw8Q_w",
-  SERVICE_KEY: "COLE_AQUI_SUA_SERVICE_ROLE_KEY",
+  SERVICE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbWJheXByYmZxYmpoZnFjYXNwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDk4NTA0NCwiZXhwIjoyMDk2NTYxMDQ0fQ.eNPcY1o5vZqldGKQcOtHbiy5rXRswd8JwUyU5SJBdas",
   DASHBOARD_URL: "https://controle-ronda.suporte04.workers.dev",
   REPLY_TO: "suporte04@baeletrica.com.br",
   MAX_PHOTOS: 40
