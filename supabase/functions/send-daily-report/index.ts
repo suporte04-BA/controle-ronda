@@ -19,6 +19,7 @@ const CORPORATE_DOMAINS = ["baeletrica.com", "baeletrica.com.br"];
 const DASHBOARD_URL = "https://controle-ronda.suporte04.workers.dev";
 const RESEND_API_KEY_FALLBACK = Deno.env.get("RESEND_API_KEY") || "";
 const MAX_PHOTOS = 40;
+const GAS_FALLBACK_URL = "https://script.google.com/macros/s/AKfycbyGy8uvHrF3cpCSbjTiATIPSq9SHFULwtOMYM2c6Lch6-SiYww0ZLrsmjK069LSnN4A/exec";
 
 const TIPO_LABEL: Record<string, string> = {
   check_in: "Início de Ronda",
@@ -1169,7 +1170,32 @@ Deno.serve(async (req) => {
       }
     }
     if (!result) {
-      throw new Error(`Falha ao enviar email após 3 tentativas: ${lastErr?.message}`);
+      // ── FALLBACK: Se Resend falhar, chama Google Apps Script ──
+      console.warn(`[main] ⚠️ Resend falhou. Tentando fallback via GAS...`);
+      try {
+        const gasUrl = setorParam
+          ? `${GAS_FALLBACK_URL}?setor=${setorParam}`
+          : `${GAS_FALLBACK_URL}?setor=CD`;
+        const gasRes = await fetch(gasUrl, { signal: AbortSignal.timeout(120000) });
+        const gasData = await gasRes.json();
+        console.log(`[main] ✅ GAS fallback OK:`, gasData);
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            modo,
+            setor: setorParam,
+            periodo,
+            count: rows.length,
+            recipients,
+            fallback: "gas",
+            gasResult: gasData,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+        );
+      } catch (gasErr: any) {
+        console.error(`[main] ❌ GAS fallback também falhou:`, gasErr?.message);
+        throw new Error(`Resend falhou: ${lastErr?.message}. GAS fallback falhou: ${gasErr?.message}`);
+      }
     }
 
     console.log(`[main] ✅ SUCCESS: email sent. id=${(result as any)?.id} recipients=${recipients.length}`);
