@@ -957,7 +957,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const modo: "teste" | "diario" = body?.modo === "diario" ? "diario" : "teste";
+    const modo = "diario";
     const periodoParam = body?.periodo as string | undefined;
     const setorParam = (body?.setor as string | undefined)?.toUpperCase() ?? null;
 
@@ -981,9 +981,6 @@ Deno.serve(async (req) => {
 
     // ── Fetch recipients FIRST (before expensive photo downloads) ──
     let recipients = await fetchRecipientEmails(admin, setorParam);
-    if (modo === "teste") {
-      recipients = recipients.filter((e) => e === "suporte04@baeletrica.com.br");
-    }
     console.log(`[main] recipients after filter:`, recipients);
     if (!recipients.length) {
       console.warn(`[main] ⚠️ NO RECIPIENTS FOUND for setor=${setorParam}. Returning early.`);
@@ -1009,46 +1006,6 @@ Deno.serve(async (req) => {
       : ALL_SETORES;
 
     console.log(`[main] SETORES to process:`, SETORES.map((s) => s.key));
-
-    // ── MODO TESTE: email leve (sem fotos/PDF) para validar Resend + destinatários ──
-    if (modo === "teste") {
-      const htmlTeste = `<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
-<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:8px;overflow:hidden">
-  <tr><td style="background:#DC2626;padding:20px 28px;font-size:18px;font-weight:bold;color:#fff">BA Elétrica — Teste de Envio</td></tr>
-  <tr><td style="padding:28px">
-    <p style="font-size:14px;color:#0B1120;margin:0 0 12px">Olá, Gestor.</p>
-    <p style="font-size:14px;color:#475569;margin:0 0 16px">Este é um <strong>e-mail de teste</strong> do sistema de Controle de Ronda.</p>
-    <table width="100%" style="background:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0"><tr><td style="padding:16px">
-      <p style="font-size:12px;color:#64748B;margin:0">Registros encontrados: <strong style="color:#0B1120">${rows.length}</strong></p>
-      <p style="font-size:12px;color:#64748B;margin:4px 0 0">Destinatários: <strong style="color:#0B1120">${recipients.join(", ")}</strong></p>
-      <p style="font-size:12px;color:#64748B;margin:4px 0 0">Período: <strong style="color:#0B1120">${periodo}</strong></p>
-    </td></tr></table>
-  </td></tr>
-  <tr><td style="background:#F1F5F9;padding:14px 28px;font-size:11px;color:#94A3B8;border-top:1px solid #E2E8F0">
-    E-mail automático — Sistema de Controle de Ronda — BA Elétrica
-  </td></tr>
-</table></td></tr></table></body></html>`;
-
-      let result;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          result = await sendResend(recipients, `BA Elétrica — Teste de Envio (${periodo})`, htmlTeste, []);
-          break;
-        } catch (e: any) {
-          if (attempt < 3) await new Promise((r) => setTimeout(r, 3000));
-          else throw e;
-        }
-      }
-
-      console.log(`[main] ✅ TESTE OK: id=${(result as any)?.id} rows=${rows.length} recipients=${recipients.length}`);
-      return new Response(
-        JSON.stringify({ ok: true, modo: "teste", rows: rows.length, recipients, id: (result as any)?.id }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-      );
-    }
 
     // ── MODO DIÁRIO: full processing com fotos + PDF ──
     const attachments: { filename: string; content: string }[] = [];
