@@ -443,7 +443,6 @@ async function buildPdf(
       page.drawRectangle({ x: tableX, y: y - 4, width: tableW, height: rowH, color: lightGray });
     }
 
-    // Row left accent for check-ins
     if (r.tipo_acao === "check_in") {
       page.drawRectangle({
         x: tableX,
@@ -462,9 +461,8 @@ async function buildPdf(
       });
     }
 
-    // Separator line BEFORE cell content so badge covers it
-    y -= rowH;
-    lineH(tableX, tableX + tableW, y, 0.3, borderColor);
+    // Separator line drawn BEFORE cell content so badge covers it in SETOR column
+    lineH(tableX, tableX + tableW, y - rowH, 0.3, borderColor);
 
     x = tableX;
     for (let i = 0; i < cells.length; i++) {
@@ -474,19 +472,19 @@ async function buildPdf(
         const bandW = colWidths[i] - 4;
         page.drawRectangle({
           x: bandX,
-          y: y,
+          y: y - 4,
           width: bandW,
           height: rowH,
           color: rgb(sc.r, sc.g, sc.b),
           borderRadius: 2,
         });
-        draw(cells[i], bandX + 5, y + 6, 6.5, true, white);
+        draw(cells[i], bandX + 5, y + 1, 6.5, true, white);
       } else {
-        draw(cells[i], x + 6, y + 4, 7.5, false, darkText);
+        draw(cells[i], x + 6, y, 7.5, false, darkText);
       }
       x += colWidths[i];
     }
-    y -= 4;
+    y -= rowH + 4;
     rowIdx++;
   }
 
