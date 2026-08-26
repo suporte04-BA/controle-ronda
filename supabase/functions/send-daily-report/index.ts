@@ -462,29 +462,30 @@ async function buildPdf(
       });
     }
 
+    // Separator line BEFORE cell content so badge covers it
+    y -= rowH;
+    lineH(tableX, tableX + tableW, y, 0.3, borderColor);
+
     x = tableX;
     for (let i = 0; i < cells.length; i++) {
       if (i === 2) {
-        // Coluna SETOR: faixa de cor + texto em branco
         const sc = setorPdfColor(r.setor);
         const bandX = x + 4;
-        const bandW = colWidths[i] - 8;
+        const bandW = colWidths[i] - 4;
         page.drawRectangle({
           x: bandX,
-          y: y - 4,
+          y: y,
           width: bandW,
-          height: rowH - 2,
+          height: rowH,
           color: rgb(sc.r, sc.g, sc.b),
           borderRadius: 2,
         });
-        draw(cells[i], bandX + 5, y + 1, 6.5, true, white);
+        draw(cells[i], bandX + 5, y + 6, 6.5, true, white);
       } else {
-        draw(cells[i], x + 6, y, 7.5, false, darkText);
+        draw(cells[i], x + 6, y + 4, 7.5, false, darkText);
       }
       x += colWidths[i];
     }
-    y -= rowH;
-    lineH(tableX, tableX + tableW, y, 0.3, borderColor);
     y -= 4;
     rowIdx++;
   }
