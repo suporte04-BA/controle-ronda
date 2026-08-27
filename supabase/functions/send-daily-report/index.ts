@@ -738,16 +738,41 @@ function buildEmailHtml(
 }
 
 async function fetchRows(admin: any, fromIso: string, toIso: string) {
-  const [{ data: regs }, { data: profs }, { data: sets }] = await Promise.all([
-    admin
-      .from("registros_ponto")
-      .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
-      .gte("horario_acao", fromIso)
-      .lte("horario_acao", toIso)
-      .order("horario_acao", { ascending: true }),
-    admin.from("profiles").select("id,nome,email,setor_id,foto_url"),
-    admin.from("setores").select("id,nome"),
+  // Retry wrapper for transient Supabase API errors
+  async function queryWithRetry(label: string, queryFn: () => Promise<any>, retries = 2): Promise<any> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      const { data, error } = await queryFn();
+      if (!error) return data ?? [];
+      console.error(`[fetchRows] ${label} attempt ${attempt}/${retries} FAILED:`, error.message);
+      if (attempt < retries) await new Promise((r) => setTimeout(r, 500 * attempt));
+    }
+    console.warn(`[fetchRows] ${label} all retries exhausted, returning empty`);
+    return [];
+  }
+
+  const [regs, profs, sets] = await Promise.all([
+    queryWithRetry("registros_ponto", () =>
+      admin
+        .from("registros_ponto")
+        .select("id,user_id,tipo_acao,horario_acao,horario_foto,foto_url,observacoes")
+        .gte("horario_acao", fromIso)
+        .lte("horario_acao", toIso)
+        .order("horario_acao", { ascending: true })
+    ),
+    queryWithRetry("profiles", () =>
+      admin.from("profiles").select("id,nome,email,setor_id,foto_url")
+    ),
+    queryWithRetry("setores", () =>
+      admin.from("setores").select("id,nome")
+    ),
   ]);
+
+  console.log(`[fetchRows] raw: regs=${regs.length} profs=${profs.length} sets=${sets.length}`);
+
+  if (profs.length === 0 || sets.length === 0) {
+    console.error(`[fetchRows] CRITICAL: profiles or setores empty! profs=${profs.length} sets=${sets.length}`);
+  }
+
   const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
   const setMap = new Map((sets ?? []).map((s: any) => [s.id, s.nome]));
   return (regs ?? []).map((r: any) => {
@@ -1017,7 +1042,13 @@ Deno.serve(async (req) => {
         return s.includes(setor.match);
       });
       console.log(`[main] setor=${setor.key} match="${setor.match}" rows=${setorRows.length}`);
-      if (setorRows.length === 0) continue;
+      if (setorRows.length === 0) {
+        if (rows.length > 0) {
+          const setorValues = [...new Set(rows.map((r: any) => r.setor ?? "null"))];
+          console.warn(`[main] ⚠️ ${setor.key}: 0 rows matched but ${rows.length} total rows exist. Available setores:`, setorValues);
+        }
+        continue;
+      }
 
       // Limitar a MAX_PHOTOS para não estourar memória do worker
       const limitedRows = setorRows.slice(0, MAX_PHOTOS);
