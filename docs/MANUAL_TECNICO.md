@@ -1,21 +1,19 @@
 <div align="center">
-  <img src="../public/logo.png" alt="BA Elétrica" width="400"/>
+  <img src="../public/logo.png" alt="BA Eletrica" width="250"/>
   
-  # Manual Técnico — Sistema Controle de Ronda
+  # Manual Tecnico
   
-  **BA Elétrica — Sistema de Gestão e Auditoria de Rondas**
-  
-  ---
-  
-  | Campo | Valor |
-  |-------|-------|
-  | **Versão** | 1.0.0 |
-  | **Data** | 02 de Setembro de 2026 |
-  | **Classificação** | Documento Interno — CONFIDENCIAL |
-  | **Proprietário** | Equipe de Desenvolvimento BA Elétrica |
-  | **Contato** | suporte04@baeletrica.com.br |
+  ## Sistema Controle de Ronda
   
   ---
+  
+  **Versao 1.0.0** — 02 de Setembro de 2026
+  
+  Documento Interno — CONFIDENCIAL
+  
+  Equipe de Desenvolvimento BA Eletrica
+  
+  suporte04@baeletrica.com.br
 </div>
 
 <br/>

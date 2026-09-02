@@ -1,19 +1,56 @@
 /* ═══════════════════════════════════════════════════════════════
-   MANUAL TÉCNICO — BA ELÉTRICA
+   MANUAL TECNICO — BA ELETRICA
    Professional Technical Documentation CSS
-   ISO/IEC/IEEE 26514 Compliant Design
    ═══════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ── Page Setup ── */
-@page {
+/* ── Named Pages ── */
+@page cover {
   size: A4;
-  margin: 22mm 16mm 22mm 16mm;
+  margin: 0;
 }
 
-@page :first {
-  margin: 0;
+@page body {
+  size: A4;
+  margin: 25mm 20mm 25mm 20mm;
+
+  @top-left {
+    content: "Manual Tecnico — Controle de Ronda";
+    font-family: 'Inter', sans-serif;
+    font-size: 8pt;
+    font-weight: 500;
+    color: #94a3b8;
+    vertical-align: bottom;
+    padding-bottom: 6pt;
+    border-bottom: 0.5pt solid #e2e8f0;
+  }
+
+  @bottom-right {
+    content: counter(page);
+    font-family: 'Inter', sans-serif;
+    font-size: 8pt;
+    font-weight: 500;
+    color: #94a3b8;
+    vertical-align: top;
+    padding-top: 6pt;
+    border-top: 0.5pt solid #e2e8f0;
+  }
+
+  @bottom-left {
+    content: "BA Eletrica — Confidencial";
+    font-family: 'Inter', sans-serif;
+    font-size: 7pt;
+    color: #cbd5e1;
+    vertical-align: top;
+    padding-top: 6pt;
+  }
+}
+
+@page cover:first {
+  @top-left { content: none; }
+  @bottom-right { content: none; }
+  @bottom-left { content: none; }
 }
 
 /* ── Base Typography ── */
@@ -24,145 +61,131 @@ body {
   color: #1e293b;
   background: #ffffff;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* ── Cover Page ── */
 div[align="center"]:first-of-type {
+  page: cover;
   width: 210mm;
   height: 297mm;
-  margin: -22mm -16mm;
-  padding: 0;
-  background: linear-gradient(160deg, #0c1929 0%, #1a2744 40%, #0f1d32 100%);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   page-break-after: always;
-  position: relative;
-  overflow: hidden;
-}
-
-div[align="center"]:first-of-type::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 6px;
-  background: linear-gradient(90deg, #c21819 0%, #e53935 50%, #c21819 100%);
-}
-
-div[align="center"]:first-of-type::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 6px;
-  background: linear-gradient(90deg, #c21819 0%, #e53935 50%, #c21819 100%);
+  box-sizing: border-box;
+  background: #ffffff;
 }
 
 div[align="center"]:first-of-type img {
-  width: 280px;
-  margin-bottom: 30px;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+  width: 220px;
+  margin-bottom: 40px;
 }
 
 div[align="center"]:first-of-type h1 {
   border: none;
-  color: #ffffff;
-  font-size: 30pt;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin: 0 0 8px 0;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  background: none;
+  color: #0f172a;
+  font-size: 22pt;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  padding: 0;
+  letter-spacing: -0.3px;
 }
 
 div[align="center"]:first-of-type h2 {
   border: none;
-  color: #94a3b8;
-  font-size: 14pt;
+  background: none;
+  color: #64748b;
+  font-size: 11pt;
   font-weight: 400;
   margin: 0 0 40px 0;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  padding: 0;
+  letter-spacing: 0.5px;
 }
 
 div[align="center"]:first-of-type table {
-  width: 50%;
+  width: 45%;
   margin: 0 auto;
-  border: none;
+  border-collapse: collapse;
 }
 
 div[align="center"]:first-of-type table th {
-  background: rgba(255,255,255,0.08);
-  color: #94a3b8;
-  border: 1px solid rgba(255,255,255,0.1);
-  font-size: 8.5pt;
+  background: #f8fafc;
+  color: #64748b;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 8pt;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 8px 16px;
+  letter-spacing: 0.8px;
+  padding: 6px 12px;
+  text-align: left;
 }
 
 div[align="center"]:first-of-type table td {
-  background: rgba(255,255,255,0.04);
-  color: #e2e8f0;
-  border: 1px solid rgba(255,255,255,0.08);
-  font-size: 9.5pt;
-  padding: 8px 16px;
+  background: transparent;
+  color: #334155;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 9pt;
+  padding: 6px 12px;
 }
 
 /* ── Headings ── */
 h1 {
+  page: body;
   font-family: 'Inter', sans-serif;
-  font-size: 20pt;
+  font-size: 18pt;
   font-weight: 700;
   color: #c21819;
-  border-bottom: 3px solid #c21819;
-  padding-bottom: 8px;
+  border-bottom: 2px solid #c21819;
+  padding-bottom: 6px;
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   page-break-after: avoid;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
 }
 
 h2 {
   font-family: 'Inter', sans-serif;
-  font-size: 14pt;
+  font-size: 13pt;
   font-weight: 600;
   color: #0f172a;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 6px;
-  margin-top: 24px;
-  margin-bottom: 10px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 5px;
+  margin-top: 22px;
+  margin-bottom: 8px;
   page-break-after: avoid;
 }
 
 h3 {
   font-family: 'Inter', sans-serif;
-  font-size: 12pt;
+  font-size: 11pt;
   font-weight: 600;
   color: #1e3a5f;
-  margin-top: 18px;
-  margin-bottom: 8px;
+  margin-top: 16px;
+  margin-bottom: 6px;
   page-break-after: avoid;
 }
 
 h4 {
   font-family: 'Inter', sans-serif;
-  font-size: 10.5pt;
+  font-size: 10pt;
   font-weight: 600;
   color: #334155;
-  margin-top: 14px;
-  margin-bottom: 6px;
+  margin-top: 12px;
+  margin-bottom: 4px;
   page-break-after: avoid;
 }
 
 /* ── Body Text ── */
 p {
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
   text-align: left;
 }
 
@@ -183,25 +206,24 @@ a {
 
 /* ── Code ── */
 code {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 8.5pt;
   background: #f1f5f9;
   color: #be185d;
-  padding: 2px 5px;
+  padding: 1px 4px;
   border-radius: 3px;
-  border: 1px solid #e2e8f0;
 }
 
 pre {
   background: #0f172a;
   color: #e2e8f0;
-  padding: 16px 20px;
-  border-radius: 8px;
+  padding: 14px 18px;
+  border-radius: 6px;
   overflow-x: auto;
-  font-size: 8.5pt;
-  line-height: 1.5;
-  border-left: 4px solid #c21819;
-  margin: 12px 0;
+  font-size: 8pt;
+  line-height: 1.45;
+  border-left: 3px solid #c21819;
+  margin: 10px 0;
   page-break-inside: avoid;
 }
 
@@ -209,15 +231,14 @@ pre code {
   background: none;
   color: inherit;
   padding: 0;
-  border: none;
-  font-size: 8.5pt;
+  font-size: 8pt;
 }
 
 /* ── Tables ── */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin: 12px 0;
+  margin: 10px 0;
   font-size: 9pt;
   page-break-inside: auto;
 }
@@ -235,20 +256,20 @@ th {
   color: #ffffff;
   font-weight: 600;
   text-align: left;
-  padding: 8px 10px;
-  font-size: 8.5pt;
+  padding: 7px 10px;
+  font-size: 8pt;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   border: 1px solid #1e293b;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 
 td {
-  padding: 7px 10px;
+  padding: 6px 10px;
   border-bottom: 1px solid #e2e8f0;
   vertical-align: top;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 tbody tr:nth-child(even) {
@@ -259,13 +280,13 @@ tbody tr:nth-child(even) {
 
 /* ── Blockquotes ── */
 blockquote {
-  border-left: 4px solid #c21819;
-  margin: 12px 0;
-  padding: 10px 18px;
+  border-left: 3px solid #c21819;
+  margin: 10px 0;
+  padding: 8px 16px;
   background: #fef2f2;
   color: #991b1b;
-  border-radius: 0 6px 6px 0;
-  font-size: 10pt;
+  border-radius: 0 4px 4px 0;
+  font-size: 9.5pt;
 }
 
 blockquote p {
@@ -274,13 +295,13 @@ blockquote p {
 
 /* ── Lists ── */
 ul, ol {
-  margin: 6px 0 12px 0;
-  padding-left: 22px;
+  margin: 4px 0 10px 0;
+  padding-left: 20px;
 }
 
 li {
-  margin-bottom: 3px;
-  line-height: 1.5;
+  margin-bottom: 2px;
+  line-height: 1.45;
 }
 
 li::marker {
@@ -290,9 +311,9 @@ li::marker {
 /* ── Horizontal Rules ── */
 hr {
   border: none;
-  height: 2px;
-  background: linear-gradient(90deg, #c21819 0%, #e2e8f0 100%);
-  margin: 20px 0;
+  height: 1px;
+  background: #e2e8f0;
+  margin: 16px 0;
 }
 
 /* ── Print Adjustments ── */
@@ -319,29 +340,19 @@ hr {
   }
 }
 
-/* ── TOC Page ── */
+/* ── TOC styling ── */
 div[align="center"]:first-of-type + h2 {
   page-break-before: always;
-  color: #0f172a;
-  border-bottom: 3px solid #c21819;
-  padding-bottom: 8px;
 }
 
-/* ── Compact Tables in TOC ── */
-div[align="center"]:first-of-type + h2 + ul {
-  columns: 1;
-  column-gap: 20px;
-}
-
-/* ── Code syntax colors ── */
+/* ── Code syntax ── */
 pre code .keyword { color: #c084fc; }
 pre code .string { color: #86efac; }
 pre code .comment { color: #64748b; font-style: italic; }
 pre code .function { color: #7dd3fc; }
 pre code .number { color: #fdba74; }
-pre code .type { color: #67e8f9; }
 
-/* ── Responsive helpers ── */
+/* ── Compact table cells ── */
 td ul, td ol {
   margin: 2px 0;
   padding-left: 14px;
