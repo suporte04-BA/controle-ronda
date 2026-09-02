@@ -1,13 +1,13 @@
 @page {
   size: A4;
-  margin: 20mm 15mm 20mm 15mm;
+  margin: 18mm 15mm 18mm 15mm;
   @top-center {
     content: "";
   }
   @bottom-center {
-    content: counter(page) " / " counter(pages);
-    font-size: 10px;
-    color: #666;
+    content: counter(page);
+    font-size: 9px;
+    color: #888;
     font-family: 'Segoe UI', Arial, sans-serif;
   }
 }
@@ -18,89 +18,103 @@
 
 body {
   font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  font-size: 11pt;
-  line-height: 1.6;
+  font-size: 10.5pt;
+  line-height: 1.55;
   color: #1a1a2e;
 }
 
+/* ── Headings ── */
 h1 {
   color: #c21819;
-  font-size: 22pt;
+  font-size: 20pt;
   border-bottom: 3px solid #c21819;
-  padding-bottom: 8px;
-  margin-top: 40px;
-  page-break-before: always;
-}
-
-h1:first-of-type {
-  page-break-before: avoid;
+  padding-bottom: 6px;
+  margin-top: 10px;
+  margin-bottom: 12px;
+  page-break-after: avoid;
+  page-break-before: auto;
 }
 
 h2 {
   color: #1a1a4e;
-  font-size: 16pt;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 6px;
-  margin-top: 30px;
+  font-size: 14pt;
+  border-bottom: 1.5px solid #d0d0d0;
+  padding-bottom: 4px;
+  margin-top: 18px;
+  margin-bottom: 8px;
+  page-break-after: avoid;
 }
 
 h3 {
   color: #2d2d5e;
-  font-size: 13pt;
-  margin-top: 20px;
+  font-size: 12pt;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  page-break-after: avoid;
 }
 
 h4 {
   color: #3d3d6e;
-  font-size: 11pt;
-  margin-top: 15px;
+  font-size: 10.5pt;
+  margin-top: 10px;
+  margin-bottom: 4px;
+  page-break-after: avoid;
 }
 
+/* ── Tables ── */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin: 15px 0;
-  font-size: 9.5pt;
+  margin: 10px 0;
+  font-size: 9pt;
   page-break-inside: auto;
+}
+
+tr {
+  page-break-inside: avoid;
 }
 
 th {
   background-color: #1a1a4e;
   color: white;
-  padding: 8px 10px;
+  padding: 6px 8px;
   text-align: left;
   font-weight: 600;
   border: 1px solid #1a1a4e;
+  font-size: 8.5pt;
 }
 
 td {
-  padding: 6px 10px;
+  padding: 5px 8px;
   border: 1px solid #ddd;
   vertical-align: top;
+  font-size: 9pt;
 }
 
 tr:nth-child(even) {
   background-color: #f8f9fa;
 }
 
+/* ── Code ── */
 code {
   background-color: #f0f0f5;
-  padding: 2px 5px;
+  padding: 1px 4px;
   border-radius: 3px;
   font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 9.5pt;
+  font-size: 9pt;
   color: #c21819;
 }
 
 pre {
   background-color: #1a1a2e;
   color: #e0e0e0;
-  padding: 15px;
-  border-radius: 6px;
+  padding: 12px;
+  border-radius: 5px;
   overflow-x: auto;
-  font-size: 9pt;
-  line-height: 1.4;
+  font-size: 8.5pt;
+  line-height: 1.35;
   page-break-inside: avoid;
+  margin: 8px 0;
 }
 
 pre code {
@@ -109,12 +123,14 @@ pre code {
   padding: 0;
 }
 
+/* ── Other elements ── */
 blockquote {
-  border-left: 4px solid #c21819;
-  margin: 15px 0;
-  padding: 10px 20px;
+  border-left: 3px solid #c21819;
+  margin: 10px 0;
+  padding: 8px 16px;
   background-color: #fff5f5;
   color: #333;
+  font-size: 10pt;
 }
 
 strong {
@@ -123,8 +139,8 @@ strong {
 
 hr {
   border: none;
-  border-top: 2px solid #e0e0e0;
-  margin: 30px 0;
+  border-top: 1.5px solid #e0e0e0;
+  margin: 15px 0;
 }
 
 img {
@@ -137,45 +153,60 @@ a {
   text-decoration: none;
 }
 
-a:hover {
-  text-decoration: underline;
-}
-
 ul, ol {
-  padding-left: 25px;
+  padding-left: 22px;
+  margin: 6px 0;
 }
 
 li {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
-/* Cover page styling */
+p {
+  margin: 6px 0;
+}
+
+/* ── Cover page ── */
 div[align="center"] {
   page-break-after: always;
-  padding-top: 80px;
+  padding-top: 60px;
 }
 
 div[align="center"] img {
-  width: 350px;
-  margin-bottom: 30px;
+  width: 320px;
+  margin-bottom: 20px;
 }
 
 div[align="center"] h1 {
   border: none;
-  font-size: 28pt;
+  font-size: 26pt;
   color: #1a1a4e;
   page-break-before: avoid;
 }
 
-/* TOC styling */
-div[align="center"] + h2,
-div[align="center"] + h2 + ul {
+div[align="center"] table {
+  width: 60%;
+  margin: 20px auto;
+}
+
+/* ── TOC page ── */
+div[align="center"] + h2 {
   page-break-before: always;
 }
 
-/* Code block syntax highlighting fallback */
+/* ── Code highlight ── */
 pre code .keyword { color: #c792ea; }
 pre code .string { color: #c3e88d; }
 pre code .comment { color: #546e7a; }
 pre code .function { color: #82aaff; }
 pre code .number { color: #f78c6c; }
+
+/* ── Compact lists in tables ── */
+td ul, td ol {
+  margin: 2px 0;
+  padding-left: 16px;
+}
+
+td li {
+  margin-bottom: 1px;
+}
