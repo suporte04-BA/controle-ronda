@@ -195,68 +195,56 @@ O **Controle de Ronda** é um sistema web/mobile desenvolvido pela BA Elétrica 
 
 ## 2.4 Arquitetura de Alto Nível
 
+### Camada de Acesso
+
+| Componente | Tecnologia | Descrição |
+|------------|-----------|-----------|
+| **Frontend** | TanStack Start + React | Interface do usuário (SSR + CSR) |
+| **Deploy** | Cloudflare Workers | `controle-ronda.suporte04.workers.dev` |
+| **Edge Functions** | Supabase Deno | `send-daily-report`, `send-monthly-report`, `health` |
+| **Email Primário** | Resend API | Envio de relatórios com anexos PDF/XLSX |
+| **Email Fallback** | Google Apps Script | `GmailApp` via `suporte.baeletrica@gmail.com` |
+
+### Camada de Dados (Supabase)
+
+| Serviço | Função | Segurança |
+|---------|--------|-----------|
+| **PostgreSQL** | Banco de dados principal | RLS (Row-Level Security) ativo |
+| **Storage** | Fotos de rondas e avatares | Bucket `fotos_ponto` (privado), `avatars` (público) |
+| **pg_cron** | Agendamento de relatórios | CD 07:00, LOJA 07:05, Mensal dia 1 08:00 |
+| **Auth** | Autenticação de usuários | JWT + Roles (funcionario, admin, gestor) |
+
+### Fluxo Geral
+
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    USUÁRIO FINAL                         │
-│  (Funcionário bate ponto / Admin gerencia / Gestor lê)  │
-└──────────┬──────────────────┬───────────────────┬───────┘
-           │                  │                   │
-           ▼                  ▼                   ▼
-┌──────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│  FRONTEND    │  │  EDGE FUNCTIONS │  │  EMAIL (GAS)    │
-│  TanStack    │  │  Supabase Deno  │  │  Google Apps    │
-│  Cloudflare  │  │                 │  │  Script         │
-│  Workers     │  │  send-daily     │  │  (fallback)     │
-│              │  │  send-monthly   │  │                 │
-│  controles   │  │  health         │  │  GmailApp       │
-│  .suporte04  │  │                 │  │  suporte.baele   │
-│  .workers    │  │  Resend API     │  │  trica@gmail.com│
-│  .dev        │  │  (primary)      │  │                 │
-└──────┬───────┘  └────────┬────────┘  └────────┬────────┘
-       │                   │                    │
-       ▼                   ▼                    │
-┌──────────────────────────────────┐            │
-│         SUPABASE                 │            │
-│  ┌────────────┐ ┌─────────────┐  │            │
-│  │ PostgreSQL │ │   Storage   │  │            │
-│  │  (RLS ON)  │ │ (fotos/avatars)│ │            │
-│  └────────────┘ └─────────────┘  │            │
-│  ┌────────────┐ ┌─────────────┐  │            │
-│  │ pg_cron    │ │   Auth      │  │            │
-│  │ (agendamento)│ │ (JWT/Roles) │  │            │
-│  └────────────┘ └─────────────┘  │            │
-└──────────────────────────────────┘            │
-       │                                        │
-       ▼                                        ▼
-┌──────────────────────────────────────────────────────┐
-│                   STORAGE DE FOTOS                    │
-│  Bucket: fotos_ponto (privado) — Fotos de rondas     │
-│  Bucket: avatars (público) — Fotos de perfil         │
-└──────────────────────────────────────────────────────┘
+USUARIO -> FRONTEND -> EDGE FUNCTIONS -> SUPABASE
+                           |
+              +------------+------------+
+              |                         |
+         RESEND API               GOOGLE APPS
+         (primario)               SCRIPT (fallback)
+              |                         |
+              +------------+------------+
+                           |
+                     EMAIL DESTINATARIO
 ```
 
 ### Fluxo de Dados — Relatório Diário
 
-```
-pg_cron (07:00 Manaus)
-    │
-    ▼
-net.http_post → Edge Function send-daily-report
-    │
-    ├─ Query registros_ponto (últimas 24h)
-    ├─ Join com profiles + setores
-    ├─ Filtrar por setor (CD ou LOJA)
-    ├─ Buscar destinatários (admins com role GESTOR)
-    ├─ Download fotos (limitado a 40)
-    ├─ Gerar PDF com pdf-lib
-    ├─ Gerar XLSX com xlsx
-    │
-    ├─ [PRIMÁRIO] Resend API → Envio de email com anexos
-    │   │
-    │   └─ [SE FALHAR] Google Apps Script → GmailApp
-    │
-    └─ Retorno JSON com status
-```
+| Etapa | Operação | Detalhes |
+|-------|----------|----------|
+| 1 | **pg_cron dispara** | 07:00 (CD) ou 07:05 (LOJA) horário de Manaus |
+| 2 | **net.http_post** | Chama Edge Function `send-daily-report` |
+| 3 | **Query registros_ponto** | Seleciona registros das últimas 24h |
+| 4 | **Join profiles + setores** | Enriquece dados com nome e setor |
+| 5 | **Filtrar por setor** | CD (`73a5d2ca`) ou LOJA (`ad1b42c1`) |
+| 6 | **Buscar destinatários** | Admins com role GESTOR no setor correspondente |
+| 7 | **Download fotos** | Limitado a 40 fotos ( URLs assinadas) |
+| 8 | **Gerar PDF** | `pdf-lib` — capa, tabela, badges, fotos |
+| 9 | **Gerar XLSX** | `xlsx` — planilha para análise |
+| 10 | **[PRIMÁRIO] Resend API** | Envia email com anexos |
+| 11 | **[SE FALHAR] GAS** | Google Apps Script → GmailApp |
+| 12 | **Retorno JSON** | Status do envio |
 
 ## 2.5 Conceitos e Terminologia
 
@@ -807,30 +795,30 @@ Authorization: Bearer {SUPABASE_ANON_KEY ou SERVICE_ROLE_KEY}
 ### Fluxo de Execução (detalhado)
 
 ```
-1. Parse body → setorParam, periodoParam
-2. rangeFor(modo, periodoParam) → fromUtc, toUtc
+1. Parse body -> setorParam, periodoParam
+2. rangeFor(modo, periodoParam) -> fromUtc, toUtc
 3. fetchRows(admin, fromUtc, toUtc)
-   ├─ SELECT registros_ponto WHERE horario_acao BETWEEN fromUtc AND toUtc
-   ├─ SELECT profiles (todos)
-   ├─ SELECT setores (todos)
-   └─ JOIN: r.user_id → profiles → setores → r.setor = setores.nome
+   - SELECT registros_ponto WHERE horario_acao BETWEEN fromUtc AND toUtc
+   - SELECT profiles (todos)
+   - SELECT setores (todos)
+   - JOIN: r.user_id -> profiles -> setores -> r.setor = setores.nome
 4. fetchRecipientEmails(admin, setorParam)
-   ├─ SELECT user_roles WHERE role = 'admin' → adminIds
-   ├─ SELECT setores → filtrar: nome IN ('GESTOR', 'GESTOR - CD', 'GESTOR - LOJA')
-   │  - CD: aceita setores com "GESTOR" E SEM "LOJA"
-   │  - LOJA: aceita setores com "GESTOR" E SEM "CD"
-   └─ Para cada admin: verificar se setor_id ∈ gestorIds
+   - SELECT user_roles WHERE role = 'admin' -> adminIds
+   - SELECT setores -> filtrar: nome IN ('GESTOR', 'GESTOR - CD', 'GESTOR - LOJA')
+   - CD: aceita setores com "GESTOR" E SEM "LOJA"
+   - LOJA: aceita setores com "GESTOR" E SEM "CD"
+   - Para cada admin: verificar se setor_id pertence a gestorIds
 5. Para cada SETOR (CD e/ou LOJA):
-   ├─ Filtrar rows por setor (r.setor.toUpperCase().includes(match))
-   ├─ Se 0 rows → skip
-   ├─ Download fotos (limit 40) + avatares
-   ├─ reconstructRondas() → agrupar por user_id e ciclo
-   ├─ buildPdf() → gerar PDF com pdf-lib
-   └─ Anexar ao array de attachments
-6. Se attachments = 0 → retornar "Nenhum registro"
-7. buildEmailHtml() → HTML do email
-8. sendResend() → enviar email com anexos PDF
-   ├─ Se falhar → sendGasFallback() → GAS URL
+   - Filtrar rows por setor (r.setor.toUpperCase().includes(match))
+   - Se 0 rows -> skip
+   - Download fotos (limit 40) + avatares
+   - reconstructRondas() -> agrupar por user_id e ciclo
+   - buildPdf() -> gerar PDF com pdf-lib
+   - Anexar ao array de attachments
+6. Se attachments = 0 -> retornar "Nenhum registro"
+7. buildEmailHtml() -> HTML do email
+8. sendResend() -> enviar email com anexos PDF
+   - Se falhar -> sendGasFallback() -> GAS URL
 9. Retornar JSON com status
 ```
 
