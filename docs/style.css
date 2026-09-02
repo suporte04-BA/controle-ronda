@@ -1,17 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
    MANUAL TECNICO — BA ELETRICA
-   Professional Technical Documentation CSS
    ═══════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ── Named Pages ── */
-@page cover {
-  size: A4;
-  margin: 0;
-}
-
-@page body {
+/* ── Page Setup ── */
+@page {
   size: A4;
   margin: 25mm 20mm 25mm 20mm;
 
@@ -22,8 +16,17 @@
     font-weight: 500;
     color: #94a3b8;
     vertical-align: bottom;
-    padding-bottom: 6pt;
+    padding-bottom: 4pt;
     border-bottom: 0.5pt solid #e2e8f0;
+  }
+
+  @bottom-left {
+    content: "BA Eletrica — Confidencial";
+    font-family: 'Inter', sans-serif;
+    font-size: 7pt;
+    color: #cbd5e1;
+    vertical-align: top;
+    padding-top: 4pt;
   }
 
   @bottom-right {
@@ -33,24 +36,16 @@
     font-weight: 500;
     color: #94a3b8;
     vertical-align: top;
-    padding-top: 6pt;
+    padding-top: 4pt;
     border-top: 0.5pt solid #e2e8f0;
-  }
-
-  @bottom-left {
-    content: "BA Eletrica — Confidencial";
-    font-family: 'Inter', sans-serif;
-    font-size: 7pt;
-    color: #cbd5e1;
-    vertical-align: top;
-    padding-top: 6pt;
   }
 }
 
-@page cover:first {
+@page :first {
   @top-left { content: none; }
-  @bottom-right { content: none; }
   @bottom-left { content: none; }
+  @bottom-right { content: none; }
+  margin: 0;
 }
 
 /* ── Base Typography ── */
@@ -68,77 +63,66 @@ body {
 
 /* ── Cover Page ── */
 div[align="center"]:first-of-type {
-  page: cover;
-  width: 210mm;
-  height: 297mm;
+  width: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   page-break-after: always;
-  box-sizing: border-box;
   background: #ffffff;
 }
 
 div[align="center"]:first-of-type img {
-  width: 220px;
-  margin-bottom: 40px;
+  width: 200px;
+  margin-bottom: 30px;
 }
 
 div[align="center"]:first-of-type h1 {
   border: none;
-  background: none;
   color: #0f172a;
-  font-size: 22pt;
+  font-size: 20pt;
   font-weight: 700;
-  margin: 0 0 6px 0;
+  margin: 0 0 4px 0;
   padding: 0;
-  letter-spacing: -0.3px;
 }
 
 div[align="center"]:first-of-type h2 {
   border: none;
-  background: none;
   color: #64748b;
   font-size: 11pt;
   font-weight: 400;
-  margin: 0 0 40px 0;
+  margin: 0 0 30px 0;
   padding: 0;
-  letter-spacing: 0.5px;
+}
+
+div[align="center"]:first-of-type hr {
+  width: 60px;
+  height: 2px;
+  background: #c21819;
+  margin: 0 auto 20px;
+  border: none;
+}
+
+div[align="center"]:first-of-type p {
+  color: #64748b;
+  font-size: 9pt;
+  margin: 3px 0;
+  line-height: 1.5;
+}
+
+div[align="center"]:first-of-type strong {
+  color: #334155;
+  font-weight: 600;
 }
 
 div[align="center"]:first-of-type table {
-  width: 45%;
-  margin: 0 auto;
-  border-collapse: collapse;
-}
-
-div[align="center"]:first-of-type table th {
-  background: #f8fafc;
-  color: #64748b;
-  border: none;
-  border-bottom: 1px solid #e2e8f0;
-  font-size: 8pt;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  padding: 6px 12px;
-  text-align: left;
-}
-
-div[align="center"]:first-of-type table td {
-  background: transparent;
-  color: #334155;
-  border: none;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 9pt;
-  padding: 6px 12px;
+  display: none;
 }
 
 /* ── Headings ── */
 h1 {
-  page: body;
   font-family: 'Inter', sans-serif;
   font-size: 18pt;
   font-weight: 700;
@@ -146,9 +130,8 @@ h1 {
   border-bottom: 2px solid #c21819;
   padding-bottom: 6px;
   margin-top: 0;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   page-break-after: avoid;
-  letter-spacing: -0.2px;
 }
 
 h2 {
@@ -157,8 +140,8 @@ h2 {
   font-weight: 600;
   color: #0f172a;
   border-bottom: 1.5px solid #e2e8f0;
-  padding-bottom: 5px;
-  margin-top: 22px;
+  padding-bottom: 4px;
+  margin-top: 20px;
   margin-bottom: 8px;
   page-break-after: avoid;
 }
@@ -168,7 +151,7 @@ h3 {
   font-size: 11pt;
   font-weight: 600;
   color: #1e3a5f;
-  margin-top: 16px;
+  margin-top: 14px;
   margin-bottom: 6px;
   page-break-after: avoid;
 }
@@ -178,7 +161,7 @@ h4 {
   font-size: 10pt;
   font-weight: 600;
   color: #334155;
-  margin-top: 12px;
+  margin-top: 10px;
   margin-bottom: 4px;
   page-break-after: avoid;
 }
@@ -340,7 +323,7 @@ hr {
   }
 }
 
-/* ── TOC styling ── */
+/* ── TOC ── */
 div[align="center"]:first-of-type + h2 {
   page-break-before: always;
 }

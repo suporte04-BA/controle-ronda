@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../public/logo.png" alt="BA Eletrica" width="250"/>
+  <img src="../public/logo.png" alt="BA Eletrica" width="220"/>
   
   # Manual Tecnico
   
@@ -7,7 +7,9 @@
   
   ---
   
-  **Versao 1.0.0** — 02 de Setembro de 2026
+  **Versao 1.0.0**
+  
+  02 de Setembro de 2026
   
   Documento Interno — CONFIDENCIAL
   
