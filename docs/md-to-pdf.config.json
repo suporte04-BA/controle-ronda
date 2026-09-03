@@ -2,13 +2,13 @@
   "pdf_options": {
     "format": "A4",
     "margin": {
-      "top": "20mm",
-      "bottom": "20mm",
-      "left": "15mm",
-      "right": "15mm"
+      "top": "0mm",
+      "bottom": "0mm",
+      "left": "0mm",
+      "right": "0mm"
     },
     "printBackground": true
   },
   "stylesheet": "docs/style.css",
-  "document_title": "Manual Técnico — Controle de Ronda BA Elétrica"
+  "document_title": "Manual Tecnico — Controle de Ronda BA Eletrica"
 }

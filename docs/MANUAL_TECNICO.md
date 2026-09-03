@@ -1,5 +1,5 @@
-<div align="center">
-  <img src="../public/logo.png" alt="BA Eletrica" width="220"/>
+<div class="cover">
+  <img src="../public/logo.png" alt="BA Eletrica" width="200"/>
   
   # Manual Tecnico
   
