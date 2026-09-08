@@ -15,7 +15,7 @@
   
   Equipe de Desenvolvimento BA Eletrica
   
-  suporte04@baeletrica.com.br
+  seu-email@empresa.com.br
 </div>
 
 <br/>
@@ -150,7 +150,7 @@ O **Controle de Ronda** é um sistema web/mobile desenvolvido pela BA Elétrica 
 | **Funcionário** | `/app/*` | Bater ponto (câmera), ver perfil, histórico de rondas |
 | **Gestor** | Email | Recebe relatórios PDF diários e mensais por email |
 
-**Conta admin protegida**: Apenas `suporte04@baeletrica.com.br` possui role admin. Todos os outros usuários são role `user`.
+**Conta admin protegida**: Apenas `seu-email@empresa.com.br` possui role admin. Todos os outros usuários são role `user`.
 
 ## 2.3 Stack Tecnológica
 
@@ -188,8 +188,8 @@ O **Controle de Ronda** é um sistema web/mobile desenvolvido pela BA Elétrica 
 
 | Componente | Tecnologia | URL |
 |-----------|-----------|-----|
-| Frontend | Cloudflare Workers | `https://controle-ronda.suporte04.workers.dev` |
-| Backend | Supabase | `https://rdmbayprbfqbjhfqcasp.supabase.co` |
+| Frontend | Cloudflare Workers | `https://controle-ronda.sua-empresa.workers.dev` |
+| Backend | Supabase | `https://seu-project-id.supabase.co` |
 | CI/CD | GitHub Actions | Push to main → auto-deploy |
 | DNS | Cloudflare | `baeletrica.com.br` |
 
@@ -200,10 +200,10 @@ O **Controle de Ronda** é um sistema web/mobile desenvolvido pela BA Elétrica 
 | Componente | Tecnologia | Descrição |
 |------------|-----------|-----------|
 | **Frontend** | TanStack Start + React | Interface do usuário (SSR + CSR) |
-| **Deploy** | Cloudflare Workers | `controle-ronda.suporte04.workers.dev` |
+| **Deploy** | Cloudflare Workers | `controle-ronda.sua-empresa.workers.dev` |
 | **Edge Functions** | Supabase Deno | `send-daily-report`, `send-monthly-report`, `health` |
 | **Email Primário** | Resend API | Envio de relatórios com anexos PDF/XLSX |
-| **Email Fallback** | Google Apps Script | `GmailApp` via `suporte.baeletrica@gmail.com` |
+| **Email Fallback** | Google Apps Script | `GmailApp` via `seu-email@empresa.com.br` |
 
 ### Camada de Dados (Supabase)
 
@@ -237,7 +237,7 @@ USUARIO -> FRONTEND -> EDGE FUNCTIONS -> SUPABASE
 | 2 | **net.http_post** | Chama Edge Function `send-daily-report` |
 | 3 | **Query registros_ponto** | Seleciona registros das últimas 24h |
 | 4 | **Join profiles + setores** | Enriquece dados com nome e setor |
-| 5 | **Filtrar por setor** | CD (`73a5d2ca`) ou LOJA (`ad1b42c1`) |
+| 5 | **Filtrar por setor** | CD (`uuid-cd`) ou LOJA (`uuid-loja`) |
 | 6 | **Buscar destinatários** | Admins com role GESTOR no setor correspondente |
 | 7 | **Download fotos** | Limitado a 40 fotos ( URLs assinadas) |
 | 8 | **Gerar PDF** | `pdf-lib` — capa, tabela, badges, fotos |
@@ -427,8 +427,8 @@ controle-ronda/
 | `appsscript.json` | Manifesto — scopes, runtime V8, timezone America/Manaus |
 
 **Deploy GAS**: Editor GAS → Executar manualmente → Criar implantação → Web App
-**Conta GAS**: `suporte.baeletrica@gmail.com` (pessoal Gmail, NÃO Workspace)
-**URL de implantação**: `https://script.google.com/macros/s/AKfycbw-.../exec`
+**Conta GAS**: `seu-email@empresa.com.br` (pessoal Gmail, NÃO Workspace)
+**URL de implantação**: `https://script.google.com/macros/s/sua-chave/exec`
 
 ## 3.6 GitHub Actions
 
@@ -566,12 +566,12 @@ Setores de trabalho (CD, LOJA, GESTOR, etc.).
 
 | ID | Nome |
 |----|------|
-| `e49fba28-...` | DEPARTAMENTO TI |
-| `ed4cc5bb-...` | GESTOR |
-| `73a5d2ca-...` | CD - GUARDAS |
-| `ad1b42c1-...` | LOJA - GUARDAS |
-| `bef20765-...` | GESTOR - LOJA |
-| `bc749fe5-...` | GESTOR - CD |
+| `uuid-ti-...` | DEPARTAMENTO TI |
+| `uuid-gestor-...` | GESTOR |
+| `uuid-cd-...` | CD - GUARDAS |
+| `uuid-loja-...` | LOJA - GUARDAS |
+| `uuid-gestor-loja-...` | GESTOR - LOJA |
+| `uuid-gestor-cd-...` | GESTOR - CD |
 
 ## 4.3 Enums e Tipos
 
@@ -760,7 +760,7 @@ Authorization: Bearer {SUPABASE_SERVICE_ROLE_KEY}
 
 ## 5.2 send-daily-report
 
-**URL**: `POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report`
+**URL**: `POST https://seu-project-id.supabase.co/functions/v1/send-daily-report`
 
 ### Parâmetros (Body JSON)
 
@@ -831,7 +831,7 @@ LOJA: 5 11 * * * (11:05 UTC = 07:05 Manaus)
 
 ## 5.3 send-monthly-report
 
-**URL**: `POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-monthly-report`
+**URL**: `POST https://seu-project-id.supabase.co/functions/v1/send-monthly-report`
 
 ### Parâmetros
 
@@ -849,7 +849,7 @@ LOJA: 5 11 * * * (11:05 UTC = 07:05 Manaus)
 
 ## 5.4 health
 
-**URL**: `GET https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/health`
+**URL**: `GET https://seu-project-id.supabase.co/functions/v1/health`
 
 **Resposta**:
 ```json
@@ -862,7 +862,7 @@ Usado pelo GitHub Actions para manter o Supabase ativo (keep-alive).
 
 ```typescript
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://controle-ronda.suporte04.workers.dev",
+  "Access-Control-Allow-Origin": "https://controle-ronda.sua-empresa.workers.dev",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 ```
@@ -1027,7 +1027,7 @@ O filtro de setor opera em duas camadas:
 | `user` | Bater ponto, ver próprio perfil, ver próprio histórico |
 
 **Atribuição**: Automática via trigger `handle_new_user()` → role `user` por padrão.
-**Conta admin**: Apenas `suporte04@baeletrica.com.br` (configurado manualmente).
+**Conta admin**: Apenas `seu-email@empresa.com.br` (configurado manualmente).
 
 ## 7.5 Timezone
 
@@ -1129,7 +1129,7 @@ Todos os componentes estão em `src/components/ui/`:
 | Arquivo | Funções Exportadas | Descrição |
 |---------|-------------------|-----------|
 | `auth.tsx` | `AuthProvider`, `useAuth()` | Contexto de autenticação Supabase |
-| `config.ts` | `SUPPORT_EMAIL` | `"suporte04@baeletrica.com.br"` |
+| `config.ts` | `SUPPORT_EMAIL` | `"seu-email@empresa.com.br"` |
 | `config.server.ts` | — | Variáveis de ambiente server-side |
 | `timezone.ts` | `toManausISO()`, `formatManaus()`, `formatHora()`, `formatData()`, `isSameDayManaus()`, `CICLO_RONDA`, `TIPO_ACAO_LABEL`, `TIPO_ACAO_ORDEM`, `proximaAcao()`, `acoesDoCicloAtual()`, `contarCiclosConcluidos()` | Utilitários de timezone e ciclo |
 | `storage.ts` | `getSignedPhotoUrl()` | URLs assinadas para fotos |
@@ -1149,13 +1149,13 @@ Todos os componentes estão em `src/components/ui/`:
 
 | Chave | Valor (resumido) | Onde Está | Sensível? |
 |-------|------------------|-----------|-----------|
-| Supabase Anon Key | `eyJhbG...anon...Q_w` | wrangler.toml, client.ts, deploy.yml, .env | BAIXO (protegida por RLS) |
-| Supabase Service Role Key | `eyJhbG...service_role...SBdas` | **Code.gs (HARDCODED)**, client.server.ts (env) | **CRÍTICO** |
-| Resend API Key | `re_it6KZMRb_...` | Supabase Secrets (env) | ALTO |
+| Supabase Anon Key | `eyJhbG...` | wrangler.toml, client.ts, deploy.yml, .env | BAIXO (protegida por RLS) |
+| Supabase Service Role Key | `eyJhbG...` | **Code.gs (HARDCODED)**, client.server.ts (env) | **CRÍTICO** |
+| Resend API Key | `re_...` | Supabase Secrets (env) | ALTO |
 | Cloudflare API Token | — | GitHub Secrets | ALTO |
-| GAS Deployment URL | `https://script.google.com/macros/s/AKfycbw-.../exec` | send-daily-report/index.ts | MÉDIO |
-| Supabase Project ID | `rdmbayprbfqbjhfqcasp` | Múltiplos arquivos | BAIXO |
-| Supabase Access Token | `sbp_a3da4c3b...` | Usado apenas em scripts locais | ALTO |
+| GAS Deployment URL | `https://script.google.com/macros/s/.../exec` | send-daily-report/index.ts | MÉDIO |
+| Supabase Project ID | `seu-project-id` | Múltiplos arquivos | BAIXO |
+| Supabase Access Token | `sbp_...` | Usado apenas em scripts locais | ALTO |
 
 ## 10.2 Variáveis de Ambiente
 
@@ -1163,9 +1163,9 @@ Todos os componentes estão em `src/components/ui/`:
 
 | Variável | Fonte | Valor |
 |----------|-------|-------|
-| `VITE_SUPABASE_URL` | .env, wrangler.toml | `https://rdmbayprbfqbjhfqcasp.supabase.co` |
+| `VITE_SUPABASE_URL` | .env, wrangler.toml | `https://seu-project.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | .env, wrangler.toml | Chave anon (JWT) |
-| `VITE_SUPABASE_PROJECT_ID` | .env, deploy.yml | `rdmbayprbfqbjhfqcasp` |
+| `VITE_SUPABASE_PROJECT_ID` | .env, deploy.yml | `seu-project-id` |
 
 ### Server-side (não expostas)
 
@@ -1216,7 +1216,7 @@ Todos os componentes estão em `src/components/ui/`:
 
 ## 11.1 Cloudflare Workers (Frontend)
 
-**URL Produção**: `https://controle-ronda.suporte04.workers.dev`
+**URL Produção**: `https://controle-ronda.sua-empresa.workers.dev`
 
 ### Configuração
 
@@ -1251,15 +1251,15 @@ O push para a branch `main` dispara o GitHub Actions `deploy.yml`:
 
 ```bash
 cd supabase/functions
-supabase functions deploy send-daily-report --project-ref rdmbayprbfqbjhfqcasp
-supabase functions deploy send-monthly-report --project-ref rdmbayprbfqbjhfqcasp
-supabase functions deploy health --project-ref rdmbayprbfqbjhfqcasp
+supabase functions deploy send-daily-report --project-ref seu-project-id
+supabase functions deploy send-monthly-report --project-ref seu-project-id
+supabase functions deploy health --project-ref seu-project-id
 ```
 
 ### Configuração de Secrets
 
 ```bash
-supabase secrets set RESEND_API_KEY=re_it6KZMRb_... --project-ref rdmbayprbfqbjhfqcasp
+supabase secrets set RESEND_API_KEY=sua-chave --project-ref seu-project-id
 ```
 
 ### Configuração
@@ -1290,7 +1290,7 @@ verify_jwt = false
 
 ### Conta
 
-- **Email**: `suporte.baeletrica@gmail.com` (pessoal Gmail)
+- **Email**: `seu-email@empresa.com.br` (pessoal Gmail)
 - **NÃO é Google Workspace** — GmailApp funciona normalmente
 - **Script ID**: `1SNDyuhthes3c7DY-r0zO7WFAXiqH7kb_qSn2lpbikwVxzpoYFYTL6V27`
 
@@ -1332,7 +1332,7 @@ jobs:
   health-ping:
     runs-on: ubuntu-latest
     steps:
-      - run: curl -s https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/health
+      - run: curl -s https://seu-project-id.supabase.co/functions/v1/health
 ```
 
 ## 11.5 Sequência de Deploy
@@ -1344,18 +1344,18 @@ jobs:
 3. `npm ci` → instala dependências
 4. `vite build` → gera bundle
 5. `wrangler deploy` → faz upload para Cloudflare Workers
-6. Verificação: `curl https://controle-ronda.suporte04.workers.dev`
+6. Verificação: `curl https://controle-ronda.sua-empresa.workers.dev`
 
 ### Deploy de Edge Function (manual)
 
 1. Alterar `supabase/functions/*/index.ts`
-2. `supabase functions deploy {nome} --project-ref rdmbayprbfqbjhfqcasp`
-3. Verificar: `curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/{nome}`
+2. `supabase functions deploy {nome} --project-ref seu-project-id`
+3. Verificar: `curl -X POST https://seu-project-id.supabase.co/functions/v1/{nome}`
 
 ### Deploy de Migração (manual)
 
 1. Criar arquivo em `supabase/migrations/YYYYMMDDHHMMSS_nome.sql`
-2. `supabase db push --project-ref rdmbayprbfqbjhfqcasp`
+2. `supabase db push --project-ref seu-project-id`
 
 ## 11.6 Rollback
 
@@ -1375,7 +1375,7 @@ git push origin main
 # Não há versão anterior automaticamente
 # Manter backup do index.ts anterior
 # Re-deploy com código anterior:
-supabase functions deploy send-daily-report --project-ref rdmbayprbfqbjhfqcasp
+supabase functions deploy send-daily-report --project-ref seu-project-id
 ```
 
 ### Migração
@@ -1441,13 +1441,13 @@ ORDER BY created DESC LIMIT 10;
 
 ```bash
 # CD
-curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report \
+curl -X POST https://seu-project-id.supabase.co/functions/v1/send-daily-report \
   -H "Authorization: Bearer {ANON_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"setor":"CD"}'
 
 # LOJA
-curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report \
+curl -X POST https://seu-project-id.supabase.co/functions/v1/send-daily-report \
   -H "Authorization: Bearer {ANON_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"setor":"LOJA"}'
@@ -1483,10 +1483,10 @@ curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-re
 
 ```bash
 # Health check
-curl https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/health
+curl https://seu-project-id.supabase.co/functions/v1/health
 
 # Teste CD
-curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report \
+curl -X POST https://seu-project-id.supabase.co/functions/v1/send-daily-report \
   -H "Authorization: Bearer {KEY}" \
   -H "Content-Type: application/json" \
   -d '{"setor":"CD","override_email":"seu@email.com"}'
@@ -1496,23 +1496,23 @@ curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-re
 
 ```bash
 # Contar registros
-supabase db query "SELECT count(*) FROM registros_ponto" --project-ref rdmbayprbfqbjhfqcasp
+supabase db query "SELECT count(*) FROM registros_ponto" --project-ref seu-project-id
 
 # Verificar setores
-supabase db query "SELECT id, nome FROM setores" --project-ref rdmbayprbfqbjhfqcasp
+supabase db query "SELECT id, nome FROM setores" --project-ref seu-project-id
 
 # Verificar users admin
-supabase db query "SELECT p.nome, p.email FROM profiles p JOIN user_roles ur ON p.id = ur.user_id WHERE ur.role = 'admin'" --project-ref rdmbayprbfqbjhfqcasp
+supabase db query "SELECT p.nome, p.email FROM profiles p JOIN user_roles ur ON p.id = ur.user_id WHERE ur.role = 'admin'" --project-ref seu-project-id
 ```
 
 ### Verificar Cron
 
 ```bash
 # Status dos jobs
-supabase db query "SELECT * FROM cron.job" --project-ref rdmbayprbfqbjhfqcasp
+supabase db query "SELECT * FROM cron.job" --project-ref seu-project-id
 
 # Últimas execuções
-supabase db query "SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 5" --project-ref rdmbayprbfqbjhfqcasp
+supabase db query "SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 5" --project-ref seu-project-id
 ```
 
 ---
@@ -1528,10 +1528,10 @@ supabase db query "SELECT * FROM cron.job_run_details ORDER BY start_time DESC L
 cd supabase/functions
 
 # 2. Deploy da function
-supabase functions deploy send-daily-report --project-ref rdmbayprbfqbjhfqcasp
+supabase functions deploy send-daily-report --project-ref seu-project-id
 
 # 3. Verificar deploy
-curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report \
+curl -X POST https://seu-project-id.supabase.co/functions/v1/send-daily-report \
   -H "Authorization: Bearer {ANON_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"setor":"CD","override_email":"seu@email.com"}'
@@ -1550,7 +1550,7 @@ curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-re
 # Usar IF NOT EXISTS / IF EXISTS para segurança
 
 # 3. Push para o banco
-supabase db push --project-ref rdmbayprbfqbjhfqcasp
+supabase db push --project-ref seu-project-id
 
 # 4. Verificar
 supabase db query "SELECT * FROM information_schema.tables WHERE table_name = 'nova_tabela'"
@@ -1563,9 +1563,9 @@ supabase db query "SELECT * FROM information_schema.tables WHERE table_name = 'n
 ```bash
 # 1. Gerar nova chave em https://resend.com/api-keys
 # 2. Atualizar no Supabase
-supabase secrets set RESEND_API_KEY=nova_chave --project-ref rdmbayprbfqbjhfqcasp
+supabase secrets set RESEND_API_KEY=nova_chave --project-ref seu-project-id
 # 3. Testar
-curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report \
+curl -X POST https://seu-project-id.supabase.co/functions/v1/send-daily-report \
   -H "Authorization: Bearer {KEY}" \
   -H "Content-Type: application/json" \
   -d '{"setor":"CD","override_email":"seu@email.com"}'
@@ -1593,7 +1593,7 @@ echo "nova_chave" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 
 ```bash
 # Enviar para email específico (teste)
-curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report \
+curl -X POST https://seu-project-id.supabase.co/functions/v1/send-daily-report \
   -H "Authorization: Bearer {SERVICE_ROLE_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1602,7 +1602,7 @@ curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-re
   }'
 
 # Enviar para todos os destinatários (produção)
-curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-report \
+curl -X POST https://seu-project-id.supabase.co/functions/v1/send-daily-report \
   -H "Authorization: Bearer {SERVICE_ROLE_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"setor": "LOJA"}'
@@ -1638,11 +1638,11 @@ curl -X POST https://rdmbayprbfqbjhfqcasp.supabase.co/functions/v1/send-daily-re
 
 | Função | Contato |
 |--------|---------|
-| **Suporte Técnico** | suporte04@baeletrica.com.br |
+| **Suporte Técnico** | seu-email@empresa.com.br |
 | **Desenvolvimento** | Equipe de Desenvolvimento BA Elétrica |
 | **GitHub** | https://github.com/suporte04-BA/controle-ronda |
-| **Produção** | https://controle-ronda.suporte04.workers.dev |
-| **Supabase Dashboard** | https://supabase.com/dashboard/project/rdmbayprbfqbjhfqcasp |
+| **Produção** | https://controle-ronda.sua-empresa.workers.dev |
+| **Supabase Dashboard** | https://supabase.com/dashboard/project/seu-project-id |
 
 ## 15.3 Referências
 
