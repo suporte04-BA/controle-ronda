@@ -60,3 +60,60 @@ TRANSOBRA_INFO_COMPLETA.txt
 
 # Lovable
 .lovable/
+
+# ---------------------------------------------------------------------------
+# Arquivos auxiliares locais — NÃO fazem parte do projeto (não commitar)
+# ---------------------------------------------------------------------------
+
+# Python
+*.py
+__pycache__/
+*.py[cod]
+
+# Transcrições / legendas / mídia baixada localmente
+window_transcripts/
+_review_chunks/
+*.cmt.xml
+*.mp4
+
+# Saídas de scripts de análise e depuração
+_*.py
+_*.json
+_*.txt
+_*.html
+_*.ps1
+_*.log
+audit_vad_report.json
+rebuild_report.json
+relatorio.json
+repair_windows.json
+build_errors.txt
+download_stderr.txt
+gcc_*.txt
+transcricao_*.txt
+glossario_*.md
+*.err
+
+# Páginas salvas de web scraping
+*_page.html
+*_selenium.html
+*_full.html
+anime*.html
+mega*.html
+zoko*.html
+CV - *.html
+Resume - *.html
+
+# Downloads / utilitários avulsos
+baixar_*.bat
+extrair_*.bat
+*_download.bat
+fix_errors.ps1
+*_screenshot.png
+
+# Configuração de ferramentas locais
+opencode.json
+
+# Bancos H2 locais
+*.mv.db
+*.lock.db
